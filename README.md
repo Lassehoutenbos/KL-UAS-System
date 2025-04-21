@@ -17,7 +17,7 @@
 
 ### Trust calcuations
 
-![Calculations for motor and weight](/Docs/Pictures/calcs.png)
+![Calculations for motor and weight](/Docs/Pictures/Calcs.png)
 
 ### Weight calculations
 
