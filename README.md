@@ -11,7 +11,7 @@
 - 1x WS2812B Ledstrip
 - [1x FlySky i6X remote controller](https://droneshop.nl/flysky-i6x-remote-controller-incl-ia6b-receiver)
 - [1x iA6B Receiver](https://droneshop.nl/flysky-i6x-remote-controller-incl-ia6b-receiver)
-- 1x Chassis
+- [1x Body](https://www.hobbydrone.cz/en/frame-pilotix-mark4-10-partizan-edition-10-/)
 
 ## Calculations
 
@@ -31,5 +31,6 @@
 | Accu | 1 | 325 gr | 325 gr |
 | Wires | many | * | * |
 | Ledstrips| 4 | * | * |
+| Body | 1 | 232 gr | 232 gr|
 | Misc | * | 20 gr | 20 gr |
-| **Total** | | | **711,7 gr** |
+| **Total** | | | **943,7 gr** |
