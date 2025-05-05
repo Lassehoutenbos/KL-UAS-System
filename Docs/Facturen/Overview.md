@@ -9,6 +9,8 @@
 | Lidar | 1 | €29,95 |
 | Wire | 6M | €17,70 |
 | i6X TX + RX| 1 | €69,95 |
-| Shipping | 4 | €27,60 |
+| Engines New | 4 | €75,88 |
+| Engines Old | 4 | €67,78 |
+| Shipping + Payment | 5 | €42,55 |
 
-## Cost €321,26
+## Cost €497,42
