@@ -14,6 +14,6 @@
 | Walksnail Nano Kit V3 | 1 | €129,00 |
 | Engines New | 4 | €75,88 |
 | Engines Old | 4 | €67,78 |
-| Shipping + Payment | 5 | €52,45 | 
+| Shipping + Payment | 5 | €52,45 |
 
 ## Cost €899,46

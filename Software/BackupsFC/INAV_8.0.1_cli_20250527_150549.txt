@@ -1,0 +1,263 @@
+
+Entering CLI Mode, type 'exit' to return, or 'help'
+
+# diff all
+
+# version
+# INAV/SPEEDYBEEF7V3 8.0.1 Mar 28 2025 / 09:54:55 (ae47bcba) 
+# GCC-13.2.1 20231009
+
+# start the command batch
+batch start
+
+# reset configuration to default settings
+defaults noreboot
+
+# resources
+
+# Timer overrides
+
+# Outputs [servo]
+
+# safehome
+
+# Fixed Wing Approach
+
+# features
+feature LED_STRIP
+feature PWM_OUTPUT_ENABLE
+
+# beeper
+
+# blackbox
+blackbox -NAV_ACC
+blackbox NAV_POS
+blackbox NAV_PID
+blackbox MAG
+blackbox ACC
+blackbox ATTI
+blackbox RC_DATA
+blackbox RC_COMMAND
+blackbox MOTORS
+blackbox -GYRO_RAW
+blackbox -PEAKS_R
+blackbox -PEAKS_P
+blackbox -PEAKS_Y
+blackbox SERVOS
+
+# Receiver: Channel map
+
+# Ports
+serial 2 1 115200 115200 0 115200
+serial 5 2 115200 115200 0 115200
+
+# LEDs
+led 0 0,0::CE:4
+led 1 1,0::CE:4
+led 2 2,0::CE:4
+led 3 3,0::CE:4
+led 4 5,0::CE:4
+led 5 4,0::CE:4
+led 6 6,0::CE:4
+led 7 0,1::CE:4
+led 8 1,1::CE:4
+led 9 2,1::CE:4
+led 10 3,1::CE:4
+led 11 4,1::CE:4
+led 12 5,1::CE:4
+led 13 6,1::CE:4
+led 14 0,2::CE:4
+led 15 1,2::CE:4
+led 16 2,2::CE:4
+led 17 3,2::CE:4
+led 18 4,2::CE:4
+led 19 5,2::CE:4
+led 20 6,2::CE:4
+led 21 0,3::CE:4
+led 22 1,3::CE:4
+led 23 2,3::CE:4
+led 24 3,3::CE:4
+led 25 4,3::CE:4
+led 26 5,3::CE:4
+led 27 6,3::CE:4
+
+# LED color
+
+# LED mode_color
+
+# Modes [aux]
+aux 0 0 3 1700 2100
+aux 1 1 2 900 2100
+aux 2 11 2 1700 2100
+aux 3 3 2 1300 2100
+aux 4 35 1 1300 1700
+aux 5 52 4 1700 2100
+aux 6 6 1 1700 2100
+aux 7 15 0 1700 2100
+
+# Adjustments [adjrange]
+
+# Receiver rxrange
+
+# temp_sensor
+
+# Mission Control Waypoints [wp]
+#wp 0 invalid
+
+# OSD [osd_layout]
+osd_layout 0 1 24 10 V
+osd_layout 0 7 13 13 V
+osd_layout 0 9 0 0 V
+osd_layout 0 11 26 9 V
+osd_layout 0 12 3 3 H
+osd_layout 0 13 10 0 V
+osd_layout 0 15 17 0 V
+osd_layout 0 24 13 15 V
+osd_layout 0 27 0 15 V
+osd_layout 0 30 1 14 V
+osd_layout 0 40 1 1 H
+osd_layout 0 100 23 1 V
+osd_layout 0 104 3 4 H
+osd_layout 0 120 18 0 H
+osd_layout 0 146 11 7 H
+osd_layout 1 104 3 4 H
+osd_layout 2 104 3 4 H
+osd_layout 3 104 3 4 H
+
+# Programming: logic
+
+# Programming: global variables
+
+# Programming: PID controllers
+
+# OSD: custom elements
+
+# master
+set gyro_main_lpf_hz = 75
+set dynamic_gyro_notch_q = 250
+set dynamic_gyro_notch_mode = 3D
+set setpoint_kalman_q = 200
+set gyro_zero_x = 1
+set gyro_zero_y = -3
+set gyro_zero_z = -4
+set ins_gravity_cmss =  975.376
+set acc_hardware = BMI270
+set acczero_x = 4
+set acczero_y = -68
+set acczero_z = -38
+set accgain_x = 4035
+set accgain_y = 4084
+set accgain_z = 4059
+set rangefinder_hardware = MSP
+set opflow_hardware = MSP
+set align_mag = CW180FLIP
+set mag_hardware = QMC5883
+set magzero_x = -125
+set magzero_y = -231
+set magzero_z = 29
+set maggain_x = 1335
+set maggain_y = 1262
+set maggain_z = 1306
+set align_mag_pitch = 1430
+set align_mag_yaw = 1800
+set baro_hardware = BMP280
+set pitot_hardware = VIRTUAL
+set serialrx_provider = CRSF
+set serialrx_halfduplex = ON
+set blackbox_rate_denom = 2
+set motor_pwm_protocol = DSHOT600
+set applied_defaults = 1
+set rpm_gyro_filter_enabled = ON
+set gps_sbas_mode = AUTO
+set gps_ublox_use_galileo = ON
+set gps_ublox_use_beidou = ON
+set gps_ublox_use_glonass = ON
+set osd_crosshairs_style = AIRCRAFT
+set i2c_speed = 800KHZ
+set pilot_name = LASSE
+set tz_offset = 60
+set tz_automatic_dst = EU
+
+# control_profile
+control_profile 1
+
+set mc_p_pitch = 92
+set mc_i_pitch = 86
+set mc_d_pitch = 52
+set mc_cd_pitch = 103
+set mc_p_roll = 80
+set mc_i_roll = 75
+set mc_d_roll = 46
+set mc_cd_roll = 90
+set mc_p_yaw = 67
+set mc_i_yaw = 80
+set mc_cd_yaw = 95
+set dterm_lpf_hz = 70
+set d_boost_min =  1.000
+set smith_predictor_delay =  2.122
+set rc_yaw_expo = 70
+set roll_rate = 60
+set pitch_rate = 60
+set yaw_rate = 50
+set ez_enabled = ON
+set ez_filter_hz = 75
+set ez_axis_ratio = 115
+set ez_response = 200
+set ez_damping = 200
+set ez_aggressiveness = 90
+
+# control_profile
+control_profile 2
+
+
+# control_profile
+control_profile 3
+
+
+# mixer_profile
+mixer_profile 1
+
+set model_preview_type = 3
+set motorstop_on_low = OFF
+
+# Mixer: motor mixer
+
+mmix reset
+
+mmix 0  1.000 -1.000  1.000 -1.000
+mmix 1  1.000 -1.000 -1.000  1.000
+mmix 2  1.000  1.000  1.000  1.000
+mmix 3  1.000  1.000 -1.000 -1.000
+
+# Mixer: servo mixer
+
+# mixer_profile
+mixer_profile 2
+
+
+# Mixer: motor mixer
+
+# Mixer: servo mixer
+
+# battery_profile
+battery_profile 1
+
+set battery_capacity = 5000
+
+# battery_profile
+battery_profile 2
+
+
+# battery_profile
+battery_profile 3
+
+
+# restore original profile selection
+control_profile 1
+mixer_profile 1
+battery_profile 1
+
+# save configuration
+save
+
+# 
