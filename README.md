@@ -15,7 +15,7 @@
 
 ## Calculations
 
-### Trust calcuations
+### Thrust calculations
 
 ![Calculations for motor and weight](/Docs/Pictures/Calcs.png)
 
@@ -35,4 +35,4 @@
 
 ### [Cost Calculations](/Docs/Facturen/Overview.md)
 
-Way to much
+Way too much
