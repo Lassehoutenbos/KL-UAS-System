@@ -1,0 +1,83 @@
+// pins.h
+#ifndef PINS_H
+#define PINS_H
+
+#include <Arduino.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_MCP23X17.h>
+
+
+// -------- ANALOG INPUTS --------
+constexpr uint8_t PIN_BAT_VIN     = PA0;  // ADC0 BAT VIN
+constexpr uint8_t PIN_EXT_VIN     = PA1;  // ADC1 EXT VIN
+
+// -------- UNUSED ANALOG/GPIO PINS --------
+constexpr uint8_t PIN_UNUSED_PA2  = PA2;
+constexpr uint8_t PIN_UNUSED_PA3  = PA3;
+constexpr uint8_t PIN_UNUSED_PA4  = PA4;
+constexpr uint8_t PIN_UNUSED_PA5  = PA5;
+constexpr uint8_t PIN_UNUSED_PA6  = PA6;
+constexpr uint8_t PIN_UNUSED_PA7  = PA7;
+constexpr uint8_t PIN_UNUSED_PA8  = PA8;
+constexpr uint8_t PIN_UNUSED_PA9  = PA9;
+constexpr uint8_t PIN_UNUSED_PA10 = PA10;
+constexpr uint8_t PIN_UNUSED_PA11 = PA11;
+constexpr uint8_t PIN_UNUSED_PA12 = PA12;
+constexpr uint8_t PIN_UNUSED_PA15 = PA15;
+
+// -------- GPIO OUTPUTS --------
+constexpr uint8_t PIN_U6_OE       = PB0;   // U6 #OE
+constexpr uint8_t PIN_U1_RESET    = PB1;   // U1 #RESET
+constexpr uint8_t PIN_U5_A        = PB3;   // U5_A
+
+// -------- UNUSED GPIO PINS --------
+constexpr uint8_t PIN_UNUSED_PB2  = PB2;
+constexpr uint8_t PIN_UNUSED_PB4  = PB4;
+constexpr uint8_t PIN_UNUSED_PB5  = PB5;
+constexpr uint8_t PIN_UNUSED_PB6  = PB6;
+constexpr uint8_t PIN_UNUSED_PB9  = PB9;
+constexpr uint8_t PIN_UNUSED_PB10 = PB10;
+constexpr uint8_t PIN_UNUSED_PB12 = PB12;
+
+// -------- I2C1 --------
+constexpr uint8_t PIN_I2C_SCL     = PB7;   // SCL
+constexpr uint8_t PIN_I2C_SDA     = PB8;   // SDA
+
+// -------- SPI2 --------
+constexpr uint8_t PIN_SPI2_SCK    = PB13;
+constexpr uint8_t PIN_SPI2_MISO   = PB14;
+constexpr uint8_t PIN_SPI2_MOSI   = PB15;
+
+// -------- UNUSED PC PINS --------
+constexpr uint8_t PIN_UNUSED_PC13 = PC13;
+constexpr uint8_t PIN_UNUSED_PC14 = PC14;
+constexpr uint8_t PIN_UNUSED_PC15 = PC15;
+
+// -------- IO Expander Led pins --------
+constexpr uint8_t PINIO_SW3LED = 0;
+constexpr uint8_t PINIO_SW4LED = 1;
+constexpr uint8_t PINIO_SW5LED = 2;
+
+// -------- IO Expander Switch pins --------
+constexpr u_int8_t PINIO_SW0 = 8;
+constexpr u_int8_t PINIO_SW1 = 9;
+constexpr u_int8_t PINIO_SW2 = 10;
+
+constexpr u_int8_t PINIO_SW3 = 11;
+constexpr u_int8_t PINIO_SW4 = 12;
+constexpr u_int8_t PINIO_SW5 = 13;
+
+constexpr u_int8_t PINIO_SW6 = 14;
+constexpr u_int8_t PINIO_SW7 = 15;
+
+constexpr u_int8_t PINIO_SW8 = 6;
+constexpr u_int8_t PINIO_SW9 = 7;
+
+extern SPIClass SPI_2;
+extern Adafruit_MCP23X17 IoExp;
+
+
+void setupPins();
+
+#endif // PINS_H

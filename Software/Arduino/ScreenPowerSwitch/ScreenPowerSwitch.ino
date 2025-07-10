@@ -8,6 +8,9 @@
 #define TFT_DC 9
 #define TFT_RST 8
 
+// Defineer de rotatie (0, 1, 2, 3)
+#define DISPLAY_ROTATION 3  // 0 = 0 graden, 1 = 90 graden, 2 = 180 graden, 3 = 270 graden
+
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 enum PowerSource { BATTERY,
@@ -135,7 +138,7 @@ void animateSwitch(PowerSource from, PowerSource to) {
 void setup() {
   randomSeed(analogRead(0));
   tft.initR(INITR_144GREENTAB);
-  tft.setRotation(1);
+  tft.setRotation(DISPLAY_ROTATION);  // Stel de rotatie in op basis van de define
   tft.fillScreen(ST77XX_BLACK);
 
   vBat = simulateVoltage(11.6);
