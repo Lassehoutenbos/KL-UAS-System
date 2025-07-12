@@ -17,6 +17,10 @@ void setup() {
 void loop() {
   Switches::update();  // Check all switches for state changes
   
+  #ifdef DEBUG_LED
+  startup();
+  #endif
+
   // Optional: Add a small delay to prevent excessive polling
   delay(1);
 }

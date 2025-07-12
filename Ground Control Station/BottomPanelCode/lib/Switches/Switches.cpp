@@ -11,6 +11,7 @@ namespace Switches {
     rgbwValue onColorValue = {0, 255, 0, 0};   // Green when pressed/active
     rgbwValue offColorValue = {255, 0, 0, 0};  // Red when released/inactive
     
+
     // Dummy RgbwColor objects for compatibility (not actually used)
     RgbwColor onColor(0, 255, 0, 0);
     RgbwColor offColor(255, 0, 0, 0);
@@ -22,13 +23,14 @@ namespace Switches {
         #ifdef DEBUG_HID
         SwitchHandler::addSwitch(PA0, [](bool state) {
             if(state) {
-                BootKeyboard.write(KEY_A);  // Active high: trigger when pressed
+                BootKeyboard.print("Nee");  // Active high: trigger when pressed
                 digitalWrite(PA13, HIGH);
             }
             // Set LED based on state
             setLed(0, state ? onColorValue : offColorValue);
         });
         #else
+
 
         // Voeg hier alle knoppen toe
         SwitchHandler::addSwitch(PINIO_SW0, [](bool state) {
