@@ -16,6 +16,8 @@ class ScreenPowerSwitch {
 public:
     void begin();
     void update();
+    void showWarning();
+    void showMainScreen();
 
 private:
     enum PowerSource { BATTERY, PLUG };
@@ -38,6 +40,14 @@ private:
 
     float vBat = 11.4;
     float vPlug = 15;
+
+    // Warning screen state
+    bool warningMode = false;
+    bool warningVisible = false;
+    unsigned long lastBlink = 0;
+    static const unsigned long warningBlinkInterval = 500; // ms
+
+    void drawWarningIcon(bool visible);
 
     float simulateVoltage(float base, int variation = 100);
     void drawBatteryIcon(int x, int y, bool active);
