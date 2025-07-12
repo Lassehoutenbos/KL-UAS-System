@@ -18,6 +18,7 @@ public:
     void update();
     void showWarning();
     void showMainScreen();
+    void showLockScreen();
 
 private:
     enum PowerSource { BATTERY, PLUG };
@@ -45,9 +46,14 @@ private:
     bool warningMode = false;
     bool warningVisible = false;
     unsigned long lastBlink = 0;
-    static const unsigned long warningBlinkInterval = 500; // ms
+    unsigned long lastPulse = 0;
+    bool pulseWhite = false;
+    static const unsigned long warningBlinkInterval = 200; // ms
+    static const unsigned long warningPulseInterval = 100; // ms
+    bool lockMode = false;
 
     void drawWarningIcon(bool visible);
+    void drawLockIcon();
 
     float simulateVoltage(float base, int variation = 100);
     void drawBatteryIcon(int x, int y, bool active);

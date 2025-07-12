@@ -109,31 +109,65 @@ void ScreenPowerSwitch::drawWarningIcon(bool visible) {
     tft.print("!");
 }
 
+void ScreenPowerSwitch::drawLockIcon() {
+    int bodyW = 30;
+    int bodyH = 20;
+    int bodyX = centerX - bodyW / 2;
+    int bodyY = centerY - bodyH / 2 + 10;
+    tft.drawRect(bodyX, bodyY, bodyW, bodyH, ST77XX_WHITE);
+    tft.drawRoundRect(bodyX - 4, bodyY - 16, bodyW + 8, 16, 8, ST77XX_WHITE);
+}
+
 void ScreenPowerSwitch::showWarning() {
     warningMode = true;
+    lockMode = false;
     tft.fillScreen(ST77XX_BLACK);
     warningVisible = true;
     lastBlink = millis();
+    lastPulse = millis();
+    pulseWhite = false;
     drawWarningIcon(true);
 }
 
 void ScreenPowerSwitch::showMainScreen() {
     warningMode = false;
+    lockMode = false;
     tft.fillScreen(ST77XX_BLACK);
     drawIcons();
     int angle = (currentPower == BATTERY) ? -45 : 45;
     drawSwitchArm(angle, ST77XX_YELLOW, true);
 }
 
+void ScreenPowerSwitch::showLockScreen() {
+    warningMode = false;
+    lockMode = true;
+    tft.fillScreen(ST77XX_BLACK);
+    drawLockIcon();
+}
+
 void ScreenPowerSwitch::update() {
     unsigned long now = millis();
 
     if (warningMode) {
+        bool redraw = false;
+        if (now - lastPulse > warningPulseInterval) {
+            pulseWhite = !pulseWhite;
+            redraw = true;
+            lastPulse = now;
+        }
         if (now - lastBlink > warningBlinkInterval) {
             warningVisible = !warningVisible;
-            drawWarningIcon(warningVisible);
+            redraw = true;
             lastBlink = now;
         }
+        if (redraw) {
+            tft.fillScreen(pulseWhite ? ST77XX_WHITE : ST77XX_BLACK);
+            drawWarningIcon(warningVisible);
+        }
+        return;
+    }
+
+    if (lockMode) {
         return;
     }
 
