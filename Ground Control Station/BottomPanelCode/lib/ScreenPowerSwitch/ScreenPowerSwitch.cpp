@@ -103,9 +103,9 @@ void ScreenPowerSwitch::begin() {
 
 void ScreenPowerSwitch::drawWarningIcon(bool visible) {
     uint16_t color = visible ? ST77XX_RED : ST77XX_BLACK;
-    tft.setTextSize(4);
+    tft.setTextSize(10);
     tft.setTextColor(color, ST77XX_BLACK);
-    tft.setCursor(centerX - 12, centerY - 16);
+    tft.setCursor(centerX - 22, centerY - 20);
     tft.print("!");
 }
 

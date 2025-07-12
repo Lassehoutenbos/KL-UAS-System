@@ -23,6 +23,7 @@ void loop() {
   powerDisplay.update();
   Switches::update();  // Check all switches for state changes
   
+  powerDisplay.showWarning();  // Show warning if needed
   
   #ifdef DEBUG_LED
   startup();
