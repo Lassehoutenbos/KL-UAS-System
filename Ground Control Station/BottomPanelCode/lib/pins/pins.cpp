@@ -40,12 +40,16 @@ void setupPins() {
     IoExp.pinMode(PINIO_SW7LED, OUTPUT);
 
 
+
     // -------- STM32 pin defs --------
     #ifdef DEBUG_HID
     pinMode(PA0, INPUT_PULLUP);  // Debug switch for KEY_A
     pinMode(PC13, OUTPUT);
     #endif
 
+    pinMode(PIN_RESET_PA8, OUTPUT);
+    pinMode(PIN_CS_PA9, OUTPUT);
+    pinMode(PIN_DC_PA10, OUTPUT);
 
     //pinMode(PIN_BAT_VIN, INPUT_ANALOG);
     pinMode(PIN_EXT_VIN, INPUT_ANALOG);

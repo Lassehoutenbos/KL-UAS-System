@@ -1,14 +1,15 @@
 #ifndef SCREENPOWERSWITCH_H
 #define SCREENPOWERSWITCH_H
 #define ST77XX_DARKGREY 0x7BEF
-#define TFT_CS 10
-#define TFT_DC 9
-#define TFT_RST 8
+#define TFT_CS PA9
+#define TFT_DC PA10
+#define TFT_RST PA8
 #define DISPLAY_ROTATION 3
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
+#include <pins.h>
 #include <Arduino.h>
 
 class ScreenPowerSwitch {
@@ -47,7 +48,8 @@ private:
     void drawSwitchArm(float angleDeg, uint16_t color, bool drawDot = false);
     void animateSwitch(PowerSource from, PowerSource to);
 
-    Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+    Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, PIN_SPI2_MOSI ,PIN_SPI2_SCK , TFT_RST);
+
 };
 
 #endif // SCREENPOWERSWITCH_H

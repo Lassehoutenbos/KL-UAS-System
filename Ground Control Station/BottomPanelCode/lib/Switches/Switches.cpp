@@ -19,7 +19,7 @@ namespace Switches {
     void begin() {
         
 
-
+        #ifndef DEBUG_LED
         #ifdef DEBUG_HID
         SwitchHandler::addSwitch(PA0, [](bool state) {
             if(state) {
@@ -114,6 +114,7 @@ namespace Switches {
             }
         });
         
+        #endif
         #endif
     }
 

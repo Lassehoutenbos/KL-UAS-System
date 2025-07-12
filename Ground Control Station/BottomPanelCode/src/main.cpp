@@ -11,16 +11,18 @@ void setup() {
   USB_Begin();  // Wrapper rond USBD_Init() + connect
   BootKeyboard.begin();  // Init HID class
   setupPins();
+  powerDisplay.begin();
   // Initialize HID keyboard (this will be the primary USB function)
   Switches::begin();
-  powerDisplay.begin();
+  
   
 
 }
 
 void loop() {
-  Switches::update();  // Check all switches for state changes
   powerDisplay.update();
+  Switches::update();  // Check all switches for state changes
+  
   
   #ifdef DEBUG_LED
   startup();
