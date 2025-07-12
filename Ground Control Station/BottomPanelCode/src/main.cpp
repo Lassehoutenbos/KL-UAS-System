@@ -1,20 +1,23 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include <pins.h>
-
+#include <Switches.h>
+#include "HID-Project.h"
 
 void setup() {
-  Serial.begin(115200);
+  USB_Begin();  // Wrapper rond USBD_Init() + connect
+  BootKeyboard.begin();  // Init HID class
   setupPins();
-
+  // Initialize HID keyboard (this will be the primary USB function)
+  Switches::begin();
+  
 
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  Switches::update();  // Check all switches for state changes
+  
+  // Optional: Add a small delay to prevent excessive polling
+  delay(1);
 }
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
-}
