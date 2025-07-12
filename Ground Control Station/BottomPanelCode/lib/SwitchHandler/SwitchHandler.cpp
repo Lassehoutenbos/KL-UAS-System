@@ -45,4 +45,8 @@ namespace SwitchHandler {
             sw.update();
         }
     }
+
+    void reset() {
+        switches.clear();
+    }
 }

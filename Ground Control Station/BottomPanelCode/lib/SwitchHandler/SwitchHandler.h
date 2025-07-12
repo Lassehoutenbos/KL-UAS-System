@@ -20,4 +20,5 @@ private:
 namespace SwitchHandler {
     void addSwitch(int pin, Switch::Callback callback);
     void updateAll();
+    void reset();
 }
