@@ -2,7 +2,7 @@
 #include "pins.h"
 #include "Blinker.h"
 
-NeoPixelBus<NeoPixelColorFeature, NeoPixelMethod> strip(ledCount, PB3);
+Adafruit_NeoPixel strip(ledCount, PB3, NEO_GRBW + NEO_KHZ800);
 PCA9685 rgbDriver;
 
 /* | Has IO | IO pin | Has Strip | Index start | Index end |*/
@@ -29,8 +29,8 @@ void setupLeds(){
     rgbDriver.init();
 
     //  SK6812 setup
-    strip.Begin();
-    strip.Show();
+    strip.begin();
+    strip.show();
 
     // Blinker setup
     blinkerSW6.begin();
@@ -86,11 +86,14 @@ void setLed(int switchId, rgbwValue color){
     }
 
     if (m.hasStripLed) {
-        RgbwColor col((color.r * 255UL) / 4095, (color.g * 255UL) / 4095, (color.b * 255UL) / 4095, (color.w * 255UL) / 4095);
+        RgbwColor col((color.r * 255UL) / 4095,
+                     (color.g * 255UL) / 4095,
+                     (color.b * 255UL) / 4095,
+                     (color.w * 255UL) / 4095);
         for (uint8_t i = m.stripStartIndex; i <= m.stripEndIndex; i++) {
-          strip.SetPixelColor(i, col);
+          strip.setPixelColor(i, col.r, col.g, col.b, col.w);
         }
-        strip.Show();
+        strip.show();
       }
 }
 
@@ -118,11 +121,11 @@ bool startup() {
             if (m.hasStripLed) {
                 RgbwColor col(pulseColor.r, pulseColor.g, pulseColor.b, pulseColor.w);
                 for (uint8_t j = m.stripStartIndex; j <= m.stripEndIndex; j++) {
-                    strip.SetPixelColor(j, col);
+                    strip.setPixelColor(j, col.r, col.g, col.b, col.w);
                 }
             }
         }
-        strip.Show();
+        strip.show();
 
         // Laat GPIO LEDs knipperen
         if (millis() - lastBlink >= blinkInterval) {
@@ -142,9 +145,9 @@ bool startup() {
 
     // Alles uitzetten na animatie
     for (int i = 0; i < ledCount; ++i) {
-        strip.SetPixelColor(i, RgbwColor(0, 0, 0, 0));
+        strip.setPixelColor(i, 0, 0, 0, 0);
     }
-    strip.Show();
+    strip.show();
 
     for (int i = 0; i < numSwitches; ++i) {
         const auto& m = ledMap[i];
@@ -215,9 +218,10 @@ void switchPositionAlert() {
                 
                 if (m.hasStripLed) {
                     // Blink white for pressed switches
-                    RgbwColor col = blinkState ? RgbwColor(255, 255, 255, 0) : RgbwColor(0, 0, 0, 0);
+                    RgbwColor col = blinkState ? RgbwColor(255, 255, 255, 0)
+                                              : RgbwColor(0, 0, 0, 0);
                     for (uint8_t j = m.stripStartIndex; j <= m.stripEndIndex; j++) {
-                        strip.SetPixelColor(j, col);
+                        strip.setPixelColor(j, col.r, col.g, col.b, col.w);
                     }
                 }
                 
@@ -247,7 +251,7 @@ void switchPositionAlert() {
                     // Red pulsing for LED strips
                     RgbwColor col(redLevel, 0, 0, 0);  // Red only
                     for (uint8_t j = m.stripStartIndex; j <= m.stripEndIndex; j++) {
-                        strip.SetPixelColor(j, col);
+                        strip.setPixelColor(j, col.r, col.g, col.b, col.w);
                     }
                 }
                 
@@ -267,6 +271,6 @@ void switchPositionAlert() {
         }
         
         // Update the LED strip
-        strip.Show();
+        strip.show();
     }
 }
