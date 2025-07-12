@@ -3,12 +3,17 @@
 
 #include <Arduino.h>
 #include <PCA9685.h>
+#include <Adafruit_NeoPixel.h>
 
-// Forward declarations to avoid NeoPixelBus compilation issues
-template<typename T_COLOR_FEATURE, typename T_METHOD> class NeoPixelBus;
-class NeoGrbwFeature;
-class NeoSk6812Method;
-class RgbwColor;
+// Simple RGBW color struct used with Adafruit_NeoPixel
+struct RgbwColor {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t w;
+    RgbwColor(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0, uint8_t w = 0)
+        : r(r), g(g), b(b), w(w) {}
+};
 
 struct rgbwValue{
     uint16_t r;
@@ -26,14 +31,12 @@ struct SwitchLedMapping {
     uint8_t stripEndIndex;
 };
 
+// Number of LEDs on the RGBW strip
 #define ledCount 38
 #define numSwitches 10
 
-typedef NeoGrbwFeature NeoPixelColorFeature;
-typedef NeoSk6812Method NeoPixelMethod;
-
-// Objectem aanmaken
-extern NeoPixelBus<NeoPixelColorFeature, NeoPixelMethod> strip;
+// Adafruit NeoPixel strip instance
+extern Adafruit_NeoPixel strip;
 extern PCA9685 rgbDriver;
 
 extern const SwitchLedMapping switchMap[numSwitches];
