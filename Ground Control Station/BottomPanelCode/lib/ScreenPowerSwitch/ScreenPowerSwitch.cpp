@@ -101,8 +101,41 @@ void ScreenPowerSwitch::begin() {
     drawSwitchArm(-45, ST77XX_YELLOW, true);
 }
 
+void ScreenPowerSwitch::drawWarningIcon(bool visible) {
+    uint16_t color = visible ? ST77XX_RED : ST77XX_BLACK;
+    tft.setTextSize(4);
+    tft.setTextColor(color, ST77XX_BLACK);
+    tft.setCursor(centerX - 12, centerY - 16);
+    tft.print("!");
+}
+
+void ScreenPowerSwitch::showWarning() {
+    warningMode = true;
+    tft.fillScreen(ST77XX_BLACK);
+    warningVisible = true;
+    lastBlink = millis();
+    drawWarningIcon(true);
+}
+
+void ScreenPowerSwitch::showMainScreen() {
+    warningMode = false;
+    tft.fillScreen(ST77XX_BLACK);
+    drawIcons();
+    int angle = (currentPower == BATTERY) ? -45 : 45;
+    drawSwitchArm(angle, ST77XX_YELLOW, true);
+}
+
 void ScreenPowerSwitch::update() {
     unsigned long now = millis();
+
+    if (warningMode) {
+        if (now - lastBlink > warningBlinkInterval) {
+            warningVisible = !warningVisible;
+            drawWarningIcon(warningVisible);
+            lastBlink = now;
+        }
+        return;
+    }
 
     if (now - lastSwitch > switchInterval) {
         PowerSource next = (currentPower == BATTERY) ? PLUG : BATTERY;
