@@ -15,8 +15,8 @@ const SwitchLedMapping ledMap[numSwitches] = {
     {true, PINIO_SW5LED, true, 10, 14},
     {true, PINIO_SW6LED, true, 28, 38},
     {true, PINIO_SW7LED, true, 28, 38},
-    {false, 0, false, 0, 0},  // DAC RGB
-    {false, 0, false, 0, 0},  // DAC RGB
+    {false, 0, false, 0, 0},  // PWM RGB
+    {false, 0, false, 0, 0},  // PWM RGB
 };
 
 Blinker blinkerSW6(PINIO_SW6LED, 500);

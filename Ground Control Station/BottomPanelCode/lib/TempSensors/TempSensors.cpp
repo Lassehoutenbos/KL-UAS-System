@@ -44,6 +44,7 @@ void TempSensors::update() {
 
     for (uint8_t i = 0; i < NUM_FANS; ++i) {
         const FanMapping &m = fanMap[i];
+
         float factor = 0.0f;
         for (uint8_t s = 0; s < m.numSensors; ++s) {
             const FanSensorConfig &sc = m.sensors[s];
@@ -57,6 +58,7 @@ void TempSensors::update() {
                 f = (t - sc.nominalTemp) / (sc.maxTemp - sc.nominalTemp);
             }
             if (f > factor) factor = f;
+
         }
         uint16_t pwm = static_cast<uint16_t>(factor * 4095.0f);
         setFanSpeed(i, pwm);
