@@ -8,9 +8,20 @@ const uint8_t TempSensors::sensorPins[NUM_SENSORS] = {
     PIN_SENS5
 };
 
+// Each fan can monitor multiple sensors with individual thresholds
+static TempSensors::FanSensorConfig fan1Sensors[] = {
+    {0, 40.0f, 60.0f},
+    {1, 40.0f, 60.0f}
+};
+
+static TempSensors::FanSensorConfig fan2Sensors[] = {
+    {2, 40.0f, 60.0f},
+    {3, 40.0f, 60.0f}
+};
+
 const TempSensors::FanMapping TempSensors::fanMap[NUM_FANS] = {
-    {FAN1_PWM_CH, 0, 40.0f, 60.0f},
-    {FAN2_PWM_CH, 1, 40.0f, 60.0f}
+    {FAN1_PWM_CH, fan1Sensors, sizeof(fan1Sensors) / sizeof(fan1Sensors[0])},
+    {FAN2_PWM_CH, fan2Sensors, sizeof(fan2Sensors) / sizeof(fan2Sensors[0])}
 };
 
 void TempSensors::begin() {
@@ -33,14 +44,21 @@ void TempSensors::update() {
 
     for (uint8_t i = 0; i < NUM_FANS; ++i) {
         const FanMapping &m = fanMap[i];
-        float t = temperatures[m.sensorIndex];
-        float factor;
-        if (t <= m.nominalTemp) {
-            factor = 0.0f;
-        } else if (t >= m.maxTemp) {
-            factor = 1.0f;
-        } else {
-            factor = (t - m.nominalTemp) / (m.maxTemp - m.nominalTemp);
+
+        float factor = 0.0f;
+        for (uint8_t s = 0; s < m.numSensors; ++s) {
+            const FanSensorConfig &sc = m.sensors[s];
+            float t = temperatures[sc.sensorIndex];
+            float f;
+            if (t <= sc.nominalTemp) {
+                f = 0.0f;
+            } else if (t >= sc.maxTemp) {
+                f = 1.0f;
+            } else {
+                f = (t - sc.nominalTemp) / (sc.maxTemp - sc.nominalTemp);
+            }
+            if (f > factor) factor = f;
+
         }
         uint16_t pwm = static_cast<uint16_t>(factor * 4095.0f);
         setFanSpeed(i, pwm);

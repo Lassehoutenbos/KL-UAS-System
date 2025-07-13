@@ -10,14 +10,19 @@ public:
     void update();              // read all sensors and adjust fans
     float getTemperatureC(uint8_t index) const;  // get last temperature for sensor 0..3
 
-private:
-    struct FanMapping {
-        uint8_t pwmChannel;    // PCA9685 channel
+    struct FanSensorConfig {
         uint8_t sensorIndex;   // linked temperature sensor
         float nominalTemp;     // °C where fan starts increasing
         float maxTemp;         // °C for full speed
     };
 
+    struct FanMapping {
+        uint8_t pwmChannel;                 // PCA9685 channel
+        const FanSensorConfig* sensors;     // list of sensors for this fan
+        uint8_t numSensors;                 // number of linked sensors
+    };
+
+private:
     static constexpr uint8_t NUM_SENSORS = 4;
     static constexpr uint8_t NUM_FANS = 2;
 
