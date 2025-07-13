@@ -1,5 +1,6 @@
 #include "ScreenPowerSwitch.h"
 #include <Arduino.h>
+#include <math.h>
 
 const uint8_t ScreenPowerSwitch::warningBitmap[] = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
@@ -362,6 +363,10 @@ void ScreenPowerSwitch::begin() {
     vPlug = simulateVoltage(15.0);
     drawIcons();
     drawSwitchArm(-45, ST77XX_YELLOW, true);
+
+    prevVBat = vBat;
+    prevVPlug = vPlug;
+    currentMode = MODE_MAIN;
 }
 
 void ScreenPowerSwitch::drawWarningIcon(bool visible) {
@@ -375,26 +380,41 @@ void ScreenPowerSwitch::drawLockIcon() {
 }
 
 void ScreenPowerSwitch::showWarning() {
+    if (currentMode == MODE_WARNING) {
+        return;
+    }
+
     warningMode = true;
     lockMode = false;
     tft.fillScreen(ST77XX_BLACK);
     drawWarningIcon(true);
+    currentMode = MODE_WARNING;
 }
 
 void ScreenPowerSwitch::showMainScreen() {
+    if (currentMode == MODE_MAIN) {
+        return;
+    }
+
     warningMode = false;
     lockMode = false;
     tft.fillScreen(ST77XX_BLACK);
     drawIcons();
     int angle = (currentPower == BATTERY) ? -45 : 45;
     drawSwitchArm(angle, ST77XX_YELLOW, true);
+    currentMode = MODE_MAIN;
 }
 
 void ScreenPowerSwitch::showLockScreen() {
+    if (currentMode == MODE_LOCK) {
+        return;
+    }
+
     warningMode = false;
     lockMode = true;
     tft.fillScreen(ST77XX_BLACK);
     drawLockIcon();
+    currentMode = MODE_LOCK;
 }
 
 void ScreenPowerSwitch::update() {
@@ -411,9 +431,20 @@ void ScreenPowerSwitch::update() {
     }
 
     if (now - lastVoltageUpdate > voltageUpdateInterval) {
-        vBat = simulateVoltage(11.6);
-        vPlug = simulateVoltage(15.0);
-        drawAllVoltages();
+        float newVBat = simulateVoltage(11.6);
+        float newVPlug = simulateVoltage(15.0);
+
+        bool changed = (fabs(newVBat - prevVBat) > 0.01f) ||
+                       (fabs(newVPlug - prevVPlug) > 0.01f);
+
+        if (changed) {
+            vBat = newVBat;
+            vPlug = newVPlug;
+            prevVBat = newVBat;
+            prevVPlug = newVPlug;
+            drawAllVoltages();
+        }
+
         lastVoltageUpdate = now;
     }
 }
