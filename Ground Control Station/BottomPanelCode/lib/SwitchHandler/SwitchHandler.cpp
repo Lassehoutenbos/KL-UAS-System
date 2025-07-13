@@ -6,22 +6,22 @@
 Switch::Switch(int pin, Callback cb)
     : pin(pin), callback(cb)
 {
-    #ifdef DEBUG_HID
-        // Debug mode: Use standard GPIO pins instead of IoExp
+    #if defined(DEBUG_HID) || defined(DEBUG_SCREENTEST)
+        // Debug/Screen test modes: read from MCU pin instead of IO expander
         lastState = digitalRead(pin);
     #else
-        // Normal mode: Use IoExp
+        // Normal mode: read from IO expander
         lastState = IoExp.digitalRead(pin);
     #endif
 
 }
 
 void Switch::update() {
-    #ifdef DEBUG_HID
-        // Debug mode: Use standard GPIO pins
+    #if defined(DEBUG_HID) || defined(DEBUG_SCREENTEST)
+        // Debug/Screen test modes: read from MCU pin
         bool currentState = digitalRead(pin);
     #else
-        // Normal mode: Use IoExp
+        // Normal mode: read from IO expander
         bool currentState = IoExp.digitalRead(pin);
     #endif
     if (currentState != lastState) {
