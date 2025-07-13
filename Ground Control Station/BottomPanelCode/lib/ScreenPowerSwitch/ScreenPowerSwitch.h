@@ -11,14 +11,17 @@
 #include <SPI.h>
 #include <pins.h>
 #include <Arduino.h>
+#include "bitmaps.h"
+#include <math.h>
 
 class ScreenPowerSwitch {
 public:
     void begin();
     void update();
-    void showWarning();
+    void showWarningScreen();
     void showMainScreen();
     void showLockScreen();
+    void showBatWarningScreen();
 
 private:
     enum PowerSource { BATTERY, PLUG };
@@ -44,19 +47,23 @@ private:
 
     // Warning and lock screen state
     bool warningMode = false;
+    bool batWarningMode = false; 
     bool lockMode = false;
 
-    enum DisplayMode { MODE_MAIN, MODE_WARNING, MODE_LOCK };
+    enum DisplayMode { MODE_MAIN, MODE_WARNING, MODE_LOCK, MODE_BATWARNING };
     DisplayMode currentMode = MODE_MAIN;
 
     float prevVBat = -1.0f;
     float prevVPlug = -1.0f;
 
-    static const uint8_t lockBitmap[];
-    static const uint8_t warningBitmap[];
+    // static const uint8_t lockBitmap[];
+    // static const uint8_t warningBitmap[];
+    // static const uint8_t batWarningBitmap[];
 
-    void drawWarningIcon(bool visible);
+
+    void drawWarningIcon();
     void drawLockIcon();
+    void drawBatWarningIcon();    
 
     float simulateVoltage(float base, int variation = 100);
     void drawBatteryIcon(int x, int y, bool active);
@@ -67,8 +74,9 @@ private:
     void drawSwitchArm(float angleDeg, uint16_t color, bool drawDot = false);
     void animateSwitch(PowerSource from, PowerSource to);
 
+
     Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, PIN_SPI2_MOSI ,PIN_SPI2_SCK , TFT_RST);
 
 };
 
-#endif // SCREENPOWERSWITCH_H
+#endif 
