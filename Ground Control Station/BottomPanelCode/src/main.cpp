@@ -23,7 +23,17 @@ void loop() {
   powerDisplay.update();
   Switches::update();  // Check all switches for state changes
   
-  powerDisplay.showWarning();  // Show warning if needed
+  // Show appropriate screen based on lock state and confirmation
+  if(Switches::isLocked) {
+    powerDisplay.showLockScreen();  // Show lock icon when locked
+  } else {
+    // Case is unlocked - check if switches were confirmed during unlock
+    if(!Switches::isConfirmed) {
+      powerDisplay.showWarning();  // Show warning when switches were not confirmed safe during unlock
+    } else {
+      powerDisplay.showMainScreen();  // Show normal screen when switches were confirmed safe
+    }
+  }
   
   #ifdef DEBUG_LED
   startup();
