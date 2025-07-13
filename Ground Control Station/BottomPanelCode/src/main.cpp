@@ -23,6 +23,9 @@ void loop() {
   powerDisplay.update();
   Switches::update();  // Check all switches for state changes
   
+  #ifdef DEBUG_LED
+  powerDisplay.showLockScreen();  // Show lock screen in debug mode
+  #else
   // Show appropriate screen based on lock state and confirmation
   if(Switches::isLocked) {
     powerDisplay.showLockScreen();  // Show lock icon when locked
@@ -34,10 +37,10 @@ void loop() {
       powerDisplay.showMainScreen();  // Show normal screen when switches were confirmed safe
     }
   }
-  
-  #ifdef DEBUG_LED
+#endif
+#ifdef DEBUG_LED
   startup();
-  #endif
+#endif
 
   // Optional: Add a small delay to prevent excessive polling
   delay(1);
