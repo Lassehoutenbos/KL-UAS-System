@@ -52,6 +52,8 @@ private:
     static const unsigned long warningPulseInterval = 100; // ms
     bool lockMode = false;
 
+    static const uint8_t lockBitmap[];
+
     void drawWarningIcon(bool visible);
     void drawLockIcon();
 
