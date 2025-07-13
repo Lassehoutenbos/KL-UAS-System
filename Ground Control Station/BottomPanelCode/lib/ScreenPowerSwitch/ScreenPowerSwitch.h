@@ -46,6 +46,12 @@ private:
     bool warningMode = false;
     bool lockMode = false;
 
+    enum DisplayMode { MODE_MAIN, MODE_WARNING, MODE_LOCK };
+    DisplayMode currentMode = MODE_MAIN;
+
+    float prevVBat = -1.0f;
+    float prevVPlug = -1.0f;
+
     static const uint8_t lockBitmap[];
     static const uint8_t warningBitmap[];
 
