@@ -85,6 +85,10 @@ constexpr uint8_t PIN_SENS3 = PB1;
 constexpr uint8_t PIN_SENS4  = PA6;
 constexpr uint8_t PIN_SENS5  = PA7;
 
+// ----------- Fan PWM channels on PCA9685 -----------
+constexpr uint8_t FAN1_PWM_CH = 6;  // shares PCA9685 with analog RGB LEDs
+constexpr uint8_t FAN2_PWM_CH = 7;
+
 extern SPIClass SPI_2;
 extern Adafruit_MCP23X17 IoExp;
 
