@@ -53,6 +53,7 @@ private:
     bool lockMode = false;
 
     static const uint8_t lockBitmap[];
+    static const uint8_t warningBitmap[];
 
     void drawWarningIcon(bool visible);
     void drawLockIcon();
