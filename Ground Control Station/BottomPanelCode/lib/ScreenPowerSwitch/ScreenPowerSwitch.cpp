@@ -378,10 +378,6 @@ void ScreenPowerSwitch::showWarning() {
     warningMode = true;
     lockMode = false;
     tft.fillScreen(ST77XX_BLACK);
-    warningVisible = true;
-    lastBlink = millis();
-    lastPulse = millis();
-    pulseWhite = false;
     drawWarningIcon(true);
 }
 
@@ -404,26 +400,7 @@ void ScreenPowerSwitch::showLockScreen() {
 void ScreenPowerSwitch::update() {
     unsigned long now = millis();
 
-    if (warningMode) {
-        bool redraw = false;
-        if (now - lastPulse > warningPulseInterval) {
-            pulseWhite = !pulseWhite;
-            redraw = true;
-            lastPulse = now;
-        }
-        if (now - lastBlink > warningBlinkInterval) {
-            warningVisible = !warningVisible;
-            redraw = true;
-            lastBlink = now;
-        }
-        if (redraw) {
-            tft.fillScreen(pulseWhite ? ST77XX_WHITE : ST77XX_BLACK);
-            drawWarningIcon(warningVisible);
-        }
-        return;
-    }
-
-    if (lockMode) {
+    if (warningMode || lockMode) {
         return;
     }
 
