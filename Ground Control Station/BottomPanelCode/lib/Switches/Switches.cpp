@@ -110,10 +110,14 @@ namespace Switches {
         #endif  // DEBUG_SCREENTEST
 
         SwitchHandler::addSwitch(PINIO_KEY, [](bool state) {
-              // Set PC13 high when key is pressed
-            if(state) {
+#ifdef DEBUG_SCREENTEST
+            bool pressed = !state; // PA0 uses pull-up, LOW means pressed
+#else
+            bool pressed = state;
+#endif
+            if(pressed) {
                 digitalWrite(PC13, HIGH);
-                // Key is HIGH - unlock the case
+                // Key is HIGH/pressed - unlock the case
                 isLocked = false;
                 // Check if all switches are in low position to confirm safe operation
                 if(allSwitchesLow()) {
@@ -122,7 +126,7 @@ namespace Switches {
                     isConfirmed = false; // Switches not safe, keep functionality disabled
                 }
             } else {
-                // Key is LOW - lock the case immediately
+                // Key is LOW/unpressed - lock the case immediately
                 digitalWrite(PC13, LOW);
                 isLocked = true;
                 isConfirmed = false;  // Reset confirmation when locking
@@ -140,7 +144,7 @@ namespace Switches {
     bool allSwitchesLow() {
         #ifdef DEBUG_SCREENTEST
         // Debug mode: Check PA0
-        return digitalRead(PA0);  // Return true if switch is LOW (not pressed)
+        return !digitalRead(PA0);  // Return true if switch is LOW (not pressed)
         #else
         // Normal mode: Check all switches via IoExp
         bool allLow = true;
