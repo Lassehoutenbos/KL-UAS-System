@@ -4,19 +4,18 @@
 #include <Switches.h>
 #include "HID-Project.h"
 #include <ScreenPowerSwitch.h>
+#include <TempSensors.h>
 
 ScreenPowerSwitch powerDisplay;
+TempSensors tempSensors;
 
 void setup() {
   USB_Begin();  // Wrapper rond USBD_Init() + connect
   BootKeyboard.begin();  // Init HID class
   setupPins();
   powerDisplay.begin();
-  // Initialize HID keyboard (this will be the primary USB function)
   Switches::begin();
-  
-  
-
+  tempSensors.begin();  // Initialize temperature sensors
 }
 
 void loop() {

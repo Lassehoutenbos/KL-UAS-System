@@ -58,10 +58,6 @@ void setupPins() {
     pinMode(PIN_BAT_VIN, INPUT_ANALOG);
     pinMode(PIN_EXT_VIN, INPUT_ANALOG);
     #endif
-    pinMode(PIN_SENS2, INPUT_ANALOG);
-    pinMode(PIN_SENS3, INPUT_ANALOG);
-    pinMode(PIN_SENS4, INPUT_ANALOG);
-    pinMode(PIN_SENS5, INPUT_ANALOG);
 
     // -------- GPIO pin defs --------
 
