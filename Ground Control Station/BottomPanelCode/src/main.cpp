@@ -13,29 +13,25 @@ void setup() {
   USB_Begin();  // Wrapper rond USBD_Init() + connect
   BootKeyboard.begin();  // Init HID class
   setupPins();
-  powerDisplay.begin();
+  // powerDisplay.begin();
   Switches::begin();
-  tempSensors.begin();  // Initialize temperature sensors
+  // tempSensors.begin();  // Initialize temperature sensors
 }
 
 void loop() {
   Switches::update();  // Check all switches for state changes
-  
-  #ifdef DEBUG_LED
-  powerDisplay.showBatWarningScreen();  // Show lock screen in debug mode
-  #else
-  // Show appropriate screen based on lock state and confirmation
-  if(Switches::isLocked) {
-    powerDisplay.showLockScreen();  // Show lock icon when locked
-  } else {
-    // Case is unlocked - check if switches were confirmed during unlock
-    if(!Switches::isConfirmed) {
-      powerDisplay.showWarningScreen();  // Show warning when switches were not confirmed safe during unlock
-    } else {
-      powerDisplay.showMainScreen();  // Show normal screen when switches were confirmed safe
-    }
-  }
-#endif
+  // tempSensors.update();  // Update temperature sensors and adjust fans
+  // // Show appropriate screen based on lock state and confirmation
+  // if(Switches::isLocked) {
+  //   powerDisplay.showLockScreen();  // Show lock icon when locked
+  // } else {
+  //   // Case is unlocked - check if switches were confirmed during unlock
+  //   if(!Switches::isConfirmed) {
+  //     powerDisplay.showWarningScreen();  // Show warning when switches were not confirmed safe during unlock
+  //   } else {
+  //     powerDisplay.showMainScreen();  // Show normal screen when switches were confirmed safe
+  //   }
+  // }
 #ifdef DEBUG_LED
   startup();
 #endif

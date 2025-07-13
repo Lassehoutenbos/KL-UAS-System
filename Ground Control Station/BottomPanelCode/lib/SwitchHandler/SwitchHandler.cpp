@@ -8,13 +8,12 @@ Switch::Switch(int pin, Callback cb)
 {
     #ifdef DEBUG_HID
         // Debug mode: Use standard GPIO pins instead of IoExp
-        pinMode(pin, INPUT_PULLUP);  // Use internal pull-up for debugging
         lastState = digitalRead(pin);
     #else
         // Normal mode: Use IoExp
-        pinMode(pin, INPUT);
         lastState = IoExp.digitalRead(pin);
     #endif
+
 }
 
 void Switch::update() {
@@ -25,7 +24,6 @@ void Switch::update() {
         // Normal mode: Use IoExp
         bool currentState = IoExp.digitalRead(pin);
     #endif
-    
     if (currentState != lastState) {
         lastState = currentState;
         callback(currentState);

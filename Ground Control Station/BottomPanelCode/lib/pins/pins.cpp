@@ -31,7 +31,13 @@ void setupPins() {
     IoExp.pinMode(PINIO_SW8, INPUT);
     IoExp.pinMode(PINIO_SW9, INPUT);
 
+    #ifdef DEBUG_SCREENTEST
+    pinMode(PINIO_KEY, INPUT_PULLUP);  // Debug switch for KEY_A+
+    pinMode(PC13, OUTPUT);
+
+    #else
     IoExp.pinMode(PINIO_KEY, INPUT);
+    #endif
 
     IoExp.pinMode(PINIO_SW3LED, OUTPUT);
     IoExp.pinMode(PINIO_SW4LED, OUTPUT);
@@ -47,6 +53,8 @@ void setupPins() {
     pinMode(PC13, OUTPUT);
     #endif
 
+
+
     pinMode(PIN_RESET_PA8, OUTPUT);
     pinMode(PIN_CS_PA9, OUTPUT);
     pinMode(PIN_DC_PA10, OUTPUT);
@@ -54,9 +62,11 @@ void setupPins() {
 
 
     // -------- ADC pin defs --------
+    #ifndef DEBUG_SCREENTEST
     #ifndef DEBUG_HID
     pinMode(PIN_BAT_VIN, INPUT_ANALOG);
     pinMode(PIN_EXT_VIN, INPUT_ANALOG);
+    #endif
     #endif
 
     // -------- GPIO pin defs --------

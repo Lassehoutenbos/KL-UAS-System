@@ -24,7 +24,8 @@ namespace Switches {
 
     void begin() {
         
-
+        
+        // Initialize all switches with their respective pins and callbacks
         #ifndef DEBUG_LED
         #ifdef DEBUG_HID
         SwitchHandler::addSwitch(PA0, [](bool state) {
@@ -36,7 +37,7 @@ namespace Switches {
             setLed(0, state ? onColorValue : offColorValue);
         });
         #else
-
+        #ifndef DEBUG_SCREENTEST
 
         // Voeg hier alle knoppen toe
         SwitchHandler::addSwitch(PINIO_SW0, [](bool state) {
@@ -106,9 +107,12 @@ namespace Switches {
             // Set LED based on state only when unlocked
             if(!isLocked) setLed(9, state ? onColorValue : offColorValue);
         });
+        #endif  // DEBUG_SCREENTEST
 
         SwitchHandler::addSwitch(PINIO_KEY, [](bool state) {
+              // Set PC13 high when key is pressed
             if(state) {
+                digitalWrite(PC13, HIGH);
                 // Key is HIGH - unlock the case
                 isLocked = false;
                 // Check if all switches are in low position to confirm safe operation
@@ -119,6 +123,7 @@ namespace Switches {
                 }
             } else {
                 // Key is LOW - lock the case immediately
+                digitalWrite(PC13, LOW);
                 isLocked = true;
                 isConfirmed = false;  // Reset confirmation when locking
             }
@@ -133,9 +138,9 @@ namespace Switches {
     }
 
     bool allSwitchesLow() {
-        #ifdef DEBUG_HID
+        #ifdef DEBUG_SCREENTEST
         // Debug mode: Check PA0
-        return !digitalRead(PA0);  // Return true if switch is LOW (not pressed)
+        return digitalRead(PA0);  // Return true if switch is LOW (not pressed)
         #else
         // Normal mode: Check all switches via IoExp
         bool allLow = true;
