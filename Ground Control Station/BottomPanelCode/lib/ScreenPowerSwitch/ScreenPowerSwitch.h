@@ -42,14 +42,8 @@ private:
     float vBat = 11.4;
     float vPlug = 15;
 
-    // Warning screen state
+    // Warning and lock screen state
     bool warningMode = false;
-    bool warningVisible = false;
-    unsigned long lastBlink = 0;
-    unsigned long lastPulse = 0;
-    bool pulseWhite = false;
-    static const unsigned long warningBlinkInterval = 200; // ms
-    static const unsigned long warningPulseInterval = 100; // ms
     bool lockMode = false;
 
     static const uint8_t lockBitmap[];
