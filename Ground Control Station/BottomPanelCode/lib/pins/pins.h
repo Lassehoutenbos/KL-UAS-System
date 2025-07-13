@@ -9,24 +9,22 @@
 
 
 // -------- ANALOG INPUTS --------
-//constexpr uint8_t PIN_BAT_VIN     = PA0;  // ADC0 BAT VIN
-constexpr uint8_t PIN_EXT_VIN     = PA1;  // ADC1 EXT VIN
 
+#ifndef DEBUG_HID
+constexpr uint8_t PIN_BAT_VIN     = PA0;  // ADC0 BAT VIN
+constexpr uint8_t PIN_EXT_VIN     = PA1;  // ADC1 EXT VIN
+#endif
 // -------- UNUSED ANALOG/GPIO PINS --------
 constexpr uint8_t PIN_UNUSED_PA2  = PA2;
 constexpr uint8_t PIN_UNUSED_PA3  = PA3;
 constexpr uint8_t PIN_UNUSED_PA4  = PA4;
 
-constexpr uint8_t PIN_UNUSED_PA6  = PA6;
-constexpr uint8_t PIN_UNUSED_PA7  = PA7;
 constexpr uint8_t PIN_UNUSED_PA11 = PA11;
 constexpr uint8_t PIN_UNUSED_PA12 = PA12;
 constexpr uint8_t PIN_UNUSED_PA15 = PA15;
 
 // -------- GPIO OUTPUTS --------
-constexpr uint8_t PIN_U6_OE       = PB0;   // U6 #OE
-constexpr uint8_t PIN_U1_RESET    = PB1;   // U1 #RESET
-constexpr uint8_t PIN_U5_A        = PB3;   // U5_A
+constexpr uint8_t PIN_ICLEDS       = PB3;   // To level shifter for IC LEDs
 constexpr uint8_t PIN_RESET_PA8  = PA8;
 constexpr uint8_t PIN_CS_PA9  = PA9;
 constexpr uint8_t PIN_DC_PA10 = PA10;
@@ -80,6 +78,12 @@ constexpr uint8_t PINIO_SW9 = 7;
 // ----------- Key Pin --------------
 
 constexpr uint8_t PINIO_KEY = 5;
+
+// ----------- Temp Sensor Pins -----------
+constexpr uint8_t PIN_SENS2 = PB0;  
+constexpr uint8_t PIN_SENS3 = PB1;  
+constexpr uint8_t PIN_SENS4  = PA6;
+constexpr uint8_t PIN_SENS5  = PA7;
 
 extern SPIClass SPI_2;
 extern Adafruit_MCP23X17 IoExp;

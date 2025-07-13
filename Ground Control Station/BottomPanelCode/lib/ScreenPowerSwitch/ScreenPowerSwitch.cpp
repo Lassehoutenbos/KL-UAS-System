@@ -170,7 +170,7 @@ void ScreenPowerSwitch::showLockScreen() {
 void ScreenPowerSwitch::update() {
     unsigned long now = millis();
 
-    if (warningMode || lockMode) {
+    if (warningMode || lockMode || batWarningMode) {
         return;
     }
 

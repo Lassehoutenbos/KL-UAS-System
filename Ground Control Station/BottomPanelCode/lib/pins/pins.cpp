@@ -50,17 +50,22 @@ void setupPins() {
     pinMode(PIN_RESET_PA8, OUTPUT);
     pinMode(PIN_CS_PA9, OUTPUT);
     pinMode(PIN_DC_PA10, OUTPUT);
+   
 
-    //pinMode(PIN_BAT_VIN, INPUT_ANALOG);
+
+    // -------- ADC pin defs --------
+    #ifndef DEBUG_HID
+    pinMode(PIN_BAT_VIN, INPUT_ANALOG);
     pinMode(PIN_EXT_VIN, INPUT_ANALOG);
+    #endif
+    pinMode(PIN_SENS2, INPUT_ANALOG);
+    pinMode(PIN_SENS3, INPUT_ANALOG);
+    pinMode(PIN_SENS4, INPUT_ANALOG);
+    pinMode(PIN_SENS5, INPUT_ANALOG);
 
-    pinMode(PIN_U6_OE, OUTPUT);
-    digitalWrite(PIN_U6_OE, LOW);
+    // -------- GPIO pin defs --------
 
-    pinMode(PIN_U1_RESET, OUTPUT);
-    digitalWrite(PIN_U1_RESET, HIGH);
-
-    pinMode(PIN_U5_A, OUTPUT);
+    pinMode(PIN_ICLEDS, OUTPUT);
 
     pinMode(PIN_I2C_SCL, OUTPUT_OPEN_DRAIN);
     pinMode(PIN_I2C_SDA, OUTPUT_OPEN_DRAIN);

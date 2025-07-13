@@ -27,8 +27,8 @@
     U4_PA3	    ->	
     U4_PA4	    ->	
     U4_PA5	    ->	
-    U4_PA6	    ->	
-    U4_PA7	    ->	
+    U4_PA6	    ->	SENS4 OUT
+    U4_PA7	    ->	SENS5 OUT
     U4_PA8	    ->	
     U4_PA9	    ->	
     U4_PA10	    ->	
@@ -36,8 +36,8 @@
     U4_PA12	    ->	
     U4_PA15	    ->	
 
-    U4_PB0	    ->	U6 #OE
-    U4_PB1	    ->	U1 #RESET
+    U4_PB0	    ->  SENS2 OUT
+    U4_PB1	    ->	SENS3 OUT
     U4_PB2	    ->	
     U4_PB3	    ->	U5_A
     U4_PB4	    ->	
