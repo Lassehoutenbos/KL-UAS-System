@@ -197,7 +197,11 @@ void switchPositionAlert() {
             #else
             // Normal mode: check corresponding IoExp pins
             switch(i) {
+                #ifdef DEBUG_SCREENTEST
+                case 0: switchPressed = digitalRead(PA0); break;
+                #else
                 case 0: switchPressed = IoExp.digitalRead(PINIO_SW0); break;
+                #endif
                 case 1: switchPressed = IoExp.digitalRead(PINIO_SW1); break;
                 case 2: switchPressed = IoExp.digitalRead(PINIO_SW2); break;
                 case 3: switchPressed = IoExp.digitalRead(PINIO_SW3); break;

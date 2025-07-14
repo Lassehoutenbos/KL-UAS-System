@@ -10,11 +10,9 @@
 
 // -------- ANALOG INPUTS --------
 
-#ifndef DEBUG_SCREENTEST
-#ifndef DEBUG_HID 
+#if !defined(DEBUG_SCREENTEST) && !defined(DEBUG_HID)
 constexpr uint8_t PIN_BAT_VIN     = PA0;  // ADC0 BAT VIN
 constexpr uint8_t PIN_EXT_VIN     = PA1;  // ADC1 EXT VIN
-#endif
 #endif
 // -------- UNUSED ANALOG/GPIO PINS --------
 constexpr uint8_t PIN_UNUSED_PA2  = PA2;
@@ -78,11 +76,8 @@ constexpr uint8_t PINIO_SW8 = 6;
 constexpr uint8_t PINIO_SW9 = 7;
 
 // ----------- Key Pin --------------
-#ifdef DEBUG_SCREENTEST
-constexpr uint8_t PINIO_KEY = PA0;  // Debug key pin for screen test
-#else
+
 constexpr uint8_t PINIO_KEY = 5;
-#endif
 
 // ----------- Temp Sensor Pins -----------
 constexpr uint8_t PIN_SENS2 = PB0;  

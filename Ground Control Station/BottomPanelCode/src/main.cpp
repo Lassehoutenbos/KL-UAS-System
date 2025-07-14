@@ -19,31 +19,32 @@ void setup() {
 }
 
 void loop() {
-  Switches::update();  // Check all switches for state changes
+  digitalWrite(PC13, HIGH);
 
   #ifdef DEBUG_LED
-  powerDisplay.showBatWarningScreen();  // Show lock screen in debug mode
+    powerDisplay.showBatWarningScreen();  // Show lock screen in debug mode
   #else
   // Show appropriate screen based on lock state and confirmation
+  
+
   if(Switches::isLocked) {
     powerDisplay.showLockScreen();  // Show lock icon when locked
   } else {
     // Case is unlocked - check if switches were confirmed during unlock
     if(!Switches::isConfirmed) {
+      switchPositionAlert();
       powerDisplay.showWarningScreen();  // Show warning when switches were not confirmed safe during unlock
     } else {
+      Switches::setLedDefault();
       powerDisplay.showMainScreen();  // Show normal screen when switches were confirmed safe
     }
   }
   #endif
-#ifdef DEBUG_LED
-  startup();
-#endif
-
+  #ifdef DEBUG_LED
+    startup();
+  #endif
+  Switches::update();  // Check all switches for state changes
   powerDisplay.update();
-
-
-  // Optional: Add a small delay to prevent excessive polling
-  delay(1);
+  delay(5);
 }
 

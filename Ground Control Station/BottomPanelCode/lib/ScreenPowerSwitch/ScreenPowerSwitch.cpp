@@ -91,7 +91,7 @@ void ScreenPowerSwitch::animateSwitch(PowerSource from, PowerSource to) {
 }
 
 void ScreenPowerSwitch::begin() {
-    randomSeed(analogRead(0));
+    randomSeed(1);
     tft.initR(INITR_144GREENTAB);
     tft.setRotation(DISPLAY_ROTATION);
     tft.fillScreen(ST77XX_BLACK);

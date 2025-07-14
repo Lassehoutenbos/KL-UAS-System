@@ -10,34 +10,35 @@ namespace Switches {
     // Define default colors for switch states using rgbwValue (avoiding NeoPixelBus issues)
     rgbwValue onColorValue = {0, 255, 0, 0};   // Green when pressed/active
     rgbwValue offColorValue = {255, 0, 0, 0};  // Red when released/inactive
-    
+    rgbwValue allOffValue = {0,0,0,0};
+
     // Global lock state variable - initially locked (key starts in LOW position)
     bool isLocked = true;
     
     // Global confirmation state - initially not confirmed
-    bool isConfirmed = false;
+    bool isConfirmed = true;
     
-
-    // Dummy RgbwColor objects for compatibility (not actually used)
-    RgbwColor onColor(0, 255, 0, 0);
-    RgbwColor offColor(255, 0, 0, 0);
 
     void begin() {
         
-        
-        // Initialize all switches with their respective pins and callbacks
-        #ifndef DEBUG_LED
+
+       
         #ifdef DEBUG_HID
         SwitchHandler::addSwitch(PA0, [](bool state) {
-            if(state) {
-                BootKeyboard.print("Nee");  // Active high: trigger when pressed
-                digitalWrite(PA13, HIGH);
+            bool pressed = !state; // PA0 uses pull-up, LOW means pressed
+            if(pressed) {
+                BootKeyboard.print("Nee");  // Trigger when actually pressed
+                digitalWrite(PC13, HIGH);
+            } else {
+                digitalWrite(PC13, LOW);
             }
-            // Set LED based on state
-            setLed(0, state ? onColorValue : offColorValue);
+            // Set LED based on actual press state
+            setLed(0, pressed ? onColorValue : offColorValue);
         });
         #else
-        #ifndef DEBUG_SCREENTEST
+
+        // Initialize all switches with their respective pins and callbacks
+        #if !defined(DEBUG_HID) && !defined(DEBUG_SCREENTEST) 
 
         // Voeg hier alle knoppen toe
         SwitchHandler::addSwitch(PINIO_SW0, [](bool state) {
@@ -107,16 +108,9 @@ namespace Switches {
             // Set LED based on state only when unlocked
             if(!isLocked) setLed(9, state ? onColorValue : offColorValue);
         });
-        #endif  // DEBUG_SCREENTEST
 
         SwitchHandler::addSwitch(PINIO_KEY, [](bool state) {
-#ifdef DEBUG_SCREENTEST
-            bool pressed = !state; // PA0 uses pull-up, LOW means pressed
-#else
-            bool pressed = state;
-#endif
-            if(pressed) {
-                digitalWrite(PC13, HIGH);
+            if(state) {
                 // Key is HIGH/pressed - unlock the case
                 isLocked = false;
                 // Check if all switches are in low position to confirm safe operation
@@ -132,13 +126,46 @@ namespace Switches {
                 isConfirmed = false;  // Reset confirmation when locking
             }
         });
+        #endif
+        #ifdef DEBUG_SCREENTEST
+        SwitchHandler::addSwitch(PA1, [](bool state) {
+            if(!state) {
+                // Key is HIGH/pressed - unlock the case
+                isLocked = false;
+                // Check if all switches are in low position to confirm safe operation
+                if(allSwitchesLow()) {
+
+                } else {
+                }
+            } else {
+                // Key is LOW/unpressed - lock the case immediately
+                digitalWrite(PC13, LOW);
+                isLocked = true;
+                isConfirmed = false;  // Reset confirmation when locking
+                for(int i = 0; i < 10; i++) {
+                   setLed(i, allOffValue);
+                }
+            }
+        });
+        #endif
+
+        #endif
         
-        #endif
-        #endif
     }
 
     void update() {
         SwitchHandler::updateAll();
+            if(allSwitchesLow()) {
+                isConfirmed = true;  // Switches confirmed safe, enable full functionality
+            }
+    }
+
+    void setLedDefault(){
+        // Initialize all LEDs to off state first
+        for(int i = 0; i < 10; i++) {
+            setLed(i, offColorValue);
+        }
+
     }
 
     bool allSwitchesLow() {
