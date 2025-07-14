@@ -19,6 +19,11 @@ const SwitchLedMapping ledMap[numSwitches] = {
     {false, 0, false, 0, 0},  // PWM RGB
 };
 
+// Mapping for reading the switch states from the IO expander
+const uint8_t switchPins[numSwitches] = {
+    PINIO_SW0, PINIO_SW1, PINIO_SW2, PINIO_SW3, PINIO_SW4,
+    PINIO_SW5, PINIO_SW6, PINIO_SW7, PINIO_SW8, PINIO_SW9
+};
 Blinker blinkerSW6(PINIO_SW6LED, 500);
 Blinker blinkerSW7(PINIO_SW7LED, 500);
 
@@ -159,122 +164,100 @@ bool startup() {
     return true;
 }
 
+
 void switchPositionAlert() {
-    static uint32_t lastUpdate = 0;
-    static bool blinkState = false;
+    static uint32_t lastPulse = 0;
     static uint32_t lastBlink = 0;
-    
-    const uint32_t blinkInterval = 300;  // Blink interval for pressed switches
-    const uint32_t pulseInterval = 50;   // Pulse update interval for unpressed switches
-    
-    uint32_t currentTime = millis();
-    
-    // Update blink state for pressed switches
-    if (currentTime - lastBlink >= blinkInterval) {
+    static bool blinkState = false;
+    static uint8_t redLevel = 77;   // start at ~30% brightness
+    static int8_t pulseStep = 4;
+
+    const uint32_t blinkInterval = 150; // faster blink for active switches
+    const uint32_t pulseInterval = 25;  // smoother pulsing
+
+    uint32_t now = millis();
+
+    // Toggle blink state for pressed switches
+    if (now - lastBlink >= blinkInterval) {
+        lastBlink = now;
         blinkState = !blinkState;
-        lastBlink = currentTime;
     }
-    
-    // Update pulse brightness for unpressed switches
-    if (currentTime - lastUpdate >= pulseInterval) {
-        lastUpdate = currentTime;
-        
-        // Calculate pulsing red brightness (sine wave)
-        float t = (currentTime % 2000) / 2000.0f;  // 2 second cycle
-        float brightness = 0.3f + 0.7f * (0.5f * (1.0f + sin(t * 2.0f * PI)));  // 30%-100% brightness
-        uint8_t redLevel = brightness * 255;
-        
-        // Check each switch and set appropriate LED behavior
-        for (int i = 0; i < numSwitches; ++i) {
-            const auto& m = ledMap[i];
-            bool switchPressed = false;
-            
-            #ifdef DEBUG_HID
-            // Debug mode: only check PA0 for switch 0
-            if (i == 0) {
-                switchPressed = digitalRead(PA0);
+
+    // Update pulsing brightness for idle switches
+    if (now - lastPulse >= pulseInterval) {
+        lastPulse = now;
+        int16_t next = redLevel + pulseStep;
+        if (next >= 255 || next <= 77) {
+            pulseStep = -pulseStep;
+            next = redLevel + pulseStep;
+        }
+        redLevel = static_cast<uint8_t>(next);
+    }
+
+    // Update each switch LED based on its current state
+    for (int i = 0; i < numSwitches; ++i) {
+        const auto& m = ledMap[i];
+        bool switchPressed = false;
+
+#ifdef DEBUG_HID
+        if (i == 0) {
+            switchPressed = digitalRead(PA0);
+        }
+#else
+        switchPressed = IoExp.digitalRead(switchPins[i]);
+#endif
+
+        if (switchPressed) {
+            if (m.hasGpioLed) {
+                IoExp.digitalWrite(m.gpioPin, blinkState ? HIGH : LOW);
             }
-            #else
-            // Normal mode: check corresponding IoExp pins
-            switch(i) {
-                #ifdef DEBUG_SCREENTEST
-                case 0: switchPressed = digitalRead(PA0); break;
-                #else
-                case 0: switchPressed = IoExp.digitalRead(PINIO_SW0); break;
-                #endif
-                case 1: switchPressed = IoExp.digitalRead(PINIO_SW1); break;
-                case 2: switchPressed = IoExp.digitalRead(PINIO_SW2); break;
-                case 3: switchPressed = IoExp.digitalRead(PINIO_SW3); break;
-                case 4: switchPressed = IoExp.digitalRead(PINIO_SW4); break;
-                case 5: switchPressed = IoExp.digitalRead(PINIO_SW5); break;
-                case 6: switchPressed = IoExp.digitalRead(PINIO_SW6); break;
-                case 7: switchPressed = IoExp.digitalRead(PINIO_SW7); break;
-                case 8: switchPressed = IoExp.digitalRead(PINIO_SW8); break;
-                case 9: switchPressed = IoExp.digitalRead(PINIO_SW9); break;
+
+            if (m.hasStripLed) {
+                RgbwColor col = blinkState ? RgbwColor(255, 255, 255, 0)
+                                          : RgbwColor(0, 0, 0, 0);
+                for (uint8_t j = m.stripStartIndex; j <= m.stripEndIndex; ++j) {
+                    strip.setPixelColor(j, col.r, col.g, col.b, col.w);
+                }
             }
-            #endif
-            
-            if (switchPressed) {
-                // Switch is pressed - blink the LED
-                if (m.hasGpioLed) {
-                    IoExp.digitalWrite(m.gpioPin, blinkState ? HIGH : LOW);
+
+            if (i == 8) {
+                uint8_t level = blinkState ? 255 : 0;
+                rgbDriver.setChannelPWM(0, level);
+                rgbDriver.setChannelPWM(1, level);
+                rgbDriver.setChannelPWM(2, level);
+            }
+
+            if (i == 9) {
+                uint8_t level = blinkState ? 255 : 0;
+                rgbDriver.setChannelPWM(3, level);
+                rgbDriver.setChannelPWM(4, level);
+                rgbDriver.setChannelPWM(5, level);
+            }
+        } else {
+            if (m.hasGpioLed) {
+                IoExp.digitalWrite(m.gpioPin, HIGH);
+            }
+
+            if (m.hasStripLed) {
+                RgbwColor col(redLevel, 0, 0, 0);
+                for (uint8_t j = m.stripStartIndex; j <= m.stripEndIndex; ++j) {
+                    strip.setPixelColor(j, col.r, col.g, col.b, col.w);
                 }
-                
-                if (m.hasStripLed) {
-                    // Blink white for pressed switches
-                    RgbwColor col = blinkState ? RgbwColor(255, 255, 255, 0)
-                                              : RgbwColor(0, 0, 0, 0);
-                    for (uint8_t j = m.stripStartIndex; j <= m.stripEndIndex; j++) {
-                        strip.setPixelColor(j, col.r, col.g, col.b, col.w);
-                    }
-                }
-                
-                // Handle special cases for switches 8 and 9 (DAC RGB)
-                if (i == 8) {
-                    uint8_t blinkLevel = blinkState ? 255 : 0;
-                    rgbDriver.setChannelPWM(0, blinkLevel);  // Red
-                    rgbDriver.setChannelPWM(1, blinkLevel);  // Green  
-                    rgbDriver.setChannelPWM(2, blinkLevel);  // Blue
-                }
-                
-                if (i == 9) {
-                    uint8_t blinkLevel = blinkState ? 255 : 0;
-                    rgbDriver.setChannelPWM(3, blinkLevel);  // Red
-                    rgbDriver.setChannelPWM(4, blinkLevel);  // Green
-                    rgbDriver.setChannelPWM(5, blinkLevel);  // Blue
-                }
-                
-            } else {
-                // Switch is not pressed - red pulsing
-                if (m.hasGpioLed) {
-                    // GPIO LEDs can't pulse, so just turn them on with red indication
-                    IoExp.digitalWrite(m.gpioPin, HIGH);
-                }
-                
-                if (m.hasStripLed) {
-                    // Red pulsing for LED strips
-                    RgbwColor col(redLevel, 0, 0, 0);  // Red only
-                    for (uint8_t j = m.stripStartIndex; j <= m.stripEndIndex; j++) {
-                        strip.setPixelColor(j, col.r, col.g, col.b, col.w);
-                    }
-                }
-                
-                // Handle special cases for switches 8 and 9 (DAC RGB) - red pulsing
-                if (i == 8) {
-                    rgbDriver.setChannelPWM(0, redLevel);  // Red pulsing
-                    rgbDriver.setChannelPWM(1, 0);         // Green off
-                    rgbDriver.setChannelPWM(2, 0);         // Blue off
-                }
-                
-                if (i == 9) {
-                    rgbDriver.setChannelPWM(3, redLevel);  // Red pulsing
-                    rgbDriver.setChannelPWM(4, 0);         // Green off
-                    rgbDriver.setChannelPWM(5, 0);         // Blue off
-                }
+            }
+
+            if (i == 8) {
+                rgbDriver.setChannelPWM(0, redLevel);
+                rgbDriver.setChannelPWM(1, 0);
+                rgbDriver.setChannelPWM(2, 0);
+            }
+
+            if (i == 9) {
+                rgbDriver.setChannelPWM(3, redLevel);
+                rgbDriver.setChannelPWM(4, 0);
+                rgbDriver.setChannelPWM(5, 0);
             }
         }
-        
-        // Update the LED strip
-        strip.show();
     }
+
+    strip.show();
 }
