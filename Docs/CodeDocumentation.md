@@ -144,7 +144,7 @@ struct SwitchLedMapping {
 ```
 — `leds.h` lines 8–31.
 
-Functions include `setupLeds()`, `setLed()`, `startup()` for the boot animation and `switchPositionAlert()` which gives visual feedback if any switch is left on.
+Functions include `setupLeds()`, `setLed()`, `startup()` for the boot animation and `switchPositionAlert()` which now quickly blinks pressed switches and pulses unpressed ones.
 
 ## ScreenPowerSwitch
 
