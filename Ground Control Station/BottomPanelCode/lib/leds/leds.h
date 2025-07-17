@@ -1,6 +1,9 @@
 #ifndef LEDS_H
 #define LEDS_H
 
+// LED control utilities for the bottom panel. Handles both GPIO LEDs and the
+// RGBW LED strip via the PCA9685 driver.
+
 #include <Arduino.h>
 #include <PCA9685.h>
 #include <Adafruit_NeoPixel.h>
@@ -41,9 +44,13 @@ extern PCA9685 rgbDriver;
 
 extern const SwitchLedMapping switchMap[numSwitches];
 
+// Initialise LED drivers.
 void setupLeds();
+// Set the colour for a particular switch LED.
 void setLed(int switchId, rgbwValue color);
+// Startup animation played once at boot.
 bool startup();
-void switchPositionAlert();  // Visual feedback for switches not in low position
+// Visual feedback for switches not in low position.
+void switchPositionAlert();
 
 #endif // LEDS_H

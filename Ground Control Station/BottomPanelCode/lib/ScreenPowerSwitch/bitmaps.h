@@ -1,6 +1,8 @@
 #ifndef BITMAPS_H
 #define BITMAPS_H
 
+// Bitmap data used by ScreenPowerSwitch for its various icons.
+
 #include <Arduino.h>
 
 // Forward declaration

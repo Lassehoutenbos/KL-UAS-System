@@ -1,4 +1,6 @@
 #include <Arduino.h>
+// Main firmware entry for the bottom panel. This file initialises all
+// subsystems and drives the main update loop used on the STM32 board.
 #include <stdint.h>
 #include <pins.h>
 #include <Switches.h>
@@ -9,6 +11,7 @@
 ScreenPowerSwitch powerDisplay;
 TempSensors tempSensors;
 
+// Set up peripherals and libraries before entering the main loop.
 void setup() {
   USB_Begin();  // Wrapper rond USBD_Init() + connect
   BootKeyboard.begin();  // Init HID class
@@ -18,6 +21,7 @@ void setup() {
   tempSensors.begin();  // Initialize temperature sensors
 }
 
+// Main program loop executed continuously after setup.
 void loop() {
   digitalWrite(PC13, HIGH);
 

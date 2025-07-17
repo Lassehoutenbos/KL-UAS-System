@@ -2,6 +2,8 @@
 #include "pins.h"
 #include "Blinker.h"
 
+// Implementation for LED effects and helper routines.
+
 Adafruit_NeoPixel strip(ledCount, PB3, NEO_GRBW + NEO_KHZ800);
 PCA9685 rgbDriver;
 
@@ -27,6 +29,7 @@ const uint8_t switchPins[numSwitches] = {
 Blinker blinkerSW6(PINIO_SW6LED, 500);
 Blinker blinkerSW7(PINIO_SW7LED, 500);
 
+// Initialise the NeoPixel strip and PCA9685 driver.
 void setupLeds(){
     
     // Led driver setup
@@ -43,6 +46,7 @@ void setupLeds(){
 
 }
 
+// Set the colour of a switch LED or LED group.
 void setLed(int switchId, rgbwValue color){
     if(switchId < 0 || switchId >= numSwitches) return;
 
@@ -102,6 +106,7 @@ void setLed(int switchId, rgbwValue color){
       }
 }
 
+// Play a brief startup animation on all LEDs.
 bool startup() {
     const uint32_t duration = 3000;      // 3 seconden animatie
     const uint32_t interval = 30;        // interval tussen frames (voor pulsen)
@@ -165,6 +170,7 @@ bool startup() {
 }
 
 
+// Warning animation used when a switch is not in the expected position.
 void switchPositionAlert() {
     static uint32_t lastPulse = 0;
     static uint32_t lastBlink = 0;

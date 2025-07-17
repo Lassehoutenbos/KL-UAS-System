@@ -5,6 +5,9 @@
 #include <Arduino.h>
 #include "leds.h"
 
+// High level logic for reading all panel switches and providing HID outputs
+// as well as LED feedback.
+
 namespace Switches {
     
     // Define default colors for switch states using rgbwValue (avoiding NeoPixelBus issues)
@@ -19,6 +22,7 @@ namespace Switches {
     bool isConfirmed = true;
     
 
+    // Configure all switch callbacks and starting LED states.
     void begin() {
         
 
@@ -153,6 +157,7 @@ namespace Switches {
         
     }
 
+    // Poll switches and maintain confirmation state.
     void update() {
         SwitchHandler::updateAll();
             if(allSwitchesLow()) {
@@ -160,6 +165,7 @@ namespace Switches {
             }
     }
 
+    // Reset every switch LED to the off colour.
     void setLedDefault(){
         // Initialize all LEDs to off state first
         for(int i = 0; i < 10; i++) {
@@ -168,6 +174,7 @@ namespace Switches {
 
     }
 
+    // Check whether all switches are in the low (off) position.
     bool allSwitchesLow() {
         #ifdef DEBUG_SCREENTEST
         // Debug mode: Check PA0

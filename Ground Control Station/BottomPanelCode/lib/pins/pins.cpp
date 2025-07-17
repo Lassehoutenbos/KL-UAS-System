@@ -1,4 +1,4 @@
-// pins.cpp
+// pins.cpp - hardware initialisation for all MCU pins and the IO expander
 #include <pins.h>
 
 // SPI2 instantie (MOSI, MISO, SCK)
@@ -8,6 +8,7 @@ SPIClass SPI_2(PIN_SPI2_MOSI, PIN_SPI2_MISO, PIN_SPI2_SCK);
 Adafruit_MCP23X17 IoExp;
 
 
+// Configure all MCU pins and initialise buses.
 void setupPins() {
 
     Wire.begin();  // Start I2C bus
