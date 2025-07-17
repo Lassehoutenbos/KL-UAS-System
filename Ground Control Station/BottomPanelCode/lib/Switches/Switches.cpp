@@ -22,7 +22,7 @@ namespace Switches {
     bool isConfirmed = true;
     
 
-    // Configure all switch callbacks and starting LED states.
+    // Configure all switch callbacks and initial LED states.
     void begin() {
         
 
