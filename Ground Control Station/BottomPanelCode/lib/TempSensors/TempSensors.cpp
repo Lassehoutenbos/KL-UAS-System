@@ -1,6 +1,8 @@
 #include "TempSensors.h"
 #include "leds.h"
 
+// Implementation of the temperature monitoring and fan control logic.
+
 const uint8_t TempSensors::sensorPins[NUM_SENSORS] = {
     PIN_SENS2,
     PIN_SENS3,
@@ -24,6 +26,7 @@ const TempSensors::FanMapping TempSensors::fanMap[NUM_FANS] = {
     {FAN2_PWM_CH, fan2Sensors, sizeof(fan2Sensors) / sizeof(fan2Sensors[0])}
 };
 
+// Configure ADC pins and initialise fan outputs.
 void TempSensors::begin() {
     for (uint8_t i = 0; i < NUM_SENSORS; ++i) {
         pinMode(sensorPins[i], INPUT_ANALOG);
@@ -35,6 +38,7 @@ void TempSensors::begin() {
     }
 }
 
+// Read all sensors and adjust fan speeds accordingly.
 void TempSensors::update() {
     for (uint8_t i = 0; i < NUM_SENSORS; ++i) {
         uint16_t raw = analogRead(sensorPins[i]);
@@ -65,11 +69,13 @@ void TempSensors::update() {
     }
 }
 
+// Return the last measured temperature in degrees Celsius.
 float TempSensors::getTemperatureC(uint8_t index) const {
     if (index >= NUM_SENSORS) return NAN;
     return temperatures[index];
 }
 
+// Write a PWM value to the fan driver after bounds checking.
 void TempSensors::setFanSpeed(uint8_t index, uint16_t pwm) {
     if (index >= NUM_FANS) return;
     if (pwm > 4095) pwm = 4095;

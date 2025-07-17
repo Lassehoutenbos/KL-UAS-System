@@ -1,10 +1,15 @@
 #include "ScreenPowerSwitch.h"
 #include "bitmaps.h"
 
+// Implementation of the ScreenPowerSwitch class which renders
+// various screens on the TFT and animates the selector arm.
+
+// Helper generating a pseudo random voltage around the given base value.
 float ScreenPowerSwitch::simulateVoltage(float base, int variation) {
     return base + (random(-variation, variation) / 1000.0f);
 }
 
+// Draw the battery icon at the supplied coordinates.
 void ScreenPowerSwitch::drawBatteryIcon(int x, int y, bool active) {
     uint16_t color = active ? ST77XX_GREEN : ST77XX_DARKGREY;
     tft.drawRect(x, y, 24, 12, ST77XX_WHITE);
@@ -12,6 +17,7 @@ void ScreenPowerSwitch::drawBatteryIcon(int x, int y, bool active) {
     tft.fillRect(x + 2, y + 2, 20, 8, color);
 }
 
+// Draw the plug icon at the supplied coordinates.
 void ScreenPowerSwitch::drawPlugIcon(int x, int y, bool active) {
     uint16_t color = active ? ST77XX_WHITE : ST77XX_DARKGREY;
     tft.fillRect(x + 4, y, 2, 6, color);
@@ -20,6 +26,7 @@ void ScreenPowerSwitch::drawPlugIcon(int x, int y, bool active) {
     tft.drawLine(x + 8, y + 12, x + 8, y + 20, color);
 }
 
+// Utility to print a voltage value centred around a coordinate.
 void ScreenPowerSwitch::drawVoltageCentered(float voltage, int cx) {
     char buf[10];
     dtostrf(voltage, 4, 2, buf);
@@ -34,11 +41,13 @@ void ScreenPowerSwitch::drawVoltageCentered(float voltage, int cx) {
     tft.print(buf);
 }
 
+// Refresh all voltage readouts on screen.
 void ScreenPowerSwitch::drawAllVoltages() {
     drawVoltageCentered(vBat, batCenterX);
     drawVoltageCentered(vPlug, plugCenterX);
 }
 
+// Draw labels, icons and the current voltage values.
 void ScreenPowerSwitch::drawIcons() {
     tft.setTextSize(1);
     tft.setTextColor(ST77XX_WHITE);
@@ -52,6 +61,8 @@ void ScreenPowerSwitch::drawIcons() {
     drawAllVoltages();
 }
 
+// Draw the moving selector arm. When drawDot is true a yellow marker is shown
+// at the arm tip to emphasise movement.
 void ScreenPowerSwitch::drawSwitchArm(float angleDeg, uint16_t color, bool drawDot) {
     tft.drawLine(centerX, centerY, lastArmX, lastArmY, ST77XX_BLACK);
     if (drawDot) {
@@ -73,6 +84,7 @@ void ScreenPowerSwitch::drawSwitchArm(float angleDeg, uint16_t color, bool drawD
     lastArmY = endY;
 }
 
+// Animate the arm transitioning between power sources.
 void ScreenPowerSwitch::animateSwitch(PowerSource from, PowerSource to) {
     int startAngle = (from == BATTERY) ? -45 : 45;
     int endAngle = (to == BATTERY) ? -45 : 45;
@@ -90,6 +102,7 @@ void ScreenPowerSwitch::animateSwitch(PowerSource from, PowerSource to) {
     drawSwitchArm(endAngle, ST77XX_YELLOW, true);
 }
 
+// Initialise the TFT and clear the screen.
 void ScreenPowerSwitch::begin() {
     randomSeed(1);
     tft.initR(INITR_144GREENTAB);
@@ -99,21 +112,25 @@ void ScreenPowerSwitch::begin() {
     prevVPlug = vPlug;
 }
 
+// Render the warning bitmap in red.
 void ScreenPowerSwitch::drawWarningIcon() {
     tft.fillScreen(ST77XX_RED);
     tft.drawBitmap(0, 0, warningBitmap, 128, 128, ST77XX_BLACK);
 }
 
+// Render the lock bitmap on a white background.
 void ScreenPowerSwitch::drawLockIcon() {
     tft.fillScreen(ST77XX_WHITE);
     tft.drawBitmap(0, 0, lockBitmap, 128, 128, ST77XX_BLACK);
 }
 
+// Render the battery warning bitmap.
 void ScreenPowerSwitch::drawBatWarningIcon(){
     tft.fillScreen(ST7735_YELLOW);
     tft.drawBitmap(0,0, batWarningBitmap, 128, 128, ST77XX_BLACK);
 }
 
+// Switch display to the generic warning screen.
 void ScreenPowerSwitch::showWarningScreen() {
     if (currentMode == MODE_WARNING) {
         return;
@@ -127,6 +144,7 @@ void ScreenPowerSwitch::showWarningScreen() {
     currentMode = MODE_WARNING;
 }
 
+// Display a battery specific warning overlay.
 void ScreenPowerSwitch::showBatWarningScreen() {
     if (currentMode == MODE_BATWARNING){
         return;
@@ -139,6 +157,7 @@ void ScreenPowerSwitch::showBatWarningScreen() {
     
 }
 
+// Restore the normal main screen layout.
 void ScreenPowerSwitch::showMainScreen() {
     if (currentMode == MODE_MAIN) {
         return;
@@ -154,6 +173,7 @@ void ScreenPowerSwitch::showMainScreen() {
     currentMode = MODE_MAIN;
 }
 
+// Display the lock overlay to indicate the system is locked.
 void ScreenPowerSwitch::showLockScreen() {
     if (currentMode == MODE_LOCK) {
         return;
@@ -167,6 +187,7 @@ void ScreenPowerSwitch::showLockScreen() {
     currentMode = MODE_LOCK;
 }
 
+// Periodic update handling animation timing and voltage refresh.
 void ScreenPowerSwitch::update() {
     unsigned long now = millis();
 

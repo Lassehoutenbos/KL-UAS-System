@@ -1,4 +1,4 @@
-// pins.h
+// pins.h - central pin definitions and helper declarations
 #ifndef PINS_H
 #define PINS_H
 
@@ -93,6 +93,7 @@ extern SPIClass SPI_2;
 extern Adafruit_MCP23X17 IoExp;
 
 
+// Configure all MCU and IO expander pins.
 void setupPins();
 
 

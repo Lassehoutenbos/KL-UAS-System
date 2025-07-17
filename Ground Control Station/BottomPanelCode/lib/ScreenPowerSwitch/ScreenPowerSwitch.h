@@ -14,13 +14,28 @@
 #include "bitmaps.h"
 #include <math.h>
 
+// ScreenPowerSwitch manages the small TFT display on the bottom panel.
+// It shows power information and warning/lock screens and animates a
+// mechanical style switch graphic between battery and plug sources.
+
 class ScreenPowerSwitch {
 public:
+    // Initialise the display and internal state.
     void begin();
+
+    // Periodic update handling animations and voltage readings.
     void update();
+
+    // Display a generic warning overlay.
     void showWarningScreen();
+
+    // Display the normal power view.
     void showMainScreen();
+
+    // Display the locked icon.
     void showLockScreen();
+
+    // Display a battery specific warning.
     void showBatWarningScreen();
 
 private:
@@ -61,11 +76,15 @@ private:
     // static const uint8_t batWarningBitmap[];
 
 
+    // Helpers to render static bitmaps for the various overlays.
     void drawWarningIcon();
     void drawLockIcon();
-    void drawBatWarningIcon();    
+    void drawBatWarningIcon();
 
+    // Generate pseudo random voltage values for demo purposes.
     float simulateVoltage(float base, int variation = 100);
+
+    // Drawing utilities for the main screen contents.
     void drawBatteryIcon(int x, int y, bool active);
     void drawPlugIcon(int x, int y, bool active);
     void drawVoltageCentered(float voltage, int cx);
@@ -75,6 +94,7 @@ private:
     void animateSwitch(PowerSource from, PowerSource to);
 
 
+    // Hardware interface for the 1.44" TFT screen.
     Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, PIN_SPI2_MOSI ,PIN_SPI2_SCK , TFT_RST);
 
 };

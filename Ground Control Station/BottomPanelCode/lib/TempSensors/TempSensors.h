@@ -1,14 +1,19 @@
 #pragma once
 
+// Driver for reading temperature sensors and controlling fans accordingly.
+
 #include <Arduino.h>
 #include <pins.h>
 #include <leds.h>
 
 class TempSensors {
 public:
-    void begin();               // setup ADC pins
-    void update();              // read all sensors and adjust fans
-    float getTemperatureC(uint8_t index) const;  // get last temperature for sensor 0..3
+    // Initialise ADC pins and fan outputs.
+    void begin();
+    // Read sensors and update fan speeds.
+    void update();
+    // Retrieve the last measured temperature for sensor 0..3.
+    float getTemperatureC(uint8_t index) const;
 
     struct FanSensorConfig {
         uint8_t sensorIndex;   // linked temperature sensor
