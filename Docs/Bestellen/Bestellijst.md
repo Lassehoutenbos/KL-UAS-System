@@ -1,5 +1,8 @@
 # Order List
 
+This file tracks parts required for our prototype. Prices and availability may
+change over time and are noted here for reference only.
+
 ---
 
 ## Electrical Parts
@@ -30,3 +33,5 @@
 - [ ]Bovenpaneel afschakelbaar maken
 - [ ]Pi HID shutdown
 - [ ]Buzzer testen
+
+All prices are indicative and items should be sourced responsibly.

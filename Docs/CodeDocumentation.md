@@ -1,6 +1,9 @@
 # Code Documentation
 
-This document provides an overview of the source code found in the `Ground Control Station/BottomPanelCode` directory. The project uses PlatformIO and consists of several small libraries to handle input switches, LED feedback and a small display.
+This document provides an overview of the source code found in the
+`Ground Control Station/BottomPanelCode` directory. It is intended as a
+learning resource for students contributing to the project. All code is
+shared as is with no warranty.
 
 ## File Structure
 
@@ -166,4 +169,10 @@ The implementation draws simple icons for battery and plug sources, animates a s
 ## Additional Files
 
 The repository also contains Arduino example code under `Ground Control Station/Arduino testcode` which replicates the display logic in a single `.ino` file. Backup configuration files for the flight controller are stored in `Software/BackupsFC`.
+
+### Disclaimer
+
+This documentation is provided for reference only. Use the code
+responsibly and ensure your hardware meets all applicable safety
+requirements.
 
