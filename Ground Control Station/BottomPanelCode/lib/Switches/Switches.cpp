@@ -21,6 +21,8 @@ namespace Switches {
     // Global confirmation state - initially not confirmed
     bool isConfirmed = true;
     
+    bool armPayload1 = false;  // Payload arm state, initially not armed
+    bool armPayload2 = false;  // Payload arm state, initially not armed
 
     // Configure all switch callbacks and initial LED states.
     void begin() {
@@ -92,19 +94,33 @@ namespace Switches {
         SwitchHandler::addSwitch(PINIO_SW6, [](bool state) {
             if(state && !isLocked && isConfirmed) BootKeyboard.write(KEY_F19);  // Only respond when unlocked and confirmed
             // Set LED based on state only when unlocked
-            if(!isLocked) setLed(6, state ? onColorValue : offColorValue);
+            armPayload1 = state;  // Update payload arm state
+            if(!isLocked){
+                setLed(6, state ? onColorValue : offColorValue);
+                setLed(8, state ? onColorValue : offColorValue, true);  // Also set SW8 LED to match SW6
+            }
         });
 
         SwitchHandler::addSwitch(PINIO_SW7, [](bool state) {
             if(state && !isLocked && isConfirmed) BootKeyboard.write(KEY_F20);  // Only respond when unlocked and confirmed
             // Set LED based on state only when unlocked
-            if(!isLocked) setLed(7, state ? onColorValue : offColorValue);
+            armPayload2 = state;  // Update payload arm state
+            if(!isLocked){ 
+                setLed(7, state ? onColorValue : offColorValue);
+                setLed(9, state ? onColorValue : offColorValue, true);  // Also set SW9 LED to match SW7
+            }
         });
 
         SwitchHandler::addSwitch(PINIO_SW8, [](bool state) {
-            if(state && !isLocked && isConfirmed) BootKeyboard.write(KEY_F21);  // Only respond when unlocked and confirmed
-            // Set LED based on state only when unlocked
-            if(!isLocked) setLed(8, state ? onColorValue : offColorValue);
+            if(state && !isLocked && isConfirmed){ 
+                if (armPayload1){
+                    BootKeyboard.write(KEY_F21);  // Only respond when unlocked and confirmed
+                    if(!isLocked) setLed(8, state ? onColorValue : offColorValue);
+                }
+                else{
+                failSafe(8);  // Trigger fail-safe if not armed
+                }
+            }
         });
 
         SwitchHandler::addSwitch(PINIO_SW9, [](bool state) {
@@ -166,10 +182,10 @@ namespace Switches {
     }
 
     // Reset every switch LED to the off colour.
-    void setLedDefault(){
+    void setLedDefault(bool off){
         // Initialize all LEDs to off state first
         for(int i = 0; i < 10; i++) {
-            setLed(i, offColorValue);
+            setLed(i, off ? allOffValue : offColorValue);  // Use allOffValue for complete off state
         }
 
     }

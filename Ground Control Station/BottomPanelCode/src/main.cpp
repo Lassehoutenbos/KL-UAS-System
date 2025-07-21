@@ -7,6 +7,7 @@
 #include "HID-Project.h"
 #include <ScreenPowerSwitch.h>
 #include <TempSensors.h>
+#include <leds.h>
 
 ScreenPowerSwitch powerDisplay;
 TempSensors tempSensors;
@@ -14,7 +15,7 @@ TempSensors tempSensors;
 // Set up peripherals and libraries before entering the main loop.
 void setup() {
   USB_Begin();  // Wrapper rond USBD_Init() + connect
-  BootKeyboard.begin();  // Init HID class
+BootKeyboard.begin();  // Init HID class
   setupPins();
   powerDisplay.begin();
   Switches::begin();
@@ -48,6 +49,8 @@ void loop() {
     startup();
   #endif
   Switches::update();  // Check all switches for state changes
+  tempSensors.update(); // Update temperature sensors and fan control  
+  updateLeds();         // Update blinking LEDs
   powerDisplay.update();
   delay(5);
 }

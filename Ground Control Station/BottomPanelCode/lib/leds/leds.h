@@ -47,10 +47,13 @@ extern const SwitchLedMapping switchMap[numSwitches];
 // Initialise LED drivers.
 void setupLeds();
 // Set the colour for a particular switch LED.
-void setLed(int switchId, rgbwValue color);
+void setLed(int switchId, rgbwValue color, bool blinking = false);
+// Update blinking LEDs (call this regularly in main loop)
+void updateLeds();
 // Startup animation played once at boot.
 bool startup();
 // Visual feedback for switches not in low position.
 void switchPositionAlert();
+void failSafe(int switchId);
 
 #endif // LEDS_H
