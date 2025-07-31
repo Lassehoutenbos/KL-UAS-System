@@ -131,7 +131,7 @@ void setLed(int switchId, rgbwValue color, bool blinking){
 
 // Update blinking LEDs (called from a FreeRTOS task)
 void updateLeds() {
-    unsigned long currentTime = xTaskGetTickCount();
+    TickType_t currentTime = xTaskGetTickCount();
     bool stripNeedsUpdate = false;
     
     for (int i = 0; i < numSwitches; i++) {
