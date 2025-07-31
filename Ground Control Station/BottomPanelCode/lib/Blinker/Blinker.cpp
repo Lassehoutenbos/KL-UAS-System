@@ -28,6 +28,11 @@ void Blinker::setInterval(unsigned long interval) {
 void Blinker::stop() {
     _active = false;
     IoExp.digitalWrite(_pin, LOW);
+
+    if (_taskHandle != nullptr) {
+        vTaskDelete(_taskHandle);
+        _taskHandle = nullptr;
+    }
 }
 
 void Blinker::start() {
