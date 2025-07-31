@@ -1,45 +1,53 @@
 #include "Blinker.h"
 #include "pins.h"
 
-// Basic non-blocking blinker implementation.
+// FreeRTOS powered non-blocking blinker implementation.
 
-// Constructor stores the pin number and blink interval.
 Blinker::Blinker(uint8_t pin, unsigned long interval)
-  : _pin(pin), _interval(interval), _lastToggle(0), _state(LOW), _active(false) {}
+    : _pin(pin), _interval(interval), _taskHandle(nullptr),
+      _state(LOW), _active(false) {}
 
-// Configure the pin and set the starting state.
 void Blinker::begin(bool startState) {
-  _state = startState;
-  IoExp.digitalWrite(_pin, _state);
-  _lastToggle = millis();
-  _active = true;
-}
-
-// Toggle the pin when enough time has passed.
-void Blinker::update() {
-  if (!_active) return;
-
-  unsigned long now = millis();
-  if (now - _lastToggle >= _interval) {
-    _state = !_state;
+    _state = startState;
     IoExp.digitalWrite(_pin, _state);
-    _lastToggle = now;
-  }
+    _active = true;
+
+    if (_taskHandle == nullptr) {
+        xTaskCreate(taskFunc, "BLNK", 128, this, 1, &_taskHandle);
+    }
 }
 
-// Change how fast the LED blinks.
+void Blinker::update() {
+    // Handled by the FreeRTOS task
+}
+
 void Blinker::setInterval(unsigned long interval) {
-  _interval = interval;
+    _interval = interval;
 }
 
-// Stop blinking and turn the LED off.
 void Blinker::stop() {
-  _active = false;
-  IoExp.digitalWrite(_pin, LOW);
+    _active = false;
+    IoExp.digitalWrite(_pin, LOW);
+
+    if (_taskHandle != nullptr) {
+        vTaskDelete(_taskHandle);
+        _taskHandle = nullptr;
+    }
 }
 
-// Resume blinking from the current time.
 void Blinker::start() {
-  _lastToggle = millis();
-  _active = true;
+    _active = true;
+}
+
+void Blinker::taskFunc(void *arg) {
+    Blinker *self = static_cast<Blinker *>(arg);
+    for (;;) {
+        if (self->_active) {
+            self->_state = !self->_state;
+            IoExp.digitalWrite(self->_pin, self->_state);
+            vTaskDelay(pdMS_TO_TICKS(self->_interval));
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+    }
 }

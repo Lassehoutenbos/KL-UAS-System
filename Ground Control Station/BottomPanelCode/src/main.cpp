@@ -30,6 +30,7 @@ BootKeyboard.begin();  // Init HID class
 
   xTaskCreate(uiTask, "UI", 512, nullptr, 2, nullptr);
   xTaskCreate(tempTask, "TEMP", 512, nullptr, 1, nullptr);
+  xTaskCreate(blinkTask, "LED", 256, nullptr, 1, nullptr);
 
   vTaskStartScheduler();
 }
@@ -72,6 +73,14 @@ static void tempTask(void *) {
   for (;;) {
     tempSensors.update();
     vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+
+// Dedicated LED update task
+static void blinkTask(void *) {
+  for (;;) {
+    updateLeds();
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
