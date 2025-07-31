@@ -27,9 +27,8 @@ void setup() {
 
   pinMode(PC13, OUTPUT);
 
-  xTaskCreate(uiTask, "UI", 512, nullptr, 1, nullptr);
+  xTaskCreate(uiTask, "UI", 512, nullptr, 2, nullptr);
   xTaskCreate(tempTask, "TEMP", 512, nullptr, 1, nullptr);
-  xTaskCreate(blinkTask, "BLINK", 128, nullptr, 1, nullptr);
 
   vTaskStartScheduler();
 }
@@ -75,11 +74,4 @@ static void tempTask(void *) {
   }
 }
 
-// Simple LED blink task to demonstrate multitasking.
-static void blinkTask(void *) {
-  for (;;) {
-    digitalToggle(PC13);
-    vTaskDelay(pdMS_TO_TICKS(250));
-  }
-}
 
