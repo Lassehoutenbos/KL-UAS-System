@@ -7,11 +7,16 @@
 #include "HID-Project.h"
 #include <ScreenPowerSwitch.h>
 #include <TempSensors.h>
+#include <STM32FreeRTOS.h>
 
 ScreenPowerSwitch powerDisplay;
 TempSensors tempSensors;
 
-// Set up peripherals and libraries before entering the main loop.
+static void uiTask(void *);
+static void tempTask(void *);
+static void blinkTask(void *);
+
+// Set up peripherals, create tasks and start the scheduler.
 void setup() {
   USB_Begin();  // Wrapper rond USBD_Init() + connect
   BootKeyboard.begin();  // Init HID class
@@ -19,36 +24,62 @@ void setup() {
   powerDisplay.begin();
   Switches::begin();
   tempSensors.begin();  // Initialize temperature sensors
+
+  pinMode(PC13, OUTPUT);
+
+  xTaskCreate(uiTask, "UI", 512, nullptr, 1, nullptr);
+  xTaskCreate(tempTask, "TEMP", 512, nullptr, 1, nullptr);
+  xTaskCreate(blinkTask, "BLINK", 128, nullptr, 1, nullptr);
+
+  vTaskStartScheduler();
 }
 
-// Main program loop executed continuously after setup.
-void loop() {
-  digitalWrite(PC13, HIGH);
+// Unused. Execution happens in FreeRTOS tasks.
+void loop() {}
 
-  #ifdef DEBUG_LED
-    powerDisplay.showBatWarningScreen();  // Show lock screen in debug mode
-  #else
-  // Show appropriate screen based on lock state and confirmation
-  
+// UI task handles screen rendering and switch state.
+static void uiTask(void *) {
+  for (;;) {
 
-  if(Switches::isLocked) {
-    powerDisplay.showLockScreen();  // Show lock icon when locked
-  } else {
-    // Case is unlocked - check if switches were confirmed during unlock
-    if(!Switches::isConfirmed) {
-      switchPositionAlert();
-      powerDisplay.showWarningScreen();  // Show warning when switches were not confirmed safe during unlock
+#ifdef DEBUG_LED
+    powerDisplay.showBatWarningScreen();
+#else
+    if (Switches::isLocked) {
+      powerDisplay.showLockScreen();
     } else {
-      Switches::setLedDefault();
-      powerDisplay.showMainScreen();  // Show normal screen when switches were confirmed safe
+      if (!Switches::isConfirmed) {
+        switchPositionAlert();
+        powerDisplay.showWarningScreen();
+      } else {
+        Switches::setLedDefault();
+        powerDisplay.showMainScreen();
+      }
     }
-  }
-  #endif
-  #ifdef DEBUG_LED
+#endif
+
+#ifdef DEBUG_LED
     startup();
-  #endif
-  Switches::update();  // Check all switches for state changes
-  powerDisplay.update();
-  delay(5);
+#endif
+
+    Switches::update();
+    powerDisplay.update();
+    vTaskDelay(pdMS_TO_TICKS(5));
+  }
+}
+
+// Periodic temperature sensor task.
+static void tempTask(void *) {
+  for (;;) {
+    tempSensors.update();
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+
+// Simple LED blink task to demonstrate multitasking.
+static void blinkTask(void *) {
+  for (;;) {
+    digitalToggle(PC13);
+    vTaskDelay(pdMS_TO_TICKS(250));
+  }
 }
 
