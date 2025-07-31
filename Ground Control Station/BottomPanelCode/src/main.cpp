@@ -9,6 +9,7 @@
 #include <TempSensors.h>
 #include <STM32FreeRTOS.h>
 
+
 ScreenPowerSwitch powerDisplay;
 TempSensors tempSensors;
 
@@ -19,7 +20,7 @@ static void blinkTask(void *);
 // Set up peripherals, create tasks and start the scheduler.
 void setup() {
   USB_Begin();  // Wrapper rond USBD_Init() + connect
-  BootKeyboard.begin();  // Init HID class
+BootKeyboard.begin();  // Init HID class
   setupPins();
   powerDisplay.begin();
   Switches::begin();

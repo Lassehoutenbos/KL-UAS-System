@@ -15,10 +15,10 @@ const SwitchLedMapping ledMap[numSwitches] = {
     {true, PINIO_SW3LED, true, 0, 3},
     {true, PINIO_SW4LED, true, 5, 8},
     {true, PINIO_SW5LED, true, 10, 14},
-    {true, PINIO_SW6LED, true, 28, 38},
-    {true, PINIO_SW7LED, true, 28, 38},
-    {false, 0, false, 0, 0},  // PWM RGB
-    {false, 0, false, 0, 0},  // PWM RGB
+    {true, PINIO_SW6LED, true, 28, 33},
+    {true, PINIO_SW7LED, true, 28, 33},
+    {false, 0, false, 33, 38},  // PWM RGB
+    {false, 0, false, 33, 38},  // PWM RGB
 };
 
 // Mapping for reading the switch states from the IO expander
@@ -26,8 +26,25 @@ const uint8_t switchPins[numSwitches] = {
     PINIO_SW0, PINIO_SW1, PINIO_SW2, PINIO_SW3, PINIO_SW4,
     PINIO_SW5, PINIO_SW6, PINIO_SW7, PINIO_SW8, PINIO_SW9
 };
+
+// Blinker objects for GPIO LEDs only
+Blinker blinkerSW3(PINIO_SW3LED, 500);
+Blinker blinkerSW4(PINIO_SW4LED, 500);
+Blinker blinkerSW5(PINIO_SW5LED, 500);
 Blinker blinkerSW6(PINIO_SW6LED, 500);
 Blinker blinkerSW7(PINIO_SW7LED, 500);
+
+// Array to easily access blinkers (nullptr for switches without GPIO LEDs)
+Blinker* blinkers[numSwitches] = {
+    nullptr, nullptr, nullptr, &blinkerSW3, &blinkerSW4,
+    &blinkerSW5, &blinkerSW6, &blinkerSW7, nullptr, nullptr  // SW0-2, SW8-9 don't use GPIO blinkers
+};
+
+// Blinking state for strip LEDs and PWM LEDs
+bool stripBlinking[numSwitches] = {false};
+rgbwValue stripBlinkColor[numSwitches] = {{0}};
+unsigned long lastBlinkTime[numSwitches] = {0};
+bool blinkState[numSwitches] = {false};
 
 // Initialise the NeoPixel strip and PCA9685 driver.
 void setupLeds(){
@@ -40,70 +57,145 @@ void setupLeds(){
     strip.begin();
     strip.show();
 
-    // Blinker setup
-    blinkerSW6.begin();
-    blinkerSW7.begin();
-
+    // Blinker setup for GPIO LEDs
+    for(int i = 0; i < numSwitches; i++) {
+        if(blinkers[i] != nullptr) {
+            blinkers[i]->begin();
+        }
+        stripBlinking[i] = false;
+        stripBlinkColor[i] = {0, 0, 0, 0};
+        lastBlinkTime[i] = 0;
+        blinkState[i] = false;
+    }
 }
 
 // Set the colour of a switch LED or LED group.
-void setLed(int switchId, rgbwValue color){
+void setLed(int switchId, rgbwValue color, bool blinking){
     if(switchId < 0 || switchId >= numSwitches) return;
 
     const SwitchLedMapping& m = ledMap[switchId];
 
-    if (switchId == 6) {
-        if (color.r + color.g + color.b + color.w > 0)
-        {
-            blinkerSW6.start();
-        } 
-        else {
-            blinkerSW6.stop();
+    // Handle GPIO LED blinking
+    if (m.hasGpioLed && blinkers[switchId] != nullptr) {
+        if (blinking && (color.r + color.g + color.b + color.w > 0)) {
+            blinkers[switchId]->start();
+        } else {
+            blinkers[switchId]->stop();
+            // Set steady state based on color
+            bool active = (color.r + color.g + color.b + color.w) > 0;
+            IoExp.digitalWrite(m.gpioPin, active ? HIGH : LOW);
         }
     }
 
-    if (switchId == 7) {
-        if (color.r + color.g + color.b + color.w > 0)
-        {
-        blinkerSW7.start();
-        } 
-        else {
-            blinkerSW7.stop();
-        }
-    }
-
+    // Handle PWM LED blinking for switches 8 and 9
     if (switchId == 8) {
-        rgbDriver.setChannelPWM(0, color.r);
-        rgbDriver.setChannelPWM(1, color.g);
-        rgbDriver.setChannelPWM(2, color.b);
+        stripBlinking[switchId] = blinking && (color.r + color.g + color.b + color.w > 0);
+        stripBlinkColor[switchId] = color;
+        if (!blinking) {
+            rgbDriver.setChannelPWM(0, color.r);       
+            rgbDriver.setChannelPWM(1, color.g);
+            rgbDriver.setChannelPWM(2, color.b);
+        }
         return;
     }
 
     if (switchId == 9) {
-        rgbDriver.setChannelPWM(3, color.r);
-        rgbDriver.setChannelPWM(4, color.g);
-        rgbDriver.setChannelPWM(5, color.b);
+        stripBlinking[switchId] = blinking && (color.r + color.g + color.b + color.w > 0);
+        stripBlinkColor[switchId] = color;
+        if (!blinking) {
+            rgbDriver.setChannelPWM(3, color.r);
+            rgbDriver.setChannelPWM(4, color.g);
+            rgbDriver.setChannelPWM(5, color.b);
+        }
         return;
     }
 
-    
-
-
-    if (m.hasGpioLed) {
-        bool active = (color.r + color.g + color.b + color.w) > 0;
-        IoExp.digitalWrite(m.gpioPin, active ? HIGH : LOW);
-    }
-
+    // Handle strip LED blinking
     if (m.hasStripLed) {
-        RgbwColor col((color.r * 255UL) / 4095,
-                     (color.g * 255UL) / 4095,
-                     (color.b * 255UL) / 4095,
-                     (color.w * 255UL) / 4095);
-        for (uint8_t i = m.stripStartIndex; i <= m.stripEndIndex; i++) {
-          strip.setPixelColor(i, col.r, col.g, col.b, col.w);
+        stripBlinking[switchId] = blinking && (color.r + color.g + color.b + color.w > 0);
+        stripBlinkColor[switchId] = color;
+        
+        if (!blinking) {
+            RgbwColor col((color.r * 255UL) / 4095,
+                         (color.g * 255UL) / 4095,
+                         (color.b * 255UL) / 4095,
+                         (color.w * 255UL) / 4095);
+            for (uint8_t i = m.stripStartIndex; i <= m.stripEndIndex; i++) {
+              strip.setPixelColor(i, col.r, col.g, col.b, col.w);
+            }
+            strip.show();
         }
+    }
+}
+
+// Update blinking LEDs (call this regularly in main loop)
+void updateLeds() {
+    unsigned long currentTime = millis();
+    bool stripNeedsUpdate = false;
+    
+    for (int i = 0; i < numSwitches; i++) {
+        if (stripBlinking[i]) {
+            // Check if it's time to toggle (500ms interval)
+            if (currentTime - lastBlinkTime[i] >= 500) {
+                blinkState[i] = !blinkState[i];
+                lastBlinkTime[i] = currentTime;
+                
+                const SwitchLedMapping& m = ledMap[i];
+                
+                // Handle PWM LEDs (switches 8 and 9)
+                if (i == 8) {
+                    if (blinkState[i]) {
+                        rgbDriver.setChannelPWM(0, stripBlinkColor[i].r);
+                        rgbDriver.setChannelPWM(1, stripBlinkColor[i].g);
+                        rgbDriver.setChannelPWM(2, stripBlinkColor[i].b);
+                    } else {
+                        rgbDriver.setChannelPWM(0, 0);
+                        rgbDriver.setChannelPWM(1, 0);
+                        rgbDriver.setChannelPWM(2, 0);
+                    }
+                } else if (i == 9) {
+                    if (blinkState[i]) {
+                        rgbDriver.setChannelPWM(3, stripBlinkColor[i].r);
+                        rgbDriver.setChannelPWM(4, stripBlinkColor[i].g);
+                        rgbDriver.setChannelPWM(5, stripBlinkColor[i].b);
+                    } else {
+                        rgbDriver.setChannelPWM(3, 0);
+                        rgbDriver.setChannelPWM(4, 0);
+                        rgbDriver.setChannelPWM(5, 0);
+                    }
+                }
+                // Handle strip LEDs
+                else if (m.hasStripLed) {
+                    if (blinkState[i]) {
+                        RgbwColor col((stripBlinkColor[i].r * 255UL) / 4095,
+                                     (stripBlinkColor[i].g * 255UL) / 4095,
+                                     (stripBlinkColor[i].b * 255UL) / 4095,
+                                     (stripBlinkColor[i].w * 255UL) / 4095);
+                        for (uint8_t j = m.stripStartIndex; j <= m.stripEndIndex; j++) {
+                            strip.setPixelColor(j, col.r, col.g, col.b, col.w);
+                        }
+                    } else {
+                        for (uint8_t j = m.stripStartIndex; j <= m.stripEndIndex; j++) {
+                            strip.setPixelColor(j, 0, 0, 0, 0);
+                        }
+                    }
+                    stripNeedsUpdate = true;
+                }
+            }
+        }
+    }
+    
+    // Update GPIO blinkers
+    for (int i = 0; i < numSwitches; i++) {
+        if (blinkers[i] != nullptr) {
+            blinkers[i]->update();
+        }
+    }
+    
+    // Update strip if any strip LED changed
+    if (stripNeedsUpdate) {
         strip.show();
-      }
+    }
 }
 
 // Play a brief startup animation on all LEDs.
@@ -266,4 +358,11 @@ void switchPositionAlert() {
     }
 
     strip.show();
+}
+
+void failSafe(int switchId){
+    if(switchId == 8 || switchId == 9){
+        setLed(switchId, {255, 0, 0, 0});
+        setLed(switchId == 8 ? 6 : 7, {255, 0, 0, 0});  // Set SW7 or SW6 to red as well
+    }
 }
