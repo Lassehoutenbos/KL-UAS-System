@@ -1,5 +1,10 @@
 # Drone
 
+This repository contains design files, documentation and firmware for an
+educational unmanned aircraft system.  Everything here is provided without
+any warranty and should only be used in compliance with your local
+regulations.
+
 ## Parts list
 
 - [4x Emax GT2218 1100KV brushless motor](https://emaxmodel.com/products/gt2218)
@@ -36,3 +41,9 @@
 ### [Cost Calculations](/Docs/Facturen/Overview.md)
 
 Way too much
+
+### Disclaimer
+
+The information in this repository is provided for educational use only.
+Always operate your drone responsibly and adhere to local laws and
+regulations.
