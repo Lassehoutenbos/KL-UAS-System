@@ -1,5 +1,6 @@
 #include "ScreenPowerSwitch.h"
 #include "bitmaps.h"
+#include <STM32FreeRTOS.h>
 
 // Implementation of the ScreenPowerSwitch class which renders
 // various screens on the TFT and animates the selector arm.
@@ -94,7 +95,7 @@ void ScreenPowerSwitch::animateSwitch(PowerSource from, PowerSource to) {
         float t = i / (float)steps;
         float angle = startAngle + (endAngle - startAngle) * t;
         drawSwitchArm(angle, ST77XX_YELLOW, true);
-        delay(40);
+        vTaskDelay(pdMS_TO_TICKS(40));
     }
 
     currentPower = to;

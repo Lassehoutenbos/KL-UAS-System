@@ -4,16 +4,19 @@
 // Small utility class to blink a GPIO pin at a configurable interval.
 
 #include <Arduino.h>
+#include <STM32FreeRTOS.h>
 
 class Blinker {
 public:
   // Create a new blinker on the given GPIO pin.
   Blinker(uint8_t pin, unsigned long interval);
 
-  // Prepare the pin and optionally set the initial state.
+  // Prepare the pin and start the FreeRTOS task. Optionally set the
+  // initial output state.
   void begin(bool startState = LOW);
 
-  // Toggle the pin when the interval elapsed.
+  // Legacy update method kept for compatibility. No longer needed as the
+  // blinking is handled inside the FreeRTOS task.
   void update();
 
   // Change the blinking interval.
@@ -28,9 +31,11 @@ public:
 private:
   uint8_t _pin;
   unsigned long _interval;
-  unsigned long _lastToggle;
+  TaskHandle_t _taskHandle;
   bool _state;
   bool _active;
+
+  static void taskFunc(void *arg);
 };
 
 #endif
