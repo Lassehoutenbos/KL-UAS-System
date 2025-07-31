@@ -1,3 +1,7 @@
+This file lists all pin assignments for the ground control station
+hardware.  The table below was created during initial development and may
+change as the design evolves.
+
 **U1 (MCP23017)**
 
     U1_A0	    ->	LED2
@@ -74,4 +78,6 @@
     U6_LED12    ->	
     U6_LED13    ->	
     U6_LED14    ->	
-    U6_LED15    ->  
+    U6_LED15    ->
+
+Pin mappings are subject to change as the project develops.
