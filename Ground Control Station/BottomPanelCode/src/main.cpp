@@ -8,14 +8,15 @@
 #include <ScreenPowerSwitch.h>
 #include <TempSensors.h>
 #include <STM32FreeRTOS.h>
+#include <leds.h>
 
 
 ScreenPowerSwitch powerDisplay;
 TempSensors tempSensors;
 
 static void uiTask(void *);
-static void tempTask(void *);
-static void blinkTask(void *);
+static void tempTask(void *); 
+static void blinkTask(void *); 
 
 // Set up peripherals, create tasks and start the scheduler.
 void setup() {
@@ -30,6 +31,7 @@ BootKeyboard.begin();  // Init HID class
 
   xTaskCreate(uiTask, "UI", 512, nullptr, 2, nullptr);
   xTaskCreate(tempTask, "TEMP", 512, nullptr, 1, nullptr);
+  xTaskCreate(blinkTask, "LED", 256, nullptr, 1, nullptr);
 
   vTaskStartScheduler();
 }
@@ -72,6 +74,15 @@ static void tempTask(void *) {
   for (;;) {
     tempSensors.update();
     vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+
+// LED update task: blinks the onboard LED and services LED animations
+static void blinkTask(void *) {
+  for (;;) {
+    digitalWrite(PC13, !digitalRead(PC13));
+    updateLeds();
+    vTaskDelay(pdMS_TO_TICKS(50));
   }
 }
 
