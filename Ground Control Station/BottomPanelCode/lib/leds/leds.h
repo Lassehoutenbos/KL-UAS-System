@@ -48,7 +48,7 @@ extern const SwitchLedMapping switchMap[numSwitches];
 void setupLeds();
 // Set the colour for a particular switch LED.
 void setLed(int switchId, rgbwValue color, bool blinking = false);
-// Update blinking LEDs (call this regularly in main loop)
+// Update blinking LEDs (called from RTOS task)
 void updateLeds();
 // Startup animation played once at boot.
 bool startup();

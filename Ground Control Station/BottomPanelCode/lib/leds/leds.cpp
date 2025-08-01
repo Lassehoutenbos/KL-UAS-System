@@ -1,6 +1,7 @@
 #include "leds.h"
 #include "pins.h"
 #include "Blinker.h"
+#include <STM32FreeRTOS.h>
 
 // Implementation for LED effects and helper routines.
 
@@ -185,13 +186,6 @@ void updateLeds() {
         }
     }
     
-    // Update GPIO blinkers
-    for (int i = 0; i < numSwitches; i++) {
-        if (blinkers[i] != nullptr) {
-            blinkers[i]->update();
-        }
-    }
-    
     // Update strip if any strip LED changed
     if (stripNeedsUpdate) {
         strip.show();
@@ -242,7 +236,7 @@ bool startup() {
             }
         }
 
-        delay(interval);  // korte pauze voor de animatie
+        vTaskDelay(pdMS_TO_TICKS(interval));  // korte pauze via RTOS
     }
 
     // Alles uitzetten na animatie
