@@ -1,6 +1,7 @@
 #include "leds.h"
 #include "pins.h"
 #include "Blinker.h"
+#include <STM32FreeRTOS.h>
 
 // Implementation for LED effects and helper routines.
 
@@ -43,7 +44,7 @@ Blinker* blinkers[numSwitches] = {
 // Blinking state for strip LEDs and PWM LEDs
 bool stripBlinking[numSwitches] = {false};
 rgbwValue stripBlinkColor[numSwitches] = {{0}};
-unsigned long lastBlinkTime[numSwitches] = {0};
+TickType_t lastBlinkTime[numSwitches] = {0};
 bool blinkState[numSwitches] = {false};
 
 // Initialise the NeoPixel strip and PCA9685 driver.
@@ -64,7 +65,7 @@ void setupLeds(){
         }
         stripBlinking[i] = false;
         stripBlinkColor[i] = {0, 0, 0, 0};
-        lastBlinkTime[i] = 0;
+        lastBlinkTime[i] = xTaskGetTickCount();
         blinkState[i] = false;
     }
 }
@@ -128,15 +129,15 @@ void setLed(int switchId, rgbwValue color, bool blinking){
     }
 }
 
-// Update blinking LEDs (call this regularly in main loop)
+// Update blinking LEDs (called from a FreeRTOS task)
 void updateLeds() {
-    unsigned long currentTime = millis();
+    TickType_t currentTime = xTaskGetTickCount();
     bool stripNeedsUpdate = false;
     
     for (int i = 0; i < numSwitches; i++) {
         if (stripBlinking[i]) {
             // Check if it's time to toggle (500ms interval)
-            if (currentTime - lastBlinkTime[i] >= 500) {
+            if (currentTime - lastBlinkTime[i] >= pdMS_TO_TICKS(500)) {
                 blinkState[i] = !blinkState[i];
                 lastBlinkTime[i] = currentTime;
                 
@@ -182,13 +183,6 @@ void updateLeds() {
                     stripNeedsUpdate = true;
                 }
             }
-        }
-    }
-    
-    // Update GPIO blinkers
-    for (int i = 0; i < numSwitches; i++) {
-        if (blinkers[i] != nullptr) {
-            blinkers[i]->update();
         }
     }
     
@@ -242,7 +236,7 @@ bool startup() {
             }
         }
 
-        delay(interval);  // korte pauze voor de animatie
+        vTaskDelay(pdMS_TO_TICKS(interval));  // korte pauze voor de animatie
     }
 
     // Alles uitzetten na animatie
