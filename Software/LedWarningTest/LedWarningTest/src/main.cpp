@@ -2,9 +2,11 @@
 #include <Adafruit_NeoPixel.h>
 
 // Configuration for STM32 Blackpill
-#define NUM_LEDS 10            // 10 LEDs on the strip
-#define DATA_PIN PA7           // Data pin for LED strip (PA7 = Pin A7)
-#define BRIGHTNESS 100         // 0-255, adjust for desired brightness
+#define NUM_WARNING_LEDS 10        // 10 LEDs for warning indicators
+#define NUM_WORKLIGHT_LEDS 23      // 23 LEDs for worklight strip
+#define NUM_LEDS (NUM_WARNING_LEDS + NUM_WORKLIGHT_LEDS)  // Total 33 LEDs
+#define DATA_PIN PA7               // Data pin for LED strip (PA7 = Pin A7)
+#define BRIGHTNESS 100             // 0-255, adjust for desired brightness
 
 // NeoPixel strip object
 Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRBW + NEO_KHZ800);
@@ -33,16 +35,24 @@ enum WarningState {
 };
 
 // Current state of each warning icon
-WarningState warningStates[NUM_LEDS];
+WarningState warningStates[NUM_WARNING_LEDS];
+
+// Worklight state variables
+bool worklightEnabled = false;
+uint8_t worklightBrightness = 255;
+uint32_t worklightColor = 0; // Default color (will be set to white in setup)
+bool worklightFlashing = false;
+unsigned long worklightFlashTimer = 0;
+bool worklightFlashState = false;
 
 // Flashing configuration for each LED
-bool warningFlashing[NUM_LEDS];
-unsigned long warningFlashTimer[NUM_LEDS];
-bool warningFlashState[NUM_LEDS];
+bool warningFlashing[NUM_WARNING_LEDS];
+unsigned long warningFlashTimer[NUM_WARNING_LEDS];
+bool warningFlashState[NUM_WARNING_LEDS];
 int warningFlashInterval = 500; // Default flash interval in ms
 
 // Custom brightness for each LED (255 = use global brightness)
-uint8_t warningBrightness[NUM_LEDS];
+uint8_t warningBrightness[NUM_WARNING_LEDS];
 
 // Animation variables for demo mode
 unsigned long lastUpdate = 0;
@@ -52,10 +62,15 @@ bool demoModeActive = false; // Set to false to disable demo
 
 // Function declarations
 void updateWarningPanel();
+void updateWorklight();
 void SetWarning(WarningIcon icon, WarningState state, bool flashing = false, uint8_t brightness = 255);
 void SetWarningCustom(WarningIcon icon, uint32_t color, bool flashing = false, uint8_t brightness = 255);
 void SetDualWarning(WarningState state, bool flashing = false, uint8_t brightness = 255);
 void setFlashInterval(int interval);
+void setWorklight(bool enabled, uint8_t brightness = 255, uint32_t color = 0, bool flashing = false);
+void setWorklightBrightness(uint8_t brightness);
+void setWorklightColor(uint32_t color);
+void setWorklightFlashing(bool flashing);
 void runDemoMode();
 void processSerialCommand();
 void printHelp();
@@ -63,6 +78,7 @@ void parseSetCommand(String command);
 void parseFlashCommand(String command);
 void parseBrightnessCommand(String command);
 void parseColorCommand(String command);
+void parseWorklightCommand(String command);
 WarningIcon parseIcon(String iconStr);
 WarningState parseState(String stateStr);
 uint32_t parseColor(String colorStr);
@@ -85,7 +101,7 @@ void setup() {
   strip.show();
   
   // Initialize all warnings to OFF
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_WARNING_LEDS; i++) {
     warningStates[i] = OFF;
     warningFlashing[i] = false;
     warningFlashTimer[i] = 0;
@@ -93,11 +109,20 @@ void setup() {
     warningBrightness[i] = 255; // Use global brightness by default
   }
   
+  // Initialize worklight
+  worklightEnabled = false;
+  worklightBrightness = 255;
+  worklightColor = strip.Color(255, 255, 255); // Default to white
+  worklightFlashing = false;
+  worklightFlashTimer = 0;
+  worklightFlashState = false;
+  
   Serial.println("STM32 Warning Panel initialized!");
   Serial.println("Hardware: STM32F411CEU6 Blackpill");
   Serial.println("LED Layout:");
-  Serial.println("0: Temperature | 1: Signal | 2: Aircraft | 3: Drone Connection | 4&5: Warning L&R");
-  Serial.println("6: GPS | 7: Connection | 8: Lock | 9: Drone Status");
+  Serial.println("0-9: Warning Indicators | 10-32: Worklight Strip (23 LEDs)");
+  Serial.println("Warnings: 0:Temp | 1:Signal | 2:Aircraft | 3:Drone | 4&5:Warning L&R");
+  Serial.println("6:GPS | 7:Connection | 8:Lock | 9:Status");
   Serial.println("Data Pin: PA7 (A7)");
   Serial.println();
   
@@ -123,6 +148,7 @@ void loop() {
   
   // Update the warning panel display
   updateWarningPanel();
+  updateWorklight();
   strip.show();
   
   delay(50); // Small delay for stability
@@ -130,7 +156,7 @@ void loop() {
 
 // Demo mode to showcase different warning states
 void runDemoMode() {
-  // Clear all warnings first
+  // Clear all warnings and worklight first
   clearAllWarnings();
   
   switch (demoMode) {
@@ -200,14 +226,24 @@ void runDemoMode() {
       SetWarningCustom(AIRCRAFT_WARNING, strip.Color(0, 255, 255), false, 150); // Cyan
       SetWarningCustom(DRONE_STATUS, strip.Color(255, 255, 0), true, 100); // Yellow
       break;
+      
+    case 12:
+      Serial.println("Demo: Worklight on");
+      setWorklight(true, 255, strip.Color(255, 255, 255), false);
+      break;
+      
+    case 13:
+      Serial.println("Demo: Worklight flashing orange");
+      setWorklight(true, 200, strip.Color(255, 165, 0), true);
+      break;
   }
   
-  demoMode = (demoMode + 1) % 12;
+  demoMode = (demoMode + 1) % 14;
 }
 
 // Update the physical LEDs based on warning states
 void updateWarningPanel() {
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_WARNING_LEDS; i++) {
     uint32_t color = 0; // Default to off
     
     if (warningStates[i] >= 0 && warningStates[i] < 5) {
@@ -250,9 +286,79 @@ void updateWarningPanel() {
   }
 }
 
+// Update the worklight LEDs
+void updateWorklight() {
+  uint32_t color = strip.Color(0, 0, 0); // Default to off
+  
+  if (worklightEnabled) {
+    color = worklightColor;
+    
+    // Handle flashing
+    if (worklightFlashing) {
+      if (millis() - worklightFlashTimer > warningFlashInterval) {
+        worklightFlashState = !worklightFlashState;
+        worklightFlashTimer = millis();
+      }
+      
+      if (!worklightFlashState) {
+        color = strip.Color(0, 0, 0); // Turn off during flash
+      }
+    }
+    
+    // Apply brightness
+    if (worklightBrightness < 255) {
+      uint8_t r = (color >> 16) & 0xFF;
+      uint8_t g = (color >> 8) & 0xFF;
+      uint8_t b = color & 0xFF;
+      
+      r = (r * worklightBrightness) / 255;
+      g = (g * worklightBrightness) / 255;
+      b = (b * worklightBrightness) / 255;
+      
+      color = strip.Color(r, g, b);
+    }
+  }
+  
+  // Set all worklight LEDs to the same color
+  for (int i = NUM_WARNING_LEDS; i < NUM_LEDS; i++) {
+    strip.setPixelColor(i, color);
+  }
+}
+
+// Worklight control functions
+void setWorklight(bool enabled, uint8_t brightness, uint32_t color, bool flashing) {
+  worklightEnabled = enabled;
+  if (brightness <= 255) worklightBrightness = brightness;
+  if (color != 0) worklightColor = color;
+  worklightFlashing = flashing;
+  
+  if (flashing) {
+    worklightFlashTimer = millis();
+    worklightFlashState = true;
+  }
+}
+
+void setWorklightBrightness(uint8_t brightness) {
+  if (brightness <= 255) {
+    worklightBrightness = brightness;
+  }
+}
+
+void setWorklightColor(uint32_t color) {
+  worklightColor = color;
+}
+
+void setWorklightFlashing(bool flashing) {
+  worklightFlashing = flashing;
+  if (flashing) {
+    worklightFlashTimer = millis();
+    worklightFlashState = true;
+  }
+}
+
 // Main function to set warning with all options
 void SetWarning(WarningIcon icon, WarningState state, bool flashing, uint8_t brightness) {
-  if (icon >= 0 && icon < NUM_LEDS) {
+  if (icon >= 0 && icon < NUM_WARNING_LEDS) {
     warningStates[icon] = state;
     warningFlashing[icon] = flashing;
     warningBrightness[icon] = brightness;
@@ -284,7 +390,7 @@ void SetWarning(WarningIcon icon, WarningState state, bool flashing, uint8_t bri
 
 // Set warning with custom color (bypasses state colors)
 void SetWarningCustom(WarningIcon icon, uint32_t color, bool flashing, uint8_t brightness) {
-  if (icon >= 0 && icon < NUM_LEDS) {
+  if (icon >= 0 && icon < NUM_WARNING_LEDS) {
     warningFlashing[icon] = flashing;
     warningBrightness[icon] = brightness;
     
@@ -380,6 +486,9 @@ void processSerialCommand() {
   else if (command.startsWith("color ")) {
     parseColorCommand(command);
   }
+  else if (command.startsWith("worklight ") || command.startsWith("work ")) {
+    parseWorklightCommand(command);
+  }
   else if (command != "") {
     Serial.println("Unknown command. Type 'help' for command list.");
   }
@@ -415,6 +524,13 @@ void printHelp() {
   Serial.println("  color <icon> <color>");
   Serial.println("  Colors: red, green, blue, yellow, purple, cyan, white, orange");
   Serial.println("  Example: color temp purple");
+  Serial.println();
+  Serial.println("Worklight Commands:");
+  Serial.println("  worklight on/off          - Turn worklight on/off");
+  Serial.println("  worklight brightness <0-255> - Set worklight brightness");
+  Serial.println("  worklight color <color>   - Set worklight color");
+  Serial.println("  worklight flash on/off    - Toggle worklight flashing");
+  Serial.println("  Example: worklight on, work brightness 200");
   Serial.println();
 }
 
@@ -578,44 +694,111 @@ uint32_t parseColor(String colorStr) {
   return 0; // Invalid color
 }
 
+// Parse WORKLIGHT command: "worklight <action> [value]"
+void parseWorklightCommand(String command) {
+  // Remove "worklight " or "work " prefix
+  if (command.startsWith("worklight ")) {
+    command = command.substring(10);
+  } else if (command.startsWith("work ")) {
+    command = command.substring(5);
+  }
+  
+  if (command == "on" || command == "1" || command == "true") {
+    setWorklight(true, worklightBrightness, worklightColor, worklightFlashing);
+    Serial.println("Worklight: ON");
+  }
+  else if (command == "off" || command == "0" || command == "false") {
+    setWorklight(false, worklightBrightness, worklightColor, worklightFlashing);
+    Serial.println("Worklight: OFF");
+  }
+  else if (command.startsWith("brightness ") || command.startsWith("bright ")) {
+    int spaceIndex = command.indexOf(' ');
+    if (spaceIndex != -1) {
+      int brightness = command.substring(spaceIndex + 1).toInt();
+      if (brightness >= 0 && brightness <= 255) {
+        setWorklightBrightness(brightness);
+        Serial.print("Worklight brightness: "); Serial.println(brightness);
+      } else {
+        Serial.println("Brightness must be 0-255");
+      }
+    } else {
+      Serial.println("Usage: worklight brightness <0-255>");
+    }
+  }
+  else if (command.startsWith("color ")) {
+    String colorStr = command.substring(6);
+    uint32_t color = parseColor(colorStr);
+    if (color != 0) {
+      setWorklightColor(color);
+      Serial.print("Worklight color: "); Serial.println(colorStr);
+    } else {
+      Serial.println("Invalid color");
+    }
+  }
+  else if (command.startsWith("flash ")) {
+    String flashStr = command.substring(6);
+    bool flashing = (flashStr == "on" || flashStr == "true" || flashStr == "1");
+    setWorklightFlashing(flashing);
+    Serial.print("Worklight flash: "); Serial.println(flashing ? "ON" : "OFF");
+  }
+  else if (command == "status") {
+    Serial.println("\n=== Worklight Status ===");
+    Serial.print("Enabled: "); Serial.println(worklightEnabled ? "YES" : "NO");
+    Serial.print("Brightness: "); Serial.println(worklightBrightness);
+    Serial.print("Flashing: "); Serial.println(worklightFlashing ? "YES" : "NO");
+    uint8_t r = (worklightColor >> 16) & 0xFF;
+    uint8_t g = (worklightColor >> 8) & 0xFF;
+    uint8_t b = worklightColor & 0xFF;
+    Serial.print("Color (RGB): "); Serial.print(r); Serial.print(","); 
+    Serial.print(g); Serial.print(","); Serial.println(b);
+    Serial.println();
+  }
+  else {
+    Serial.println("Worklight commands: on/off, brightness <0-255>, color <color>, flash on/off, status");
+  }
+}
+
 // Utility functions
 void clearAllWarnings() {
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_WARNING_LEDS; i++) {
     warningStates[i] = OFF;
     warningFlashing[i] = false;
     warningBrightness[i] = 255;
     strip.setPixelColor(i, strip.Color(0, 0, 0));
   }
+  
+  // Also turn off worklight
+  setWorklight(false, 255, strip.Color(255, 255, 255), false);
 }
 
 void setAllWarningsState(WarningState state) {
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_WARNING_LEDS; i++) {
     SetWarning((WarningIcon)i, state);
   }
 }
 
 void setAllWarningsColor(uint32_t color) {
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_WARNING_LEDS; i++) {
     SetWarningCustom((WarningIcon)i, color);
   }
 }
 
 bool hasCriticalWarnings() {
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_WARNING_LEDS; i++) {
     if (warningStates[i] == CRITICAL) return true;
   }
   return false;
 }
 
 bool hasActiveWarnings() {
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_WARNING_LEDS; i++) {
     if (warningStates[i] != OFF) return true;
   }
   return false;
 }
 
 WarningState getWarningState(WarningIcon icon) {
-  if (icon >= 0 && icon < NUM_LEDS) {
+  if (icon >= 0 && icon < NUM_WARNING_LEDS) {
     return warningStates[icon];
   }
   return OFF;
@@ -627,7 +810,7 @@ void printWarningStatus() {
                         "Warning Left", "Warning Right", "GPS", "Connection", "Lock", "Drone Status"};
   String stateNames[] = {"OFF", "NORMAL", "WARNING", "CRITICAL", "INFO"};
   
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_WARNING_LEDS; i++) {
     Serial.print(iconNames[i]); Serial.print(": ");
     Serial.print(stateNames[warningStates[i]]);
     if (warningFlashing[i]) Serial.print(" (FLASHING)");
@@ -636,5 +819,16 @@ void printWarningStatus() {
     }
     Serial.println();
   }
+  
+  Serial.println();
+  Serial.println("=== Worklight Status ===");
+  Serial.print("Enabled: "); Serial.println(worklightEnabled ? "YES" : "NO");
+  Serial.print("Brightness: "); Serial.println(worklightBrightness);
+  Serial.print("Flashing: "); Serial.println(worklightFlashing ? "YES" : "NO");
+  uint8_t r = (worklightColor >> 16) & 0xFF;
+  uint8_t g = (worklightColor >> 8) & 0xFF;
+  uint8_t b = worklightColor & 0xFF;
+  Serial.print("Color (RGB): "); Serial.print(r); Serial.print(","); 
+  Serial.print(g); Serial.print(","); Serial.println(b);
   Serial.println();
 }

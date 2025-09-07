@@ -8,17 +8,18 @@ Adafruit_NeoPixel strip(ledCount, PB3, NEO_GRBW + NEO_KHZ800);
 PCA9685 rgbDriver;
 
 /* | Has IO | IO pin | Has Strip | Index start | Index end |*/
+// LED Layout: 0-37 Switch LEDs (38 LEDs), 38-47 Warning Panel (10 LEDs), 48-70 Worklight (23 LEDs)
 const SwitchLedMapping ledMap[numSwitches] = {
-    {false, 0, true, 14, 17},
-    {false, 0, true, 19, 22},
-    {false, 0, true, 24, 27},
-    {true, PINIO_SW3LED, true, 0, 3},
-    {true, PINIO_SW4LED, true, 5, 8},
-    {true, PINIO_SW5LED, true, 10, 14},
-    {true, PINIO_SW6LED, true, 28, 33},
-    {true, PINIO_SW7LED, true, 28, 33},
-    {false, 0, false, 33, 38},  // PWM RGB
-    {false, 0, false, 33, 38},  // PWM RGB
+    {false, 0, true, 0, 3},          // SW0: LEDs 0-3 (strip only)
+    {false, 0, true, 4, 7},          // SW1: LEDs 4-7 (strip only)
+    {false, 0, true, 8, 11},         // SW2: LEDs 8-11 (strip only)
+    {true, PINIO_SW3LED, true, 12, 15},  // SW3: LEDs 12-15 + GPIO LED
+    {true, PINIO_SW4LED, true, 16, 19},  // SW4: LEDs 16-19 + GPIO LED
+    {true, PINIO_SW5LED, true, 20, 23},  // SW5: LEDs 20-23 + GPIO LED
+    {true, PINIO_SW6LED, true, 24, 28},  // SW6: LEDs 24-28 + GPIO LED
+    {true, PINIO_SW7LED, true, 29, 33},  // SW7: LEDs 29-33 + GPIO LED
+    {false, 0, true, 34, 35},        // SW8: LEDs 34-35 + PWM RGB (PCA9685 channels 0-2)
+    {false, 0, true, 36, 37},        // SW9: LEDs 36-37 + PWM RGB (PCA9685 channels 3-5)
 };
 
 // Mapping for reading the switch states from the IO expander

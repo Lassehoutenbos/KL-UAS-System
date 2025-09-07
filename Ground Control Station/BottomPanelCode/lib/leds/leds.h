@@ -35,7 +35,11 @@ struct SwitchLedMapping {
 };
 
 // Number of LEDs on the RGBW strip
-#define ledCount 38
+// LED Strip Layout (71 LEDs total):
+// - LEDs 0-37:  Switch LEDs (38 LEDs total, distributed among 10 switches)
+// - LEDs 38-47: Warning Panel (10 LEDs for status indicators)  
+// - LEDs 48-70: Worklight (23 LEDs for illumination)
+#define ledCount 71
 #define numSwitches 10
 
 // Adafruit NeoPixel strip instance
