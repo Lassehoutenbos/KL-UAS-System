@@ -38,6 +38,7 @@
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <cmath>
+#include <QStyle>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -104,39 +105,35 @@ void MainWindow::setupUI()
     setupMenuBar();
     setupStatusBar();
     
-    // Apply enhanced dark theme
+    // Apply refined dark theme with accent color for a cleaner look
     setStyleSheet(
-        "QMainWindow { background-color: #1E1E1E; }"
-        "QWidget { background-color: #1E1E1E; color: #FFFFFF; }"
-        "QGroupBox { font-weight: bold; color: #FFFFFF; border: 2px solid #404040; "
-        "border-radius: 6px; margin-top: 1ex; padding-top: 10px; background-color: #2D2D2D; }"
-        "QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 8px 0 8px; "
-        "background-color: #2D2D2D; }"
-        "QLabel { color: #FFFFFF; }"
+        "QMainWindow { background-color: #1f1f1f; font-family: 'Segoe UI', sans-serif; }"
+        "QWidget { background-color: #1f1f1f; color: #f0f0f0; }"
+        "QGroupBox { font-weight: bold; color: #f0f0f0; border: 1px solid #3c3c3c; "
+        "border-radius: 8px; margin-top: 1ex; padding-top: 10px; background-color: #2b2b2b; }"
+        "QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 4px; background-color: #2b2b2b; }"
+        "QLabel { color: #f0f0f0; }"
         "QPushButton { border-radius: 4px; padding: 8px 12px; font-weight: bold; border: none; }"
-        "QPushButton:hover { opacity: 0.8; }"
-        "QPushButton:pressed { opacity: 0.6; }"
+        "QPushButton:hover { background-color: #00adb5; color: #ffffff; }"
         "QPushButton:disabled { background-color: #404040; color: #808080; }"
-        "QComboBox { background-color: #404040; color: #FFFFFF; border: 1px solid #606060; "
+        "QComboBox { background-color: #404040; color: #f0f0f0; border: 1px solid #606060; "
         "border-radius: 4px; padding: 6px; }"
         "QComboBox::drop-down { border: none; }"
         "QComboBox::down-arrow { image: none; border: none; }"
-        "QProgressBar { border: 1px solid #606060; border-radius: 4px; background-color: #404040; "
-        "text-align: center; }"
-        "QProgressBar::chunk { border-radius: 3px; }"
-        "QLCDNumber { border: 1px solid #606060; border-radius: 4px; background-color: #1A1A1A; }"
-        "QTextEdit { background-color: #1A1A1A; color: #FFFFFF; border: 1px solid #606060; "
+        "QProgressBar { background-color: #3c3c3c; border-radius: 4px; text-align: center; }"
+        "QProgressBar::chunk { background-color: #00adb5; border-radius: 4px; }"
+        "QTextEdit { background-color: #1a1a1a; color: #f0f0f0; border: 1px solid #606060; "
         "border-radius: 4px; font-family: 'Consolas', monospace; }"
-        "QTabWidget::pane { border: 1px solid #404040; background-color: #2D2D2D; }"
-        "QTabBar::tab { background-color: #404040; color: #FFFFFF; padding: 8px 16px; "
+        "QTabWidget::pane { border: 1px solid #3c3c3c; background-color: #2b2b2b; }"
+        "QTabBar::tab { background-color: #2b2b2b; color: #f0f0f0; padding: 8px 16px; "
         "margin-right: 2px; border-top-left-radius: 4px; border-top-right-radius: 4px; }"
-        "QTabBar::tab:selected { background-color: #4CAF50; }"
-        "QTabBar::tab:hover { background-color: #505050; }"
-        "QTableWidget { background-color: #2D2D2D; alternate-background-color: #353535; "
+        "QTabBar::tab:selected { background-color: #00adb5; }"
+        "QTabBar::tab:hover { background-color: #3c3c3c; }"
+        "QTableWidget { background-color: #2b2b2b; alternate-background-color: #353535; "
         "gridline-color: #404040; border: 1px solid #606060; }"
         "QTableWidget::item { padding: 4px; }"
-        "QTableWidget::item:selected { background-color: #4CAF50; }"
-        "QHeaderView::section { background-color: #404040; color: #FFFFFF; padding: 6px; "
+        "QTableWidget::item:selected { background-color: #00adb5; }"
+        "QHeaderView::section { background-color: #2b2b2b; color: #f0f0f0; padding: 6px; "
         "border: none; font-weight: bold; }"
     );
 }
@@ -175,9 +172,11 @@ void MainWindow::setupControlPanel()
     
     connectionStatusLabel = new QLabel("Disconnected");
     connectionStatusLabel->setStyleSheet("QLabel { color: #F44336; font-weight: bold; font-size: 14px; }");
-    
+
     connectBtn = new QPushButton("Connect to UAV");
     connectBtn->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-size: 12px; }");
+    connectBtn->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));
+    connectBtn->setToolTip("Connect to the UAV");
     connect(connectBtn, &QPushButton::clicked, this, &MainWindow::connectToUAV);
     
     QHBoxLayout *connLayout = new QHBoxLayout;
@@ -193,32 +192,43 @@ void MainWindow::setupControlPanel()
     
     armBtn = new QPushButton("ARM");
     armBtn->setStyleSheet("QPushButton { background-color: #FF9800; color: white; }");
+    armBtn->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+    armBtn->setToolTip("Arm or disarm the UAV motors");
     armBtn->setEnabled(false);
     connect(armBtn, &QPushButton::clicked, this, &MainWindow::armDisarm);
-    
+
     takeOffBtn = new QPushButton("TAKE OFF");
     takeOffBtn->setStyleSheet("QPushButton { background-color: #2196F3; color: white; }");
+    takeOffBtn->setIcon(style()->standardIcon(QStyle::SP_ArrowUp));
+    takeOffBtn->setToolTip("Launch the UAV");
     takeOffBtn->setEnabled(false);
     connect(takeOffBtn, &QPushButton::clicked, this, &MainWindow::takeOff);
-    
+
     landBtn = new QPushButton("LAND");
     landBtn->setStyleSheet("QPushButton { background-color: #9C27B0; color: white; }");
+    landBtn->setIcon(style()->standardIcon(QStyle::SP_ArrowDown));
+    landBtn->setToolTip("Land the UAV at the current position");
     landBtn->setEnabled(false);
     connect(landBtn, &QPushButton::clicked, this, &MainWindow::land);
-    
+
     rthBtn = new QPushButton("RTH");
     rthBtn->setStyleSheet("QPushButton { background-color: #607D8B; color: white; }");
+    rthBtn->setIcon(style()->standardIcon(QStyle::SP_ArrowBack));
+    rthBtn->setToolTip("Return to the recorded home location");
     rthBtn->setEnabled(false);
     connect(rthBtn, &QPushButton::clicked, this, &MainWindow::returnToHome);
-    
+
     emergencyBtn = new QPushButton("🚨 EMERGENCY STOP");
     emergencyBtn->setStyleSheet("QPushButton { background-color: #F44336; color: white; font-weight: bold; }");
+    emergencyBtn->setIcon(style()->standardIcon(QStyle::SP_MessageBoxCritical));
+    emergencyBtn->setToolTip("Immediately cut power to all motors");
     emergencyBtn->setEnabled(false);
     connect(emergencyBtn, &QPushButton::clicked, this, &MainWindow::emergencyStop);
     
     QLabel *modeLabel = new QLabel("Flight Mode:");
     flightModeCombo = new QComboBox;
     flightModeCombo->addItems({"Manual", "Stabilize", "Altitude Hold", "Position Hold", "RTH", "Auto Mission"});
+    flightModeCombo->setToolTip("Select the desired flight mode");
     flightModeCombo->setEnabled(false);
     connect(flightModeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onModeChanged);
     
