@@ -25,34 +25,34 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QMainWindow {
-    background-color: #2E2E2E;
+    background-color: #1F1F1F;
 }
 
 QMenuBar {
-    background-color: #3E3E3E;
+    background-color: #2D2D2D;
     color: #FFFFFF;
-    border-bottom: 1px solid #555555;
+    border-bottom: 1px solid #444444;
 }
 
 QMenuBar::item {
     background-color: transparent;
-    padding: 4px 8px;
+    padding: 6px 12px;
 }
 
 QMenuBar::item:selected {
-    background-color: #4CAF50;
+    background-color: #00ADB5;
 }
 
 QStatusBar {
-    background-color: #3E3E3E;
+    background-color: #2D2D2D;
     color: #FFFFFF;
-    border-top: 1px solid #555555;
+    border-top: 1px solid #444444;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
     <string notr="true">QWidget {
-    background-color: #2E2E2E;
+    background-color: #1F1F1F;
 }</string>
    </property>
   </widget>
