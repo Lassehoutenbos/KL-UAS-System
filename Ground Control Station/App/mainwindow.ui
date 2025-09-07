@@ -6,21 +6,63 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1400</width>
+    <height>900</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>MainWindow</string>
+  <property name="minimumSize">
+   <size>
+    <width>1200</width>
+    <height>800</height>
+   </size>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
+  <property name="windowTitle">
+   <string>KL-UAS Ground Control Station</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>.</normaloff>.</iconset>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QMainWindow {
+    background-color: #2E2E2E;
+}
+
+QMenuBar {
+    background-color: #3E3E3E;
+    color: #FFFFFF;
+    border-bottom: 1px solid #555555;
+}
+
+QMenuBar::item {
+    background-color: transparent;
+    padding: 4px 8px;
+}
+
+QMenuBar::item:selected {
+    background-color: #4CAF50;
+}
+
+QStatusBar {
+    background-color: #3E3E3E;
+    color: #FFFFFF;
+    border-top: 1px solid #555555;
+}</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true">QWidget {
+    background-color: #2E2E2E;
+}</string>
+   </property>
+  </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
-     <height>17</height>
+     <width>1400</width>
+     <height>22</height>
     </rect>
    </property>
   </widget>
