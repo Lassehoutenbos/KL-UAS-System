@@ -11,9 +11,93 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>KL-UAS GCS</string>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QGroupBox" name="mapGroup">
+      <property name="title">
+       <string>Map</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QGraphicsView" name="mapView"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="rightLayout">
+      <item>
+       <widget class="QGroupBox" name="connectionGroup">
+        <property name="title">
+         <string>Connection</string>
+        </property>
+        <layout class="QHBoxLayout" name="connectionLayout">
+         <item>
+          <widget class="QLabel" name="statusLabel">
+           <property name="text">
+            <string>Disconnected</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="connectButton">
+           <property name="text">
+            <string>Connect</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="disconnectButton">
+           <property name="text">
+            <string>Disconnect</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="telemetryGroup">
+        <property name="title">
+         <string>Telemetry</string>
+        </property>
+        <layout class="QVBoxLayout" name="telemetryLayout">
+         <item>
+          <widget class="QPlainTextEdit" name="telemetryView"/>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="controlsGroup">
+        <property name="title">
+         <string>Controls</string>
+        </property>
+        <layout class="QHBoxLayout" name="controlsLayout">
+         <item>
+          <widget class="QPushButton" name="takeoffButton">
+           <property name="text">
+            <string>Takeoff</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="landButton">
+           <property name="text">
+            <string>Land</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
