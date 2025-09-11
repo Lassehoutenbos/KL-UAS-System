@@ -39,7 +39,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F13`
 - **Function**: General purpose control function
-- **Icon**: <img src="Sticker/Icons/home-import-outline.svg" width="24" height="24" alt="Home Icon"> - Return to Home
+- **Icon**: <img src="Sticker/Icons/home-import-outline.svg" width="24" height="24" alt="Home Icon" style="filter: invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);"> - Return to Home
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -51,7 +51,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F14`
 - **Function**: General purpose control function
-- **Icon**: <img src="Sticker/Icons/play.svg" width="24" height="24" alt="Play Icon"> - Mission Start/Resume
+- **Icon**: <img src="Sticker/Icons/play.svg" width="24" height="24" alt="Play Icon" style="filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);"> - Mission Start/Resume
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -63,7 +63,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F15`
 - **Function**: General purpose control function
-- **Icon**: <img src="Sticker/Icons/stop.svg" width="24" height="24" alt="Stop Icon"> - Mission Stop/Pause
+- **Icon**: <img src="Sticker/Icons/stop.svg" width="24" height="24" alt="Stop Icon" style="filter: invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);"> - Mission Stop/Pause
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -75,7 +75,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Toggle switch (maintains state)
 - **HID Command**: `KEY_F16`
 - **Function**: Persistent state control function
-- **Icon**: <img src="Sticker/Icons/satellite-uplink.svg" width="24" height="24" alt="Satellite Icon"> - GPS/Navigation Mode Toggle
+- **Icon**: <img src="Sticker/Icons/satellite-uplink.svg" width="24" height="24" alt="Satellite Icon" style="filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);"> - GPS/Navigation Mode Toggle
 - **LED Behavior**:
   - ON (toggled active): Green/Blue color
   - OFF (toggled inactive): Red/dimmed color
@@ -90,7 +90,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F17`
 - **Function**: General purpose control function
-- **Icon**: <img src="Sticker/Icons/arrow-left-bold.svg" width="24" height="24" alt="Arrow Left Icon"> - Previous Waypoint/Function
+- **Icon**: <img src="Sticker/Icons/arrow-left-bold.svg" width="24" height="24" alt="Arrow Left Icon" style="filter: invert(20%) sepia(77%) saturate(1542%) hue-rotate(266deg) brightness(99%) contrast(105%);"> - Previous Waypoint/Function
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -102,7 +102,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F18`
 - **Function**: General purpose control function
-- **Icon**: <img src="Sticker/Icons/arrow-right-bold.svg" width="24" height="24" alt="Arrow Right Icon"> - Next Waypoint/Function
+- **Icon**: <img src="Sticker/Icons/arrow-right-bold.svg" width="24" height="24" alt="Arrow Right Icon" style="filter: invert(20%) sepia(77%) saturate(1542%) hue-rotate(266deg) brightness(99%) contrast(105%);"> - Next Waypoint/Function
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -116,7 +116,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F19`
 - **Function**: First stage payload arming
-- **Icon**: <img src="Sticker/Icons/numeric-1-box-outline.svg" width="24" height="24" alt="Numeric 1 Icon"> - Payload Arm Stage 1
+- **Icon**: <img src="Sticker/Icons/numeric-1-box-outline.svg" width="24" height="24" alt="Numeric 1 Icon" style="filter: invert(85%) sepia(8%) saturate(3157%) hue-rotate(4deg) brightness(99%) contrast(93%);"> - Payload Arm Stage 1
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -130,7 +130,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F20`
 - **Function**: Second stage payload arming
-- **Icon**: <img src="Sticker/Icons/numeric-2-box-outline.svg" width="24" height="24" alt="Numeric 2 Icon"> - Payload Arm Stage 2
+- **Icon**: <img src="Sticker/Icons/numeric-2-box-outline.svg" width="24" height="24" alt="Numeric 2 Icon" style="filter: invert(85%) sepia(8%) saturate(3157%) hue-rotate(4deg) brightness(99%) contrast(93%);"> - Payload Arm Stage 2
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -144,7 +144,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F21`
 - **Function**: Primary payload operation control
-- **Icon**: <img src="Sticker/Icons/drone.svg" width="24" height="24" alt="Drone Icon"> - Payload Deploy/Release
+- **Icon**: <img src="Sticker/Icons/drone.svg" width="24" height="24" alt="Drone Icon" style="filter: invert(13%) sepia(94%) saturate(1352%) hue-rotate(87deg) brightness(119%) contrast(115%);"> - Payload Deploy/Release
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -159,7 +159,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F22`
 - **Function**: Emergency or secondary payload function
-- **Icon**: <img src="Sticker/Icons/camera-metering-matrix.svg" width="24" height="24" alt="Camera Icon"> - Camera Control/Secondary Function
+- **Icon**: <img src="Sticker/Icons/camera-metering-matrix.svg" width="24" height="24" alt="Camera Icon" style="filter: invert(20%) sepia(77%) saturate(1542%) hue-rotate(266deg) brightness(99%) contrast(105%);"> - Camera Control/Secondary Function
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -173,7 +173,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Key switch (maintained position)
 - **HID Command**: None (internal system control)
 - **Function**: Master system enable/disable
-- **Icon**: <img src="Sticker/Icons/lightning-bolt.svg" width="24" height="24" alt="Lightning Bolt Icon"> - System Power/Lock Control
+- **Icon**: <img src="Sticker/Icons/lightning-bolt.svg" width="24" height="24" alt="Lightning Bolt Icon" style="filter: invert(85%) sepia(68%) saturate(4328%) hue-rotate(4deg) brightness(101%) contrast(101%);"> - System Power/Lock Control
 - **Behavior**:
   - **Key Inserted & Turned (HIGH)**:
     - Unlocks system
@@ -234,13 +234,13 @@ if(sw8_pressed && sw6_armed && sw7_armed && !isLocked && isConfirmed) {
 
 | Switch | Pin | Type | HID Command | Function | Icon |
 |--------|-----|------|-------------|----------|------|
-| SW0 | PINIO_SW0 | Momentary | KEY_F13 | Return to Home | <img src="Sticker/Icons/home-import-outline.svg" width="20" height="20" alt="Home"> |
-| SW3 | PINIO_SW3 | Toggle | KEY_F16 | GPS/Navigation Mode | <img src="Sticker/Icons/satellite-uplink.svg" width="20" height="20" alt="Satellite"> |
-| SW6 | PINIO_SW6 | Momentary | KEY_F19 | AUX 1 (Worklight) | <img src="Sticker/Icons/numeric-1-box-outline.svg" width="20" height="20" alt="Numeric 1"> |
-| SW7 | PINIO_SW7 | Momentary | KEY_F20 | AUX 2 | <img src="Sticker/Icons/numeric-2-box-outline.svg" width="20" height="20" alt="Numeric 2"> |
-| SW8 | PINIO_SW8 | Momentary | KEY_F21 | Payload Deploy | <img src="Sticker/Icons/drone.svg" width="20" height="20" alt="Drone"> |
-| SW9 | PINIO_SW9 | Momentary | KEY_F22 | Camera/Secondary | <img src="Sticker/Icons/camera-metering-matrix.svg" width="20" height="20" alt="Camera"> |
-| Key | PINIO_KEY | Key Switch | None | System Lock/Unlock | <img src="Sticker/Icons/lightning-bolt.svg" width="20" height="20" alt="Lightning"> |
+| SW0 | PINIO_SW0 | Momentary | KEY_F13 | Return to Home | <img src="Sticker/Icons/home-import-outline.svg" width="20" height="20" alt="Home" style="filter: invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);"> |
+| SW3 | PINIO_SW3 | Toggle | KEY_F16 | GPS/Navigation Mode | <img src="Sticker/Icons/satellite-uplink.svg" width="20" height="20" alt="Satellite" style="filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);"> |
+| SW6 | PINIO_SW6 | Momentary | KEY_F19 | AUX 1 (Worklight) | <img src="Sticker/Icons/numeric-1-box-outline.svg" width="20" height="20" alt="Numeric 1" style="filter: invert(85%) sepia(8%) saturate(3157%) hue-rotate(4deg) brightness(99%) contrast(93%);"> |
+| SW7 | PINIO_SW7 | Momentary | KEY_F20 | AUX 2 | <img src="Sticker/Icons/numeric-2-box-outline.svg" width="20" height="20" alt="Numeric 2" style="filter: invert(85%) sepia(8%) saturate(3157%) hue-rotate(4deg) brightness(99%) contrast(93%);"> |
+| SW8 | PINIO_SW8 | Momentary | KEY_F21 | Payload Deploy | <img src="Sticker/Icons/drone.svg" width="20" height="20" alt="Drone" style="filter: invert(13%) sepia(94%) saturate(1352%) hue-rotate(87deg) brightness(119%) contrast(115%);"> |
+| SW9 | PINIO_SW9 | Momentary | KEY_F22 | Camera/Secondary | <img src="Sticker/Icons/camera-metering-matrix.svg" width="20" height="20" alt="Camera" style="filter: invert(20%) sepia(77%) saturate(1542%) hue-rotate(266deg) brightness(99%) contrast(105%);"> |
+| Key | PINIO_KEY | Key Switch | None | System Lock/Unlock | <img src="Sticker/Icons/lightning-bolt.svg" width="20" height="20" alt="Lightning" style="filter: invert(85%) sepia(68%) saturate(4328%) hue-rotate(4deg) brightness(101%) contrast(101%);"> |
 
 ## Raspberry Pi Integration
 
@@ -250,11 +250,11 @@ The Raspberry Pi receives these function key presses as standard keyboard input 
 
 The control panel also includes several safety and warning symbols from the Icons directory:
 
-- <img src="/Sticker/Icons/ElectricDanger.svg" width="24" height="24" alt="Electric Danger"> **Electric Danger**: High voltage warning symbol
-- <img src="Sticker/Icons/ISO_7010_W017.svg" width="24" height="24" alt="ISO Warning"> **ISO 7010 W017**: General warning symbol
-- <img src="Sticker/Icons/ISO_7010_W037_warning;_injury_from_automated_or_remote-controlled_vehicles.svg" width="24" height="24" alt="Remote Vehicle Warning"> **ISO 7010 W037**: Warning about injury from automated/remote-controlled vehicles
-- <img src="Sticker/Icons/Radio_waves_hazard_symbol.svg" width="24" height="24" alt="Radio Waves Hazard"> **Radio Waves Hazard**: RF radiation warning
-- <img src="Sticker/Icons/ev-station.svg" width="24" height="24" alt="EV Station"> **EV Station**: Electric vehicle charging symbol
+- <img src="Sticker/Icons/ElectricDanger.svg" width="24" height="24" alt="Electric Danger" style="filter: invert(85%) sepia(68%) saturate(4328%) hue-rotate(4deg) brightness(101%) contrast(101%);"> **Electric Danger**: High voltage warning symbol
+- <img src="Sticker/Icons/ISO_7010_W017.svg" width="24" height="24" alt="ISO Warning" style="filter: invert(85%) sepia(68%) saturate(4328%) hue-rotate(4deg) brightness(101%) contrast(101%);"> **ISO 7010 W017**: General warning symbol
+- <img src="Sticker/Icons/ISO_7010_W037_warning;_injury_from_automated_or_remote-controlled_vehicles.svg" width="24" height="24" alt="Remote Vehicle Warning" style="filter: invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);"> **ISO 7010 W037**: Warning about injury from automated/remote-controlled vehicles
+- <img src="Sticker/Icons/Radio_waves_hazard_symbol.svg" width="24" height="24" alt="Radio Waves Hazard" style="filter: invert(20%) sepia(77%) saturate(1542%) hue-rotate(266deg) brightness(99%) contrast(105%);"> **Radio Waves Hazard**: RF radiation warning
+- <img src="Sticker/Icons/ev-station.svg" width="24" height="24" alt="EV Station" style="filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);"> **EV Station**: Electric vehicle charging symbol
 
 ## Failsafe Features
 

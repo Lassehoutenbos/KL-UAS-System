@@ -57,7 +57,7 @@ The bottom panel contains the main electronics for the control interface:
 
 The ground control station features a custom PCB design with dedicated controls for drone operations, mission planning, and real-time telemetry monitoring.
 
-[Button descriptions](Ground Control Station/GCS_Button_Mapping.md)
+[Switches](Ground Control Station/GCS_Button_Mapping.md)
 
 ### Disclaimer
 
