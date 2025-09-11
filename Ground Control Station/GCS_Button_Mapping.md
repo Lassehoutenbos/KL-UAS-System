@@ -39,7 +39,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F13`
 - **Function**: General purpose control function
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/home-import-outline.svg" width="24" height="24" alt="Home Icon"> - Return to Home
+- **Icon**: <img src="Sticker/Icons/home-import-outline.svg" width="24" height="24" alt="Home Icon"> - Return to Home
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -51,7 +51,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F14`
 - **Function**: General purpose control function
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/play.svg" width="24" height="24" alt="Play Icon"> - Mission Start/Resume
+- **Icon**: <img src="Sticker/Icons/play.svg" width="24" height="24" alt="Play Icon"> - Mission Start/Resume
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -63,7 +63,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F15`
 - **Function**: General purpose control function
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/stop.svg" width="24" height="24" alt="Stop Icon"> - Mission Stop/Pause
+- **Icon**: <img src="Sticker/Icons/stop.svg" width="24" height="24" alt="Stop Icon"> - Mission Stop/Pause
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -75,7 +75,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Toggle switch (maintains state)
 - **HID Command**: `KEY_F16`
 - **Function**: Persistent state control function
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/satellite-uplink.svg" width="24" height="24" alt="Satellite Icon"> - GPS/Navigation Mode Toggle
+- **Icon**: <img src="Sticker/Icons/satellite-uplink.svg" width="24" height="24" alt="Satellite Icon"> - GPS/Navigation Mode Toggle
 - **LED Behavior**:
   - ON (toggled active): Green/Blue color
   - OFF (toggled inactive): Red/dimmed color
@@ -90,7 +90,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F17`
 - **Function**: General purpose control function
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/arrow-left-bold.svg" width="24" height="24" alt="Arrow Left Icon"> - Previous Waypoint/Function
+- **Icon**: <img src="Sticker/Icons/arrow-left-bold.svg" width="24" height="24" alt="Arrow Left Icon"> - Previous Waypoint/Function
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -102,7 +102,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F18`
 - **Function**: General purpose control function
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/arrow-right-bold.svg" width="24" height="24" alt="Arrow Right Icon"> - Next Waypoint/Function
+- **Icon**: <img src="Sticker/Icons/arrow-right-bold.svg" width="24" height="24" alt="Arrow Right Icon"> - Next Waypoint/Function
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -116,7 +116,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F19`
 - **Function**: First stage payload arming
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/numeric-1-box-outline.svg" width="24" height="24" alt="Numeric 1 Icon"> - Payload Arm Stage 1
+- **Icon**: <img src="Sticker/Icons/numeric-1-box-outline.svg" width="24" height="24" alt="Numeric 1 Icon"> - Payload Arm Stage 1
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -130,7 +130,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F20`
 - **Function**: Second stage payload arming
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/numeric-2-box-outline.svg" width="24" height="24" alt="Numeric 2 Icon"> - Payload Arm Stage 2
+- **Icon**: <img src="Sticker/Icons/numeric-2-box-outline.svg" width="24" height="24" alt="Numeric 2 Icon"> - Payload Arm Stage 2
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -144,7 +144,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F21`
 - **Function**: Primary payload operation control
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/drone.svg" width="24" height="24" alt="Drone Icon"> - Payload Deploy/Release
+- **Icon**: <img src="Sticker/Icons/drone.svg" width="24" height="24" alt="Drone Icon"> - Payload Deploy/Release
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -159,7 +159,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Momentary switch
 - **HID Command**: `KEY_F22`
 - **Function**: Emergency or secondary payload function
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/camera-metering-matrix.svg" width="24" height="24" alt="Camera Icon"> - Camera Control/Secondary Function
+- **Icon**: <img src="Sticker/Icons/camera-metering-matrix.svg" width="24" height="24" alt="Camera Icon"> - Camera Control/Secondary Function
 - **LED Behavior**:
   - ON (pressed): Green/Blue color
   - OFF (released): Red/dimmed color
@@ -173,7 +173,7 @@ This document provides a comprehensive mapping of all buttons and switches on th
 - **Type**: Key switch (maintained position)
 - **HID Command**: None (internal system control)
 - **Function**: Master system enable/disable
-- **Icon**: <img src="Ground%20Control%20Station/Sticker/Icons/lightning-bolt.svg" width="24" height="24" alt="Lightning Bolt Icon"> - System Power/Lock Control
+- **Icon**: <img src="Sticker/Icons/lightning-bolt.svg" width="24" height="24" alt="Lightning Bolt Icon"> - System Power/Lock Control
 - **Behavior**:
   - **Key Inserted & Turned (HIGH)**:
     - Unlocks system
@@ -234,13 +234,13 @@ if(sw8_pressed && sw6_armed && sw7_armed && !isLocked && isConfirmed) {
 
 | Switch | Pin | Type | HID Command | Function | Icon |
 |--------|-----|------|-------------|----------|------|
-| SW0 | PINIO_SW0 | Momentary | KEY_F13 | Return to Home | <img src="Ground%20Control%20Station/Sticker/Icons/home-import-outline.svg" width="20" height="20" alt="Home"> |
-| SW3 | PINIO_SW3 | Toggle | KEY_F16 | GPS/Navigation Mode | <img src="Ground%20Control%20Station/Sticker/Icons/satellite-uplink.svg" width="20" height="20" alt="Satellite"> |
-| SW6 | PINIO_SW6 | Momentary | KEY_F19 | AUX 1 (Worklight) | <img src="Ground%20Control%20Station/Sticker/Icons/numeric-1-box-outline.svg" width="20" height="20" alt="Numeric 1"> |
-| SW7 | PINIO_SW7 | Momentary | KEY_F20 | AUX 2 | <img src="Ground%20Control%20Station/Sticker/Icons/numeric-2-box-outline.svg" width="20" height="20" alt="Numeric 2"> |
-| SW8 | PINIO_SW8 | Momentary | KEY_F21 | Payload Deploy | <img src="Ground%20Control%20Station/Sticker/Icons/drone.svg" width="20" height="20" alt="Drone"> |
-| SW9 | PINIO_SW9 | Momentary | KEY_F22 | Camera/Secondary | <img src="Ground%20Control%20Station/Sticker/Icons/camera-metering-matrix.svg" width="20" height="20" alt="Camera"> |
-| Key | PINIO_KEY | Key Switch | None | System Lock/Unlock | <img src="Ground%20Control%20Station/Sticker/Icons/lightning-bolt.svg" width="20" height="20" alt="Lightning"> |
+| SW0 | PINIO_SW0 | Momentary | KEY_F13 | Return to Home | <img src="Sticker/Icons/home-import-outline.svg" width="20" height="20" alt="Home"> |
+| SW3 | PINIO_SW3 | Toggle | KEY_F16 | GPS/Navigation Mode | <img src="Sticker/Icons/satellite-uplink.svg" width="20" height="20" alt="Satellite"> |
+| SW6 | PINIO_SW6 | Momentary | KEY_F19 | AUX 1 (Worklight) | <img src="Sticker/Icons/numeric-1-box-outline.svg" width="20" height="20" alt="Numeric 1"> |
+| SW7 | PINIO_SW7 | Momentary | KEY_F20 | AUX 2 | <img src="Sticker/Icons/numeric-2-box-outline.svg" width="20" height="20" alt="Numeric 2"> |
+| SW8 | PINIO_SW8 | Momentary | KEY_F21 | Payload Deploy | <img src="Sticker/Icons/drone.svg" width="20" height="20" alt="Drone"> |
+| SW9 | PINIO_SW9 | Momentary | KEY_F22 | Camera/Secondary | <img src="Sticker/Icons/camera-metering-matrix.svg" width="20" height="20" alt="Camera"> |
+| Key | PINIO_KEY | Key Switch | None | System Lock/Unlock | <img src="Sticker/Icons/lightning-bolt.svg" width="20" height="20" alt="Lightning"> |
 
 ## Raspberry Pi Integration
 
@@ -250,11 +250,11 @@ The Raspberry Pi receives these function key presses as standard keyboard input 
 
 The control panel also includes several safety and warning symbols from the Icons directory:
 
-- <img src="Ground%20Control%20Station/Sticker/Icons/ElectricDanger.svg" width="24" height="24" alt="Electric Danger"> **Electric Danger**: High voltage warning symbol
-- <img src="Ground%20Control%20Station/Sticker/Icons/ISO_7010_W017.svg" width="24" height="24" alt="ISO Warning"> **ISO 7010 W017**: General warning symbol
-- <img src="Ground%20Control%20Station/Sticker/Icons/ISO_7010_W037_warning;_injury_from_automated_or_remote-controlled_vehicles.svg" width="24" height="24" alt="Remote Vehicle Warning"> **ISO 7010 W037**: Warning about injury from automated/remote-controlled vehicles
-- <img src="Ground%20Control%20Station/Sticker/Icons/Radio_waves_hazard_symbol.svg" width="24" height="24" alt="Radio Waves Hazard"> **Radio Waves Hazard**: RF radiation warning
-- <img src="Ground%20Control%20Station/Sticker/Icons/ev-station.svg" width="24" height="24" alt="EV Station"> **EV Station**: Electric vehicle charging symbol
+- <img src="/Sticker/Icons/ElectricDanger.svg" width="24" height="24" alt="Electric Danger"> **Electric Danger**: High voltage warning symbol
+- <img src="Sticker/Icons/ISO_7010_W017.svg" width="24" height="24" alt="ISO Warning"> **ISO 7010 W017**: General warning symbol
+- <img src="Sticker/Icons/ISO_7010_W037_warning;_injury_from_automated_or_remote-controlled_vehicles.svg" width="24" height="24" alt="Remote Vehicle Warning"> **ISO 7010 W037**: Warning about injury from automated/remote-controlled vehicles
+- <img src="Sticker/Icons/Radio_waves_hazard_symbol.svg" width="24" height="24" alt="Radio Waves Hazard"> **Radio Waves Hazard**: RF radiation warning
+- <img src="Sticker/Icons/ev-station.svg" width="24" height="24" alt="EV Station"> **EV Station**: Electric vehicle charging symbol
 
 ## Failsafe Features
 
