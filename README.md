@@ -9,6 +9,10 @@ regulations.
 
 This is a custom-built quadcopter featuring a SpeedyBee F7 V3 flight controller stack with INAV firmware. The drone is equipped with 10-inch folding propellers powered by four Emax GT2218 1100KV brushless motors, providing flight stability and endurance. With its powerful motor configuration, the aircraft can lift a considerable amount of weight, making it suitable for payload missions and extended flight operations. It includes advanced features such as optical flow and LiDAR sensors for positioning, GPS with compass for navigation, and an integrated FPV system with Walksnail Avatar. The aircraft is designed for autonomous flight systems, mission planning, and drone operations.
 
+## Documentation site
+
+The project documentation is published with [GitHub Pages](https://pages.github.com/) from the [`docs/`](docs/) folder. Once Pages is enabled for the repository, the site will be available at `https://<your-github-username>.github.io/KL-UAS-System/` and provides quick access to the hardware overview and ground control station details.
+
 ## Parts list
 
 - [4x Emax GT2218 1100KV brushless motor](https://emaxmodel.com/products/gt2218)
