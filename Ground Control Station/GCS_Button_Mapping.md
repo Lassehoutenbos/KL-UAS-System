@@ -1,8 +1,5 @@
 # Ground Control Station - Button Mapping Documentation
 
-> [!CAUTION]
-> Switch number do not correspond yet, please confirm IO pins and switch number.
-
 ## Overview
 
 This document provides a comprehensive mapping of all buttons and switches on the Ground Control Station (GCS) bottom panel, including their specific functions and the HID commands sent to the Raspberry Pi.
@@ -232,15 +229,19 @@ if(sw8_pressed && sw6_armed && sw7_armed && !isLocked && isConfirmed) {
 
 ## Function Key Assignment Summary 
 
-| Switch | Pin | Type | HID Command | Function | Icon |
-|--------|-----|------|-------------|----------|------|
-| SW0 | PINIO_SW0 | Momentary | KEY_F13 | Return to Home | <img src="Sticker/Icons/home-import-outline.svg" width="20" height="20" alt="Home" style="filter: invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);"> |
-| SW3 | PINIO_SW3 | Toggle | KEY_F16 | GPS/Navigation Mode | <img src="Sticker/Icons/satellite-uplink.svg" width="20" height="20" alt="Satellite" style="filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);"> |
-| SW6 | PINIO_SW6 | Momentary | KEY_F19 | AUX 1 (Worklight) | <img src="Sticker/Icons/numeric-1-box-outline.svg" width="20" height="20" alt="Numeric 1" style="filter: invert(85%) sepia(8%) saturate(3157%) hue-rotate(4deg) brightness(99%) contrast(93%);"> |
-| SW7 | PINIO_SW7 | Momentary | KEY_F20 | AUX 2 | <img src="Sticker/Icons/numeric-2-box-outline.svg" width="20" height="20" alt="Numeric 2" style="filter: invert(85%) sepia(8%) saturate(3157%) hue-rotate(4deg) brightness(99%) contrast(93%);"> |
-| SW8 | PINIO_SW8 | Momentary | KEY_F21 | Payload Deploy | <img src="Sticker/Icons/drone.svg" width="20" height="20" alt="Drone" style="filter: invert(13%) sepia(94%) saturate(1352%) hue-rotate(87deg) brightness(119%) contrast(115%);"> |
-| SW9 | PINIO_SW9 | Momentary | KEY_F22 | Camera/Secondary | <img src="Sticker/Icons/camera-metering-matrix.svg" width="20" height="20" alt="Camera" style="filter: invert(20%) sepia(77%) saturate(1542%) hue-rotate(266deg) brightness(99%) contrast(105%);"> |
-| Key | PINIO_KEY | Key Switch | None | System Lock/Unlock | <img src="Sticker/Icons/lightning-bolt.svg" width="20" height="20" alt="Lightning" style="filter: invert(85%) sepia(68%) saturate(4328%) hue-rotate(4deg) brightness(101%) contrast(101%);"> |
+| Switch | Pin | Pin Value | Type | HID Command | Function | Icon |
+|--------|-----|-----------|------|-------------|----------|------|
+| SW0 | PINIO_SW0 | 8 | Momentary | KEY_F13 | Return to Home | <img src="Sticker/Icons/home-import-outline.svg" width="20" height="20" alt="Home" style="filter: invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);"> |
+| SW1 | PINIO_SW1 | 9 | Momentary | KEY_F14 | Mission Start/Resume | <img src="Sticker/Icons/play.svg" width="20" height="20" alt="Play" style="filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);"> |
+| SW2 | PINIO_SW2 | 10 | Momentary | KEY_F15 | Mission Stop/Pause | <img src="Sticker/Icons/stop.svg" width="20" height="20" alt="Stop" style="filter: invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);"> |
+| SW3 | PINIO_SW3 | 11 | Toggle | KEY_F16 | GPS/Navigation Mode | <img src="Sticker/Icons/satellite-uplink.svg" width="20" height="20" alt="Satellite" style="filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);"> |
+| SW4 | PINIO_SW4 | 12 | Momentary | KEY_F17 | Previous Waypoint | <img src="Sticker/Icons/arrow-left-bold.svg" width="20" height="20" alt="Arrow Left" style="filter: invert(20%) sepia(77%) saturate(1542%) hue-rotate(266deg) brightness(99%) contrast(105%);"> |
+| SW5 | PINIO_SW5 | 13 | Momentary | KEY_F18 | Next Waypoint | <img src="Sticker/Icons/arrow-right-bold.svg" width="20" height="20" alt="Arrow Right" style="filter: invert(20%) sepia(77%) saturate(1542%) hue-rotate(266deg) brightness(99%) contrast(105%);"> |
+| SW6 | PINIO_SW6 | 14 | Momentary | KEY_F19 | Payload Arm Stage 1 | <img src="Sticker/Icons/numeric-1-box-outline.svg" width="20" height="20" alt="Numeric 1" style="filter: invert(85%) sepia(8%) saturate(3157%) hue-rotate(4deg) brightness(99%) contrast(93%);"> |
+| SW7 | PINIO_SW7 | 15 | Momentary | KEY_F20 | Payload Arm Stage 2 | <img src="Sticker/Icons/numeric-2-box-outline.svg" width="20" height="20" alt="Numeric 2" style="filter: invert(85%) sepia(8%) saturate(3157%) hue-rotate(4deg) brightness(99%) contrast(93%);"> |
+| SW8 | PINIO_SW8 | 6 | Momentary | KEY_F21 | Payload Deploy/Release | <img src="Sticker/Icons/drone.svg" width="20" height="20" alt="Drone" style="filter: invert(13%) sepia(94%) saturate(1352%) hue-rotate(87deg) brightness(119%) contrast(115%);"> |
+| SW9 | PINIO_SW9 | 7 | Momentary | KEY_F22 | Camera Control/Secondary | <img src="Sticker/Icons/camera-metering-matrix.svg" width="20" height="20" alt="Camera" style="filter: invert(20%) sepia(77%) saturate(1542%) hue-rotate(266deg) brightness(99%) contrast(105%);"> |
+| Key | PINIO_KEY | 5 | Key Switch | None | System Lock/Unlock | <img src="Sticker/Icons/lightning-bolt.svg" width="20" height="20" alt="Lightning" style="filter: invert(85%) sepia(68%) saturate(4328%) hue-rotate(4deg) brightness(101%) contrast(101%);"> |
 
 ## Raspberry Pi Integration
 
