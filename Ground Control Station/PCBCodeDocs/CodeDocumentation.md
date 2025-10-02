@@ -1,9 +1,7 @@
 # Code Documentation
 
 This document provides an overview of the source code found in the
-`Ground Control Station/BottomPanelCode` directory. It is intended as a
-learning resource for students contributing to the project. All code is
-shared as is with no warranty.
+`Ground Control Station/BottomPanelCode` directory.
 
 ## File Structure
 
@@ -56,6 +54,7 @@ class Blinker {
   void start();
 };
 ```
+
 — `Blinker.h` lines 1–22.
 
 ```cpp
@@ -69,6 +68,7 @@ void Blinker::update() {
   }
 }
 ```
+
 — `Blinker.cpp` lines 12–22.
 
 ## SwitchHandler
@@ -87,6 +87,7 @@ namespace SwitchHandler {
   void updateAll();
 }
 ```
+
 — `SwitchHandler.h` lines 1–23.
 
 Switch states are read either via the IO expander or directly from GPIO depending on debug options. The `updateAll()` function iterates over all registered `Switch` objects.
@@ -107,6 +108,7 @@ void begin() {
   // remaining switches configured similarly...
 }
 ```
+
 — `Switches.cpp` lines 10–99.
 
 Function `allSwitchesLow()` checks that every switch connected to the IO expander is in the low position before powering other devices.
@@ -127,6 +129,7 @@ void setupPins() {
   // ...
 }
 ```
+
 — `pins.cpp` lines 1–41.
 
 ## leds
@@ -145,6 +148,7 @@ struct SwitchLedMapping {
   uint8_t stripEndIndex;
 };
 ```
+
 — `leds.h` lines 8–31.
 
 Functions include `setupLeds()`, `setLed()`, `startup()` for the boot animation and `switchPositionAlert()` which now quickly blinks pressed switches and pulses unpressed ones.
@@ -162,6 +166,7 @@ class ScreenPowerSwitch {
   void showLockScreen();   // static lock icon
 };
 ```
+
 — `ScreenPowerSwitch.h` lines 15–23.
 
 The implementation draws simple icons for battery and plug sources, animates a selector arm and simulates voltage values for demonstration purposes. See `ScreenPowerSwitch.cpp` for details of the drawing and animation logic.
@@ -175,4 +180,3 @@ The repository also contains Arduino example code under `Ground Control Station/
 This documentation is provided for reference only. Use the code
 responsibly and ensure your hardware meets all applicable safety
 requirements.
-
