@@ -3,92 +3,946 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Drone Project</title>
+  <title>KL UAS System</title>
   <style>
+    :root {
+      color-scheme: dark;
+      --bg-primary: #04070d;
+      --bg-secondary: #0d1117;
+      --surface: rgba(13, 17, 23, 0.7);
+      --surface-elevated: rgba(22, 27, 34, 0.85);
+      --accent: #58a6ff;
+      --accent-soft: rgba(88, 166, 255, 0.12);
+      --accent-strong: #1f6feb;
+      --success: #2ea043;
+      --text-primary: #e6edf3;
+      --text-secondary: #9ba6b4;
+      --border: rgba(177, 186, 196, 0.2);
+      --shadow: 0 24px 80px rgba(10, 22, 39, 0.55);
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
-      background: #0d1117;
-      color: #e6edf3;
+      background: radial-gradient(circle at top, rgba(31, 111, 235, 0.3), transparent 60%),
+                  radial-gradient(circle at 20% 20%, rgba(46, 160, 67, 0.15), transparent 55%),
+                  var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    header.hero {
+      position: relative;
+      padding: 0 1.5rem 6rem;
+      overflow: hidden;
+      background: linear-gradient(160deg, rgba(31, 111, 235, 0.55), rgba(4, 7, 13, 0.6) 55%, rgba(4, 7, 13, 0.9));
+      isolation: isolate;
+    }
+
+    header.hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 20%, rgba(88, 166, 255, 0.25), transparent 55%),
+                  radial-gradient(circle at 80% 0%, rgba(46, 160, 67, 0.2), transparent 60%);
+      z-index: -2;
+    }
+
+    header.hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 60% 20%, rgba(15, 15, 45, 0.45), transparent 55%);
+      z-index: -1;
+      mix-blend-mode: screen;
+    }
+
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.5rem 0 3rem;
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(180deg, rgba(4, 7, 13, 0.85), rgba(4, 7, 13, 0));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      z-index: 10;
+    }
+
+    .navbar a {
+      text-decoration: none;
+    }
+
+    .brand {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .brand span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.75rem;
+      background: linear-gradient(135deg, rgba(31, 111, 235, 0.9), rgba(35, 134, 54, 0.7));
+      box-shadow: var(--shadow);
+      font-size: 1.4rem;
+    }
+
+    .nav-group {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .nav-links {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0;
+      margin: 0;
+    }
+
+    .nav-links a {
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding: 0.6rem 0.85rem;
+      border-radius: 999px;
+      color: var(--text-secondary);
+      transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a:focus-visible {
+      color: var(--text-primary);
+      background: var(--accent-soft);
+      transform: translateY(-1px);
+    }
+
+    .cta-link {
+      padding: 0.6rem 1.1rem;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      border: none;
+    }
+
+    .cta-link:hover,
+    .cta-link:focus-visible {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 30px rgba(31, 111, 235, 0.35);
+    }
+
+    .nav-toggle {
+      display: none;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 0.75rem;
+      padding: 0.55rem;
+      cursor: pointer;
+    }
+
+    .nav-toggle span {
+      display: block;
+      width: 1.25rem;
+      height: 2px;
+      margin: 0.25rem 0;
+      background: var(--text-primary);
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .hero-content {
+      max-width: 960px;
+      margin: 0 auto;
+      padding-bottom: 4rem;
       text-align: center;
     }
-    header {
-      padding: 3rem 1rem;
-      background: linear-gradient(135deg, #0366d6, #0d1117);
-    }
-    header h1 {
-      font-size: 2.5rem;
-      margin: 0;
-    }
-    header p {
-      font-size: 1.2rem;
-      color: #adbac7;
-    }
-    main {
-      padding: 2rem;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    section {
-      margin: 3rem 0;
-    }
-    h2 {
-      color: #58a6ff;
-    }
-    .btn {
-      display: inline-block;
-      padding: 0.8rem 1.2rem;
-      margin: 1rem 0;
-      background: #238636;
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: bold;
-    }
-    .btn:hover {
-      background: #2ea043;
-    }
-    footer {
-      background: #161b22;
-      padding: 1rem;
+
+    .tagline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      background: rgba(22, 27, 34, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      color: var(--text-secondary);
       font-size: 0.9rem;
-      margin-top: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-content h1 {
+      font-size: clamp(2.5rem, 6vw, 3.75rem);
+      margin: 0 0 1.5rem;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-content p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin: 0 auto 2.5rem;
+      max-width: 720px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.85rem 1.4rem;
+      border-radius: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--success), #4cce75);
+      color: #041007;
+    }
+
+    .btn.primary:hover,
+    .btn.primary:focus-visible {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 35px rgba(46, 160, 67, 0.35);
+    }
+
+    .btn.secondary {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: var(--text-primary);
+      background: rgba(22, 27, 34, 0.6);
+    }
+
+    .btn.secondary:hover,
+    .btn.secondary:focus-visible {
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    main {
+      padding: 0 1.5rem 5rem;
+    }
+
+    section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 4.5rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      scroll-margin-top: 6rem;
+    }
+
+    .section-heading {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      padding: 0.3rem 0.7rem;
+      background: rgba(88, 166, 255, 0.12);
+      border-radius: 999px;
+      margin-bottom: 1.5rem;
+    }
+
+    h2.section-title {
+      font-size: clamp(2rem, 4vw, 2.5rem);
+      margin: 0 0 1rem;
+    }
+
+    .section-subtitle {
+      color: var(--text-secondary);
+      max-width: 720px;
+      margin-bottom: 2.5rem;
+    }
+
+    .content-grid {
+      display: grid;
+      gap: 2.5rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .content-grid.single {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .feature-cards {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .card {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 1.25rem;
+      padding: 1.8rem;
+      box-shadow: 0 20px 50px rgba(4, 7, 13, 0.4);
+      transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(130deg, rgba(88, 166, 255, 0.15), transparent);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(88, 166, 255, 0.3);
+      box-shadow: 0 24px 60px rgba(31, 111, 235, 0.2);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.2rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+
+    .card .icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(88, 166, 255, 0.16);
+      color: var(--accent);
+      font-size: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .metrics {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+
+    .metric {
+      background: var(--surface-elevated);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 2rem;
+      color: var(--accent);
+      margin-bottom: 0.2rem;
+    }
+
+    .metric span {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 1.5rem;
+      border-left: 2px solid rgba(88, 166, 255, 0.2);
+      margin-left: 0.8rem;
+      padding-left: 1.5rem;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-left: 1rem;
+    }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -2.1rem;
+      top: 0.4rem;
+      width: 0.9rem;
+      height: 0.9rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      box-shadow: 0 0 0 6px rgba(88, 166, 255, 0.14);
+    }
+
+    .timeline-item h3 {
+      margin: 0 0 0.4rem;
+      font-size: 1.1rem;
+    }
+
+    .timeline-item span {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .stack-grid {
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .stack-tile {
+      border-radius: 1rem;
+      padding: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(13, 17, 23, 0.65);
+    }
+
+    .stack-tile h3 {
+      margin: 0 0 0.75rem;
+      font-size: 1.05rem;
+    }
+
+    .stack-tile ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .gallery-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .gallery-card {
+      background: rgba(13, 17, 23, 0.65);
+      border-radius: 1.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      min-height: 220px;
+      justify-content: center;
+    }
+
+    .gallery-card span {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .gallery-card p {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+
+    .contact-grid {
+      display: grid;
+      gap: 1.8rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .contact-card {
+      background: rgba(13, 17, 23, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1.2rem;
+      padding: 1.8rem;
+    }
+
+    .contact-card h3 {
+      margin-top: 0;
+    }
+
+    .contact-card a {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    footer {
+      background: rgba(4, 7, 13, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 3rem 1.5rem;
+    }
+
+    .footer-content {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+
+    .footer-links a:hover,
+    .footer-links a:focus-visible {
+      color: var(--text-primary);
+    }
+
+    .footer-bottom {
+      text-align: center;
+      margin-top: 2.5rem;
+      font-size: 0.85rem;
+      color: #6f7a89;
+    }
+
+    @media (max-width: 960px) {
+      .content-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      header.hero {
+        padding-bottom: 4rem;
+      }
+
+      .navbar {
+        position: static;
+        flex-wrap: wrap;
+        padding-bottom: 2rem;
+      }
+
+      .nav-group {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .cta-link {
+        display: none;
+      }
+
+      .nav-links {
+        position: absolute;
+        inset: 80px 1.5rem auto;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        border-radius: 1rem;
+        padding: 0.6rem;
+        background: rgba(4, 7, 13, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: var(--shadow);
+        transform-origin: top right;
+        transform: scale(0.9);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+      }
+
+      .nav-links.open {
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1);
+      }
+
+      .nav-links li {
+        width: 100%;
+      }
+
+      .nav-links a {
+        display: block;
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border-radius: 0.8rem;
+      }
+
+      .nav-toggle {
+        display: inline-flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0;
+      }
+
+      .nav-toggle[aria-expanded="true"] span:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+      }
+
+      .nav-toggle[aria-expanded="true"] span:nth-child(2) {
+        opacity: 0;
+      }
+
+      .nav-toggle[aria-expanded="true"] span:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
+      }
+
+      .hero-actions {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🚁 Drone Project</h1>
-    <p>Exploring custom-built drones, flight control, and autonomy</p>
+  <header class="hero">
+    <nav class="navbar">
+      <div class="nav-group">
+        <a class="brand" href="#top">
+          <span>🚁</span>
+          KL UAS System
+        </a>
+        <button class="nav-toggle" aria-expanded="false" aria-controls="primary-navigation">
+          <span class="sr-only">Toggle navigation</span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+      <ul class="nav-links" id="primary-navigation">
+        <li><a href="#about">About</a></li>
+        <li><a href="#features">Capabilities</a></li>
+        <li><a href="#stack">Tech Stack</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li><a href="#insights">Insights</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <a class="cta-link" href="https://github.com/YourUsername/your-drone-repo" target="_blank" rel="noreferrer">
+        View Repository ↗
+      </a>
+    </nav>
+
+    <div class="hero-content">
+      <span class="tagline">Open hardware • Autonomous flight • Mission ready</span>
+      <h1>Designing a next-generation unmanned aerial system</h1>
+      <p>
+        KL UAS System is a modular drone platform blending high-thrust propulsion, advanced flight control, and
+        intelligent sensing to deliver reliable autonomous flight for mapping, inspection, and cinematic capture missions.
+      </p>
+      <div class="hero-actions">
+        <a class="btn primary" href="#contact">Join the mission</a>
+        <a class="btn secondary" href="#features">Explore capabilities</a>
+      </div>
+    </div>
   </header>
 
   <main>
-    <section>
-      <h2>About</h2>
-      <p>
-        This project is about building and experimenting with drones using 
-        <strong>INAV/ArduPilot</strong>, custom hardware, and computer vision.
+    <section id="about">
+      <div class="section-heading">Mission Overview</div>
+      <h2 class="section-title">Purpose-built for reliable autonomous flight</h2>
+      <p class="section-subtitle">
+        The KL UAS program packages long-range performance, resilient communications, and a flexible ground control
+        station into a single cohesive ecosystem, enabling pilots to focus on high-value mission outcomes.
       </p>
+      <div class="content-grid">
+        <div>
+          <div class="metrics">
+            <div class="metric">
+              <strong>10"</strong>
+              <span>Carbon Cinelifter</span>
+            </div>
+            <div class="metric">
+              <strong>6K</strong>
+              <span>Imaging Payload</span>
+            </div>
+            <div class="metric">
+              <strong>35 min</strong>
+              <span>Endurance</span>
+            </div>
+            <div class="metric">
+              <strong>15 km</strong>
+              <span>Command Link</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="icon">🎯</div>
+          <h3>Operational focus</h3>
+          <p>
+            Built around INAV and ArduPilot flight stacks, the system emphasizes dependable controls, redundant power
+            distribution, and robust telemetry. Paired with a Linux-based ground station, it streamlines mission planning
+            from takeoff through data delivery.
+          </p>
+        </div>
+      </div>
     </section>
 
-    <section>
-      <h2>Features</h2>
-      <ul style="list-style: none; padding: 0;">
-        <li>⚡ 10-inch cinelifter drone</li>
-        <li>🧭 Optical flow & LiDAR integration</li>
-        <li>📡 Walksnail HD FPV</li>
-        <li>🖥️ Ground control via Raspberry Pi</li>
-      </ul>
+    <section id="features">
+      <div class="section-heading">Capabilities</div>
+      <h2 class="section-title">Integrated flight hardware and software</h2>
+      <p class="section-subtitle">
+        From stabilized cinematography to inspection routes, the airframe and electronics work together to maintain
+        smooth, responsive control and capture the data your mission demands.
+      </p>
+      <div class="feature-cards">
+        <div class="card">
+          <div class="icon">⚙️</div>
+          <h3>Custom propulsion</h3>
+          <p>
+            High-thrust 10-inch propulsion with tunable PID profiles ensures precise maneuvering even in challenging wind
+            conditions.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon">🛰️</div>
+          <h3>Sensor fusion</h3>
+          <p>
+            LiDAR, optical flow, and HD FPV video merge to provide situational awareness and accurate position holding.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon">🧠</div>
+          <h3>Onboard intelligence</h3>
+          <p>
+            Companion computer enables real-time perception, path planning, and AI-assisted decision-making on the edge.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon">📡</div>
+          <h3>Ground control</h3>
+          <p>
+            Raspberry&nbsp;Pi-based control station with mission planning software, secure radios, and custom dashboards for
+            telemetry.
+          </p>
+        </div>
+      </div>
     </section>
 
-    <section>
-      <h2>Resources</h2>
-      <a href="https://github.com/YourUsername/your-drone-repo" class="btn">View on GitHub</a>
+    <section id="stack">
+      <div class="section-heading">Technology Stack</div>
+      <h2 class="section-title">Hardware and software ecosystems</h2>
+      <p class="section-subtitle">
+        A curated blend of open-source projects and custom electronics provides the flexibility to experiment while
+        maintaining mission readiness.
+      </p>
+      <div class="stack-grid">
+        <div class="stack-tile">
+          <h3>Flight systems</h3>
+          <ul>
+            <li>INAV &amp; ArduPilot firmware with mission scripting</li>
+            <li>Redundant IMU and barometric sensing</li>
+            <li>GPS/GLONASS positioning with RTK readiness</li>
+          </ul>
+        </div>
+        <div class="stack-tile">
+          <h3>Electronics</h3>
+          <ul>
+            <li>High-efficiency ESC powertrain</li>
+            <li>Custom PCB power distribution and filtering</li>
+            <li>Walksnail HD FPV &amp; long-range radio links</li>
+          </ul>
+        </div>
+        <div class="stack-tile">
+          <h3>Ground station</h3>
+          <ul>
+            <li>Raspberry Pi mission computer with QGroundControl</li>
+            <li>Secure VPN and telemetry logging</li>
+            <li>Web-based dashboards for fleet monitoring</li>
+          </ul>
+        </div>
+        <div class="stack-tile">
+          <h3>Software</h3>
+          <ul>
+            <li>Python automation scripts and diagnostics</li>
+            <li>Computer vision pipelines for object tracking</li>
+            <li>GitHub Actions for firmware builds and tests</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <div class="section-heading">Roadmap</div>
+      <h2 class="section-title">Progress toward fully autonomous flight</h2>
+      <p class="section-subtitle">
+        Regular hardware validation and software upgrades ensure the platform is always ready for the next mission
+        profile.
+      </p>
+      <div class="timeline">
+        <div class="timeline-item">
+          <span>Q1 2025</span>
+          <h3>Flight controller integration</h3>
+          <p>Completed system bring-up with INAV, sensor calibration, and thrust tuning across operating weights.</p>
+        </div>
+        <div class="timeline-item">
+          <span>Q2 2025</span>
+          <h3>Ground station release</h3>
+          <p>Released Raspberry Pi ground station image with telemetry dashboards, mission planning tools, and failsafes.</p>
+        </div>
+        <div class="timeline-item">
+          <span>Q3 2025</span>
+          <h3>Autonomy toolkit</h3>
+          <p>Deploying computer vision-assisted navigation, obstacle avoidance, and automated cinematic flight profiles.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="insights">
+      <div class="section-heading">Mission Insights</div>
+      <h2 class="section-title">Design decisions that keep pilots confident</h2>
+      <p class="section-subtitle">
+        Each mission generates new learnings. These highlights summarize the engineering choices that give KL UAS its
+        edge.
+      </p>
+      <div class="gallery-grid">
+        <div class="gallery-card">
+          <span>Thermal management</span>
+          <p>Layered carbon chassis routes heat away from the ESC bank while preserving rigidity for cinematic payloads.</p>
+        </div>
+        <div class="gallery-card">
+          <span>Signal integrity</span>
+          <p>Shielded harnessing and isolated power rails keep sensor noise low, even when capturing high-bandwidth HD video.</p>
+        </div>
+        <div class="gallery-card">
+          <span>Mission resilience</span>
+          <p>Dual-battery support and automated return-to-home sequences guard against unexpected power or link losses.</p>
+        </div>
+        <div class="gallery-card">
+          <span>Field serviceability</span>
+          <p>Modular arms, quick-release payload mounts, and labeled wiring simplify repairs between sorties.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="section-heading">Connect</div>
+      <h2 class="section-title">Collaborate with the KL UAS team</h2>
+      <p class="section-subtitle">
+        Interested in contributing hardware expertise, writing automation scripts, or testing flight profiles? Reach out
+        and let us know how you'd like to collaborate.
+      </p>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <h3>Core maintainers</h3>
+          <p>Email us at <a href="mailto:uas-team@example.com">uas-team@example.com</a> with proposals or partnership ideas.</p>
+        </div>
+        <div class="contact-card">
+          <h3>Issue tracker</h3>
+          <p>
+            Report bugs or request features through our <a href="https://github.com/YourUsername/your-drone-repo/issues" target="_blank" rel="noreferrer">GitHub issue tracker</a> for rapid feedback.
+          </p>
+        </div>
+        <div class="contact-card">
+          <h3>Community chat</h3>
+          <p>Join the Discord community for live mission planning sessions and firmware update notifications.</p>
+        </div>
+      </div>
     </section>
   </main>
 
   <footer>
-    &copy; 2025 My Drone Project — Powered by GitHub Pages
+    <div class="footer-content">
+      <div class="footer-brand">
+        <strong>KL UAS System</strong>
+        <span>Modular drones for dependable autonomous missions.</span>
+      </div>
+      <div class="footer-links">
+        <strong>Explore</strong>
+        <a href="#about">About</a>
+        <a href="#features">Capabilities</a>
+        <a href="#stack">Tech Stack</a>
+      </div>
+      <div class="footer-links">
+        <strong>Resources</strong>
+        <a href="https://github.com/YourUsername/your-drone-repo" target="_blank" rel="noreferrer">Repository</a>
+        <a href="https://github.com/YourUsername/your-drone-repo/issues" target="_blank" rel="noreferrer">Issues</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+    <div class="footer-bottom">&copy; 2025 KL UAS System — Built with open-source innovation.</div>
   </footer>
+
+  <script>
+    const navToggle = document.querySelector('.nav-toggle');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (navToggle && navLinks) {
+      navToggle.addEventListener('click', () => {
+        const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
+        navToggle.setAttribute('aria-expanded', String(!isOpen));
+        navLinks.classList.toggle('open', !isOpen);
+      });
+
+      navLinks.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => {
+          navToggle.setAttribute('aria-expanded', 'false');
+          navLinks.classList.remove('open');
+        });
+      });
+    }
+  </script>
 </body>
 </html>
