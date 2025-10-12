@@ -109,6 +109,9 @@ namespace Switches {
                     // Record the start time of the press
                     sw6PressStartTime = currentTime;
                     sw6WasPressed = true;
+                    
+                    // Send HID command once when button is first pressed
+                    if(!isLocked && isConfirmed) BootKeyboard.write(KEY_F19);
                 }
                 
                 // Check for hold (dimming mode) - activate after 500ms hold
@@ -128,8 +131,7 @@ namespace Switches {
                     }
                 }
                 
-                // Still send HID command for payload arming if needed
-                if(!isLocked && isConfirmed) BootKeyboard.write(KEY_F19);
+                // Update payload arm state
                 armPayload1 = state;
             } else {
                 // Button released
