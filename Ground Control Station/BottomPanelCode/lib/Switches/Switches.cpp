@@ -213,6 +213,10 @@ namespace Switches {
                 digitalWrite(PC13, LOW);
                 isLocked = true;
                 isConfirmed = false;  // Reset confirmation when locking
+                
+                // Turn off worklight when locking
+                worklightState = WORKLIGHT_OFF;
+                updateWorklight();
             }
         });
         #endif
@@ -234,6 +238,10 @@ namespace Switches {
                 for(int i = 0; i < 10; i++) {
                    setLed(i, allOffValue);
                 }
+                
+                // Turn off worklight when locking
+                worklightState = WORKLIGHT_OFF;
+                updateWorklight();
             }
         });
         #endif
