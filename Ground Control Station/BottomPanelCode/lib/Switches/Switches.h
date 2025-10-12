@@ -16,6 +16,18 @@ namespace Switches {
     extern bool armPayload1;  // Payload arm state, initially not armed
     extern bool armPayload2;  // Payload arm state, initially not armed
 
+    // Worklight (reading light) state variables
+    enum WorklightState {
+        WORKLIGHT_OFF = 0,
+        WORKLIGHT_WHITE = 1,
+        WORKLIGHT_RED = 2
+    };
+    extern WorklightState worklightState;
+    extern unsigned long sw6PressStartTime;
+    extern bool sw6WasPressed;
+    extern uint8_t worklightBrightness;
+    extern unsigned long lastDimUpdate;
+
     // Initialise all switch callbacks and LEDs.
     void begin();
     // Poll all switches for state changes.
@@ -24,4 +36,6 @@ namespace Switches {
     bool allSwitchesLow();
     // Reset LEDs to their default off state.
     void setLedDefault(bool off = false);
+    // Update worklight based on current state
+    void updateWorklight();
 }

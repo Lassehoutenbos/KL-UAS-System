@@ -4,6 +4,7 @@
 #include "pins.h"
 #include <Arduino.h>
 #include "leds.h"
+#include "WarningPanel.h"
 
 // High level logic for reading all panel switches and providing HID outputs
 // as well as LED feedback.
@@ -23,6 +24,13 @@ namespace Switches {
     
     bool armPayload1 = false;  // Payload arm state, initially not armed
     bool armPayload2 = false;  // Payload arm state, initially not armed
+
+    // Worklight (reading light) state tracking
+    WorklightState worklightState = WORKLIGHT_OFF;
+    unsigned long sw6PressStartTime = 0;
+    bool sw6WasPressed = false;
+    uint8_t worklightBrightness = 255;  // Full brightness by default
+    unsigned long lastDimUpdate = 0;
 
     // Configure all switch callbacks and initial LED states.
     void begin() {
@@ -92,9 +100,72 @@ namespace Switches {
         });
 
         SwitchHandler::addSwitch(PINIO_SW6, [](bool state) {
-            if(state && !isLocked && isConfirmed) BootKeyboard.write(KEY_F19);  // Only respond when unlocked and confirmed
+            // SW6 controls the worklight (reading light) and also serves as payload arm
+            unsigned long currentTime = millis();
+            
+            if (state) {
+                // Button pressed
+                if (!sw6WasPressed) {
+                    // Record the start time of the press
+                    sw6PressStartTime = currentTime;
+                    sw6WasPressed = true;
+                    
+                    // Send HID command once when button is first pressed
+                    if(!isLocked && isConfirmed) BootKeyboard.write(KEY_F19);
+                }
+                
+                // Check for hold (dimming mode) - activate after 500ms hold
+                if (currentTime - sw6PressStartTime > 500 && worklightState != WORKLIGHT_OFF) {
+                    // Dimming mode - update brightness periodically
+                    if (currentTime - lastDimUpdate > 50) {  // Update every 50ms
+                        lastDimUpdate = currentTime;
+                        
+                        // Decrease brightness by 5 each update (wraps around at 0)
+                        if (worklightBrightness > 10) {
+                            worklightBrightness -= 5;
+                        } else {
+                            worklightBrightness = 255;  // Wrap to full brightness
+                        }
+                        
+                        updateWorklight();
+                    }
+                }
+                
+                // Update payload arm state
+                armPayload1 = state;
+            } else {
+                // Button released
+                if (sw6WasPressed) {
+                    unsigned long pressDuration = currentTime - sw6PressStartTime;
+                    
+                    // Only cycle state if it was a short press (< 500ms)
+                    if (pressDuration < 500) {
+                        // Cycle through states: OFF -> WHITE -> RED -> OFF
+                        switch (worklightState) {
+                            case WORKLIGHT_OFF:
+                                worklightState = WORKLIGHT_WHITE;
+                                worklightBrightness = 255;  // Reset to full brightness
+                                break;
+                            case WORKLIGHT_WHITE:
+                                worklightState = WORKLIGHT_RED;
+                                worklightBrightness = 255;  // Reset to full brightness
+                                break;
+                            case WORKLIGHT_RED:
+                                worklightState = WORKLIGHT_OFF;
+                                worklightBrightness = 255;  // Reset to full brightness
+                                break;
+                        }
+                        
+                        updateWorklight();
+                    }
+                    
+                    sw6WasPressed = false;
+                }
+                
+                armPayload1 = false;
+            }
+            
             // Set LED based on state only when unlocked
-            armPayload1 = state;  // Update payload arm state
             if(!isLocked){
                 setLed(6, state ? onColorValue : offColorValue);
                 setLed(8, state ? onColorValue : offColorValue, true);  // Also set SW8 LED to match SW6
@@ -144,6 +215,10 @@ namespace Switches {
                 digitalWrite(PC13, LOW);
                 isLocked = true;
                 isConfirmed = false;  // Reset confirmation when locking
+                
+                // Turn off worklight when locking
+                worklightState = WORKLIGHT_OFF;
+                updateWorklight();
             }
         });
         #endif
@@ -165,6 +240,10 @@ namespace Switches {
                 for(int i = 0; i < 10; i++) {
                    setLed(i, allOffValue);
                 }
+                
+                // Turn off worklight when locking
+                worklightState = WORKLIGHT_OFF;
+                updateWorklight();
             }
         });
         #endif
@@ -211,6 +290,29 @@ namespace Switches {
         allLow &= !IoExp.digitalRead(PINIO_SW9);
         return allLow;
         #endif
+    }
+
+    // Update worklight based on current state
+    void updateWorklight() {
+        uint32_t color = 0;
+        bool enabled = false;
+        
+        switch (worklightState) {
+            case WORKLIGHT_OFF:
+                enabled = false;
+                break;
+            case WORKLIGHT_WHITE:
+                enabled = true;
+                color = strip.Color(255, 255, 255);  // White
+                break;
+            case WORKLIGHT_RED:
+                enabled = true;
+                color = strip.Color(255, 0, 0);  // Red
+                break;
+        }
+        
+        // Update worklight through WarningPanel
+        warningPanel.setWorklight(enabled, 48, 70, worklightBrightness, color, false);
     }
 
 }
