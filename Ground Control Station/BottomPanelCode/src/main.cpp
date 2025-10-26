@@ -19,12 +19,11 @@ WarningCommunication warningComm(&warningPanel);
 static void uiTask(void *);
 static void tempTask(void *);
 static void warningTask(void *);
-static void blinkTask(void *);
 
 // Set up peripherals, create tasks and start the scheduler.
 void setup() {
   USB_Begin();  // Wrapper rond USBD_Init() + connect
-BootKeyboard.begin();  // Init HID class
+  BootKeyboard.begin();  // Init HID class
   setupPins();
   setupLeds();          // Initialize LED system first
   powerDisplay.begin();
@@ -70,6 +69,7 @@ static void uiTask(void *) {
 #endif
 
     Switches::update();
+    updateLeds();         // Update LED blinking states
     powerDisplay.update();
     vTaskDelay(pdMS_TO_TICKS(5));
   }
@@ -124,7 +124,7 @@ static void warningTask(void *) {
     } else if (maxTemp > 0.0f) {
       warningPanel.setWarning(TEMPERATURE_WARNING, WARNING_NORMAL, false);
     } else {
-      warningPanel.setWarning(TEMPERATURE_WARNING, WARNING_OFF, false);
+      warningPanel.setWarning(TEMPERATURE_WARNING, WARNING_CRITICAL, false);
     }
     
     // Set connection warning based on switch states
@@ -139,7 +139,20 @@ static void warningTask(void *) {
     } else {
       warningPanel.setDualWarning(WARNING_OFF, false);
     }
-    
+
+    // Set connection warning based on switch states
+    if (Switches::isLocked) {
+      warningPanel.setWarning(LOCK_WARNING, WARNING_CRITICAL, false);
+    } else {
+      warningPanel.setWarning(LOCK_WARNING, WARNING_OFF, false);
+    }
+
+    if (!Switches::isConfirmed) {
+      warningPanel.setDualWarning(WARNING_WARNING, true);
+    } else {
+      warningPanel.setDualWarning(WARNING_OFF, false);
+    }
+
     vTaskDelay(pdMS_TO_TICKS(50)); // 20Hz update rate
   }
 }

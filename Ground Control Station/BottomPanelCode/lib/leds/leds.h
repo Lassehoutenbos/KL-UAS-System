@@ -46,7 +46,7 @@ struct SwitchLedMapping {
 extern Adafruit_NeoPixel strip;
 extern PCA9685 rgbDriver;
 
-extern const SwitchLedMapping switchMap[numSwitches];
+extern const SwitchLedMapping ledMap[numSwitches];
 
 // Initialise LED drivers.
 void setupLeds();

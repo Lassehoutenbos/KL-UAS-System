@@ -106,7 +106,7 @@ void ScreenPowerSwitch::animateSwitch(PowerSource from, PowerSource to) {
 void ScreenPowerSwitch::begin() {
     randomSeed(1);
     tft.initR(INITR_144GREENTAB);
-    tft.setSPISpeed(40000000);  // Set SPI to 40MHz (up from default ~4MHz)
+    tft.setSPISpeed(16000000);  // Set SPI to 16MHz (safe speed for ST7735)
     tft.setRotation(DISPLAY_ROTATION);
     tft.fillScreen(ST77XX_BLACK);
     prevVBat = vBat;

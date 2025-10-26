@@ -37,9 +37,8 @@ The bottom panel serves as the main control interface and processing hub for the
 - **Frequency Range**: 24 Hz to 1526 Hz
 - **Channels Used**:
   - **Channels 0-5**: RGB LED control (LED5_R, LED5_G, LED5_B, LED6_R, LED6_G, LED6_B)
-  - **Channels 6-7**: Fan PWM control (FAN1_PWM_CH, FAN2_PWM_CH)
-  - **Channels 8-15**: Available for expansion
-- **Purpose**: Provides precise PWM control for RGB LEDs and cooling fans
+  - **Channels 6-15**: Available for expansion
+- **Purpose**: Provides precise PWM control for RGB LEDs
 
 ## Display System
 
@@ -163,13 +162,7 @@ struct SwitchLedMapping {
 
 ### Cooling System
 
-- **Fan Count**: 2 PWM-controlled fans
-- **Control**: PCA9685 channels 6 and 7
-- **Speed Range**: 0-100% via 12-bit PWM
-- **Control Logic**:
-  - **Nominal Temperature**: Base temperature where fan starts increasing speed
-  - **Maximum Temperature**: Temperature for full fan speed
-  - **Sensor Mapping**: Each fan can be linked to multiple temperature sensors
+- **Fan Count**: 2 always on fans
 
 ### Thermal Control Algorithm
 
