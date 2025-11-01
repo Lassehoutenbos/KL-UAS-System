@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include <PCA9685.h>
 #include <Adafruit_NeoPixel.h>
+#include <STM32FreeRTOS.h>
 
 // Simple RGBW color struct used with Adafruit_NeoPixel
 struct RgbwColor {

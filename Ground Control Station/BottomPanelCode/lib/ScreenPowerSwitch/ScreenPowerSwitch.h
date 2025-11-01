@@ -13,6 +13,7 @@
 #include <Arduino.h>
 #include "bitmaps.h"
 #include <math.h>
+#include <STM32FreeRTOS.h>
 
 // ScreenPowerSwitch manages the small TFT display on the bottom panel.
 // It shows power information and warning/lock screens and animates a
