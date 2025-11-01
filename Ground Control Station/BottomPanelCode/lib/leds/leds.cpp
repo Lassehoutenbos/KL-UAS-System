@@ -243,7 +243,7 @@ bool startup() {
             }
         }
 
-        delay(interval);  // korte pauze voor de animatie
+        vTaskDelay(pdMS_TO_TICKS(interval));  // korte pauze voor de animatie
     }
 
     // Alles uitzetten na animatie

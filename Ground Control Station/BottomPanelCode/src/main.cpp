@@ -140,19 +140,6 @@ static void warningTask(void *) {
       warningPanel.setDualWarning(WARNING_OFF, false);
     }
 
-    // Set connection warning based on switch states
-    if (Switches::isLocked) {
-      warningPanel.setWarning(LOCK_WARNING, WARNING_CRITICAL, false);
-    } else {
-      warningPanel.setWarning(LOCK_WARNING, WARNING_OFF, false);
-    }
-
-    if (!Switches::isConfirmed) {
-      warningPanel.setDualWarning(WARNING_WARNING, true);
-    } else {
-      warningPanel.setDualWarning(WARNING_OFF, false);
-    }
-
     vTaskDelay(pdMS_TO_TICKS(50)); // 20Hz update rate
   }
 }
