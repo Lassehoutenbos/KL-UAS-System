@@ -1,0 +1,54 @@
+;
+; WS2811 RGB button driver — 400 Kbps NRZ, RGB 24-bit
+;
+; Adapted from the Raspberry Pi Pico SDK ws2812.pio example.
+; Drives PIO0 SM1 on PIN_WS2811_DATA (GP1) via a 3.3V→5V level shifter.
+; Chain: LED5 WS2811 DIN → LED5 WS2811 DOUT → LED6 WS2811 DIN.
+;
+; Timing (400 Kbps, 10 cycles/bit at 4 MHz PIO clock):
+;   T0H = 3 cycles (0.75 µs),   T0L = 7 cycles (1.75 µs)
+;   T1H = 6 cycles (1.50 µs),   T1L = 4 cycles (1.00 µs)
+;   Reset: >50 µs low — handled in C by delaying before next DMA transfer
+;
+; Pixel data is pushed 32 bits at a time (MSB first), left-aligned:
+; bits[31:8] = RGB, bits[7:0] ignored.
+; Set autopull threshold to 24 in the init function.
+;
+
+.program ws2811
+.side_set 1
+
+.define PUBLIC T1 3
+.define PUBLIC T2 3
+.define PUBLIC T3 4
+
+.wrap_target
+bitloop:
+    out x, 1            side 0 [T3 - 1]   ; drive low, shift out MSB
+    jmp !x do_zero      side 1 [T1 - 1]   ; drive high early
+    jmp  bitloop        side 1 [T2 - 1]   ; 1-bit: stay high
+do_zero:
+    nop                 side 0 [T2 - 1]   ; 0-bit: drive low
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void ws2811_program_init(PIO pio, uint sm, uint offset,
+                                       uint pin, float freq)
+{
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    pio_sm_config c = ws2811_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, pin);
+    sm_config_set_out_shift(&c, false, true, 24);   /* shift left, autopull at 24 bits */
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+
+    float div = clock_get_hz(clk_sys) / (freq * 10.0f);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

@@ -1,0 +1,135 @@
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "task.h"
+
+/* ------------------------------------------------------------------ */
+/* Packet framing                                                        */
+/* ------------------------------------------------------------------ */
+#define PROTO_SOF               0xAA
+
+#define PROTO_TYPE_ADC          0x01  /* Pico→Pi: ADC channel data         */
+#define PROTO_TYPE_DIGITAL      0x02  /* Pico→Pi: digital I/O state        */
+#define PROTO_TYPE_LED          0x03  /* Pi→Pico: LED command               */
+#define PROTO_TYPE_SCREEN       0x04  /* Pi→Pico: screen mode command       */
+#define PROTO_TYPE_HEARTBEAT    0x05  /* bidirectional: alive signal        */
+#define PROTO_TYPE_EVENT        0x06  /* Pico→Pi: input event               */
+#define PROTO_TYPE_ERROR        0x07  /* Pico→Pi: error status              */
+#define PROTO_TYPE_BRIGHTNESS   0x08  /* Pi→Pico: global brightness         */
+#define PROTO_TYPE_MODE         0x09  /* Pi→Pico: state machine override    */
+
+/* LED animation modes — type 0x03, chain=0x01 (WS2811 RGB buttons) */
+#define LED_ANIM_OFF            0
+#define LED_ANIM_ON             1
+#define LED_ANIM_BLINK_SLOW     2   /* 500 ms period */
+#define LED_ANIM_BLINK_FAST     3   /* 100 ms period */
+#define LED_ANIM_PULSE          4   /* sine-wave 0-100% brightness */
+
+/* Event IDs — type 0x06 */
+#define EVT_SWITCH_CHANGED      0x01  /* value = port_a<<8 | port_b */
+#define EVT_BUTTON_PRESSED      0x02  /* value = button_id */
+#define EVT_BUTTON_RELEASED     0x03  /* value = button_id */
+#define EVT_KEY_LOCK_CHANGED    0x04  /* value = 0=locked, 1=unlocked */
+#define EVT_SOURCE_DETECTED     0x05  /* value = source bitmask */
+#define EVT_USB_CONNECTED       0x06
+#define EVT_USB_DISCONNECTED    0x07
+
+/* Error codes — type 0x07 */
+#define ERR_WATCHDOG_RESET      0x01
+#define ERR_STACK_OVERFLOW      0x02
+#define ERR_MALLOC_FAILED       0x03
+
+#define PROTO_MAX_PAYLOAD   256
+#define PROTO_MAX_PACKET    (4 + PROTO_MAX_PAYLOAD)
+
+/* ------------------------------------------------------------------ */
+/* Packet payload structures                                            */
+/* ------------------------------------------------------------------ */
+
+/* Type 0x01 — ADC data (14 bytes) */
+typedef struct __attribute__((packed)) {
+    uint16_t ch[6];       /* raw 12-bit ADC counts for CH0-CH5 */
+    uint16_t ts_ms;       /* FreeRTOS tick count in ms */
+} adc_packet_t;
+
+/* Type 0x02 — Digital I/O state (4 bytes) */
+typedef struct __attribute__((packed)) {
+    uint8_t  port_a;      /* MCP23017 GPIOA state */
+    uint8_t  port_b;      /* MCP23017 GPIOB state */
+    uint16_t ts_ms;
+} digital_packet_t;
+
+/* Type 0x03 — LED command header */
+typedef struct __attribute__((packed)) {
+    uint8_t chain;        /* 0x00=SK6812, 0x01=WS2811 buttons, 0x02=MCP23017 LEDs */
+    uint8_t num_pixels;   /* chain=0x00: pixel count; chain=0x01/0x02: unused */
+} led_cmd_header_t;
+
+/* Type 0x04 — Screen mode */
+typedef struct __attribute__((packed)) {
+    uint8_t mode;   /* 0=auto, 1=main, 2=warning, 3=lock, 4=bat_warning */
+} screen_cmd_t;
+
+/* Type 0x05 — Heartbeat */
+typedef struct __attribute__((packed)) {
+    uint8_t seq;
+} heartbeat_pkt_t;
+
+/* Type 0x06 — Input event */
+typedef struct __attribute__((packed)) {
+    uint8_t  event_id;
+    uint16_t value;
+} event_pkt_t;
+
+/* Type 0x07 — Error */
+typedef struct __attribute__((packed)) {
+    uint8_t error_code;
+} error_pkt_t;
+
+/* Type 0x08 — Brightness */
+typedef struct __attribute__((packed)) {
+    uint8_t target;   /* 0=SK6812 strip, 1=WS2811 buttons */
+    uint8_t level;    /* 0-255 */
+} brightness_cmd_t;
+
+/* Type 0x09 — Mode/state override */
+typedef struct __attribute__((packed)) {
+    uint8_t state;
+} mode_cmd_t;
+
+/* ------------------------------------------------------------------ */
+/* TX queue                                                              */
+/* ------------------------------------------------------------------ */
+#define TX_BUF_SIZE     64
+#define TX_QUEUE_DEPTH  16
+
+typedef struct {
+    uint8_t buf[TX_BUF_SIZE];
+    uint8_t len;
+} tx_item_t;
+
+extern QueueHandle_t g_tx_queue;
+
+/* ------------------------------------------------------------------ */
+/* API                                                                   */
+/* ------------------------------------------------------------------ */
+int  proto_serialize(uint8_t *buf, int buf_size,
+                     uint8_t type, const uint8_t *payload, uint8_t payload_len);
+int  proto_parse(const uint8_t *buf, uint8_t buf_len,
+                 uint8_t *type_out, uint8_t *payload_out);
+void proto_handle_rx(const uint8_t *data, uint32_t len);
+void proto_set_led_task_handles(TaskHandle_t sk6812_handle,
+                                TaskHandle_t ws2811_handle);
+void proto_set_screen_task_handle(TaskHandle_t screen_handle);
+
+/** Enqueue a Pico→Pi event packet on g_tx_queue (safe from any task). */
+void proto_send_event(uint8_t event_id, uint16_t value);
+
+/** Enqueue a Pico→Pi error packet on g_tx_queue. */
+void proto_send_error(uint8_t error_code);
+
+#endif /* PROTOCOL_H */

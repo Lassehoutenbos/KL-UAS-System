@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Read(//c/Users/houte/.pico-sdk/sdk/2.2.0//**)",
+      "Bash(xargs grep:*)",
+      "Read(//c/Users/houte//**)"
+    ]
+  }
+}
