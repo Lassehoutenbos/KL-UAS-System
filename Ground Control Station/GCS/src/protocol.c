@@ -240,6 +240,16 @@ void proto_handle_rx(const uint8_t *data, uint32_t len)
                             }
                             break;
 
+                        case PROTO_TYPE_WARNING:
+                            if (s_rx_len >= WARN_ICON_COUNT) {
+                                for (uint8_t i = 0; i < WARN_ICON_COUNT; i++) {
+                                    led_sk6812_set_warning_state(i, s_rx_buf[i]);
+                                }
+                                /* Wake sk6812_task for an immediate visual update */
+                                if (s_sk6812_handle) xTaskNotifyGive(s_sk6812_handle);
+                            }
+                            break;
+
                         default:
                             break;
                     }

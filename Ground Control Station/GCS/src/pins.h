@@ -81,7 +81,7 @@
 #define PIN_TFT_DC          21  /* GP21 — data(1) / command(0)        */
 #define PIN_TFT_RST         22  /* GP22 — hardware reset (active low) */
 #define ST7735_SPI_INST     spi1
-#define ST7735_SPI_BAUD     16000000  /* 16 MHz */
+#define ST7735_SPI_BAUD     4000000   /* 4 MHz — reduce if display stays white */
 
 /* ------------------------------------------------------------------ */
 /* MCP3208 channel assignments                                          */

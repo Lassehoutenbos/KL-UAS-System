@@ -26,8 +26,17 @@ void led_sk6812_set(const uint8_t *pixel_data, uint8_t num_pixels);
 void led_sk6812_set_brightness(uint8_t level);
 
 /**
- * FreeRTOS task: blocks on task notification, then DMA-transfers
- * the pixel buffer to PIO0 SM0 TX FIFO.
+ * Set the warning severity for a single panel icon (LEDs 61-69).
+ * icon:     0-8, use WARN_ICON_* constants from protocol.h
+ * severity: WARN_OK / WARN_WARNING / WARN_CRITICAL
+ * Thread-safe (volatile byte write). The sk6812_task picks up the
+ * new state on its next 50 ms tick.
+ */
+void led_sk6812_set_warning_state(uint8_t icon, uint8_t severity);
+
+/**
+ * FreeRTOS task: wakes on task notification or every 50 ms, updates
+ * warning panel pixels, then DMA-transfers the pixel buffer to PIO0 SM0.
  */
 void sk6812_task(void *param);
 

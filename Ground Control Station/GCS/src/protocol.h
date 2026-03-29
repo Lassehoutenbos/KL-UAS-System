@@ -21,6 +21,25 @@
 #define PROTO_TYPE_ERROR        0x07  /* Pico→Pi: error status              */
 #define PROTO_TYPE_BRIGHTNESS   0x08  /* Pi→Pico: global brightness         */
 #define PROTO_TYPE_MODE         0x09  /* Pi→Pico: state machine override    */
+#define PROTO_TYPE_WARNING      0x0A  /* Pi→Pico: warning panel severity    */
+
+/* Warning severity levels — type 0x0A */
+#define WARN_OK                 0
+#define WARN_WARNING            1
+#define WARN_CRITICAL           2
+
+/* Warning icon indices (LED = WARN_PANEL_LED_BASE + index) */
+#define WARN_ICON_TEMP          0   /* temperature warning     */
+#define WARN_ICON_SIGNAL        1   /* signal strength warning */
+#define WARN_ICON_AIRCRAFT      2   /* aircraft warning        */
+#define WARN_ICON_DRONE_LINK    3   /* drone link status       */
+#define WARN_ICON_MAIN          4   /* main big warning        */
+#define WARN_ICON_GPS_GCS       5   /* GPS lock GCS            */
+#define WARN_ICON_NETWORK_GCS   6   /* network connection GCS  */
+#define WARN_ICON_LOCKED        7   /* locked state            */
+#define WARN_ICON_DRONE_STATUS  8   /* drone status            */
+#define WARN_ICON_COUNT         9
+#define WARN_PANEL_LED_BASE     61
 
 /* LED animation modes — type 0x03, chain=0x01 (WS2811 RGB buttons) */
 #define LED_ANIM_OFF            0
@@ -100,6 +119,11 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
     uint8_t state;
 } mode_cmd_t;
+
+/* Type 0x0A — Warning panel severity */
+typedef struct __attribute__((packed)) {
+    uint8_t severity[WARN_ICON_COUNT];  /* one WARN_* value per icon, index = WARN_ICON_* */
+} warning_cmd_t;
 
 /* ------------------------------------------------------------------ */
 /* TX queue                                                              */

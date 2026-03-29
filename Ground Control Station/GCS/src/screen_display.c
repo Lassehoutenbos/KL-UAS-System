@@ -42,104 +42,158 @@ static          uint8_t s_last_mode = 0xFF; /* forces first render */
 static void render_boot(void)
 {
     st7735_fill_screen(ST7735_BLACK);
-    st7735_draw_string(10, 50, "GCS", ST7735_WHITE, ST7735_BLACK, 2);
-    st7735_draw_string(10, 74, "Booting...", ST7735_GREY, ST7735_BLACK, 1);
+    /* "GCS" size 3: 3*18=54px, x=(128-54)/2=37 */
+    st7735_draw_string(37, 20, "GCS", ST7735_WHITE, ST7735_BLACK, 3);
+    /* "Ground Control": 14*6=84px, x=(128-84)/2=22 */
+    st7735_draw_string(22, 56, "Ground Control", ST7735_GREY, ST7735_BLACK, 1);
+    /* "Station": 7*6=42px, x=(128-42)/2=43 */
+    st7735_draw_string(43, 66, "Station", ST7735_GREY, ST7735_BLACK, 1);
+    st7735_draw_hline(8, 80, 112, ST7735_DARKGREY);
+    /* "Booting...": 10*6=60px, x=(128-60)/2=34 */
+    st7735_draw_string(34, 88, "Booting...", ST7735_GREY, ST7735_BLACK, 1);
+    st7735_fill_rect(0, 118, 128, 10, ST7735_DARKGREY);
+    /* "KL-UAS System": 13*6=78px, x=(128-78)/2=25 */
+    st7735_draw_string(25, 120, "KL-UAS System", ST7735_GREY, ST7735_DARKGREY, 1);
 }
 
 static void render_waiting(void)
 {
     st7735_fill_screen(ST7735_YELLOW);
-    st7735_draw_string(4, 44, "Waiting", ST7735_BLACK, ST7735_YELLOW, 1);
-    st7735_draw_string(4, 56, "for Pi...", ST7735_BLACK, ST7735_YELLOW, 1);
+    st7735_fill_rect(0, 0, 128, 18, ST7735_ORANGE);
+    /* "PLEASE WAIT": 11*6=66px, x=(128-66)/2=31 */
+    st7735_draw_string(31, 5, "PLEASE WAIT", ST7735_BLACK, ST7735_ORANGE, 1);
+    /* "Waiting" size 2: 7*12=84px, x=(128-84)/2=22 */
+    st7735_draw_string(22, 40, "Waiting", ST7735_BLACK, ST7735_YELLOW, 2);
+    /* "for Pi" size 2: 6*12=72px, x=(128-72)/2=28 */
+    st7735_draw_string(28, 60, "for Pi", ST7735_BLACK, ST7735_YELLOW, 2);
+    st7735_draw_hline(8, 88, 112, ST7735_ORANGE);
+    st7735_fill_rect(0, 108, 128, 20, ST7735_ORANGE);
+    /* "Stand by...": 11*6=66px, x=31 */
+    st7735_draw_string(31, 113, "Stand by...", ST7735_BLACK, ST7735_ORANGE, 1);
 }
 
 static void render_main(void)
 {
-    /* Background */
     st7735_fill_screen(ST7735_BLACK);
-
-    /* Title bar */
-    st7735_fill_rect(0, 0, ST7735_WIDTH, 14, ST7735_BLUE);
-    st7735_draw_string(4, 3, "GCS Panel", ST7735_WHITE, ST7735_BLUE, 1);
-
-    /* Battery voltage */
-    float bat_v = adc_to_volts(g_latest_adc.ch[0], BAT_DIVIDER);
     char buf[24];
-    snprintf(buf, sizeof(buf), "BAT: %4.1fV", (double)bat_v);
-    st7735_draw_string(4, 24, buf, ST7735_GREEN, ST7735_BLACK, 1);
 
-    /* External voltage */
+    /* Header bar */
+    st7735_fill_rect(0, 0, 128, 16, ST7735_BLUE);
+    /* "GCS PANEL": 9*6=54px, x=(128-54)/2=37 */
+    st7735_draw_string(37, 4, "GCS PANEL", ST7735_WHITE, ST7735_BLUE, 1);
+
+    /* Battery section */
+    st7735_draw_string(4, 19, "BATTERY", ST7735_GREY, ST7735_BLACK, 1);
+    float bat_v = adc_to_volts(g_latest_adc.ch[0], BAT_DIVIDER);
+    snprintf(buf, sizeof(buf), "%4.1fV", (double)bat_v);
+    uint16_t bat_col = (bat_v > 11.5f) ? ST7735_GREEN :
+                       (bat_v > 10.5f) ? ST7735_YELLOW : ST7735_RED;
+    /* size 2, 5 chars*12=60px, x=(128-60)/2=34 */
+    st7735_draw_string(34, 28, buf, bat_col, ST7735_BLACK, 2);
+    /* Charge bar */
+    st7735_fill_rect(4, 46, 120, 8, ST7735_DARKGREY);
+    int fill = (int)((bat_v - 10.0f) / (13.0f - 10.0f) * 118.0f);
+    if (fill < 0)   fill = 0;
+    if (fill > 118) fill = 118;
+    st7735_fill_rect(5, 47, fill, 6, bat_col);
+
+    /* External section */
+    st7735_draw_string(4, 57, "EXTERNAL", ST7735_GREY, ST7735_BLACK, 1);
     float ext_v = adc_to_volts(g_latest_adc.ch[1], EXT_DIVIDER);
-    snprintf(buf, sizeof(buf), "EXT: %4.1fV", (double)ext_v);
-    st7735_draw_string(4, 36, buf, ST7735_CYAN, ST7735_BLACK, 1);
-
-    /* Key/lock status */
-    bool locked = !(g_latest_digital.port_a & (1u << IOEXP_A_KEY));
-    st7735_draw_string(4, 52, locked ? "KEY: LOCKED" : "KEY: OPEN  ",
-                       locked ? ST7735_RED : ST7735_GREEN, ST7735_BLACK, 1);
-
-    /* Switch summary from port B */
-    snprintf(buf, sizeof(buf), "SW: %02X %02X",
-             g_latest_digital.port_a & 0xFF,
-             g_latest_digital.port_b & 0xFF);
-    st7735_draw_string(4, 64, buf, ST7735_WHITE, ST7735_BLACK, 1);
+    snprintf(buf, sizeof(buf), "%4.1fV", (double)ext_v);
+    st7735_draw_string(34, 66, buf, ST7735_CYAN, ST7735_BLACK, 2);
 
     /* Divider */
-    st7735_draw_hline(0, 78, ST7735_WIDTH, ST7735_DARKGREY);
+    st7735_draw_hline(0, 85, 128, ST7735_DARKGREY);
 
-    /* Pi connected indicator */
+    /* Key status bar */
+    bool locked = !(g_latest_digital.port_a & (1u << IOEXP_A_KEY));
+    uint16_t key_col = locked ? ST7735_RED : ST7735_GREEN;
+    st7735_fill_rect(0, 87, 128, 14, key_col);
+    /* "KEY: LOCKED"/"KEY:  OPEN ": 11*6=66px, x=(128-66)/2=31 */
+    st7735_draw_string(31, 90, locked ? "KEY: LOCKED" : "KEY:  OPEN ",
+                       ST7735_WHITE, key_col, 1);
+
+    /* Switch states */
+    snprintf(buf, sizeof(buf), "SW A:%02X  B:%02X",
+             g_latest_digital.port_a & 0xFF,
+             g_latest_digital.port_b & 0xFF);
+    st7735_draw_string(4, 104, buf, ST7735_WHITE, ST7735_BLACK, 1);
+
+    /* Pi status bar */
     sys_state_t state = g_sys_state;
-    const char *con = (state == SYS_CONNECTED || state == SYS_ACTIVE) ?
-                      "Pi: CONNECTED" : "Pi: WAITING  ";
-    uint16_t con_color = (state == SYS_CONNECTED || state == SYS_ACTIVE) ?
-                         ST7735_GREEN : ST7735_ORANGE;
-    st7735_draw_string(4, 82, con, con_color, ST7735_BLACK, 1);
+    bool connected = (state == SYS_CONNECTED || state == SYS_ACTIVE);
+    uint16_t pi_col = connected ? ST7735_GREEN : ST7735_ORANGE;
+    st7735_fill_rect(0, 114, 128, 14, pi_col);
+    /* "Pi: CONNECTED"/"Pi:  WAITING ": 13*6=78px, x=(128-78)/2=25 */
+    st7735_draw_string(25, 117, connected ? "Pi: CONNECTED" : "Pi:  WAITING ",
+                       ST7735_WHITE, pi_col, 1);
 }
 
 static void render_warning(void)
 {
     st7735_fill_screen(ST7735_RED);
-    /* Draw simple warning triangle outline */
-    for (int i = 0; i < 60; i++) {
-        st7735_draw_pixel(64, 24 + i,               ST7735_WHITE);
-        st7735_draw_pixel(64 - i, 24 + i + 40,      ST7735_WHITE);
-        st7735_draw_pixel(64 + i, 24 + i + 40 > 127
-                          ? 127 : 24 + i + 40,      ST7735_WHITE);
+
+    /* Filled yellow warning triangle: apex (64,8), base y=98, half-width=54 */
+    for (int y = 8; y <= 98; y++) {
+        int half = (int)((float)(y - 8) / 90.0f * 54.0f);
+        st7735_draw_hline(64 - half, y, 2 * half + 1, ST7735_YELLOW);
     }
-    /* Exclamation mark */
-    st7735_fill_rect(61, 50, 6, 20, ST7735_WHITE);
-    st7735_fill_rect(61, 76, 6,  6, ST7735_WHITE);
-    st7735_draw_string(16, 100, "! WARNING !", ST7735_WHITE, ST7735_RED, 1);
+
+    /* Black exclamation mark centred inside triangle */
+    st7735_fill_rect(60, 44, 8, 28, ST7735_BLACK);  /* shaft */
+    st7735_fill_rect(60, 79, 8,  8, ST7735_BLACK);  /* dot   */
+
+    /* Label bar */
+    st7735_fill_rect(0, 106, 128, 22, ST7735_DARKGREY);
+    /* "WARNING" size 2: 7*12=84px, x=(128-84)/2=22 */
+    st7735_draw_string(22, 110, "WARNING", ST7735_RED, ST7735_DARKGREY, 2);
 }
 
 static void render_lock(void)
 {
     st7735_fill_screen(ST7735_WHITE);
-    /* Draw simple padlock shape */
-    st7735_fill_rect(44, 60, 40, 32, ST7735_DARKGREY);    /* body */
-    st7735_draw_hline(50, 54, 12, ST7735_DARKGREY);
-    st7735_draw_hline(66, 54, 12, ST7735_DARKGREY);
-    st7735_draw_vline(50, 42, 12, ST7735_DARKGREY);
-    st7735_draw_vline(78, 42, 12, ST7735_DARKGREY);
-    st7735_draw_hline(50, 42, 28, ST7735_DARKGREY);
-    /* Keyhole */
-    st7735_fill_rect(60, 70, 8, 12, ST7735_WHITE);
-    st7735_draw_string(30, 100, "  LOCKED  ", ST7735_BLACK, ST7735_WHITE, 1);
+
+    /* Shackle: left leg, right leg, top bar */
+    st7735_fill_rect(46, 22, 8, 38, ST7735_DARKGREY);  /* left leg  */
+    st7735_fill_rect(74, 22, 8, 38, ST7735_DARKGREY);  /* right leg */
+    st7735_fill_rect(46, 22, 36, 8, ST7735_DARKGREY);  /* top bar   */
+
+    /* Body: x=32, y=58, w=64, h=44 */
+    st7735_fill_rect(32, 58, 64, 44, ST7735_DARKGREY);
+
+    /* Keyhole centred in body */
+    st7735_fill_rect(58, 66, 12, 22, ST7735_WHITE);
+
+    /* "LOCKED" size 2: 6*12=72px, x=(128-72)/2=28 */
+    st7735_draw_string(28, 108, "LOCKED", ST7735_RED, ST7735_WHITE, 2);
 }
 
 static void render_batwarning(void)
 {
     st7735_fill_screen(ST7735_YELLOW);
-    /* Draw simple battery shape */
-    st7735_fill_rect(34, 40, 60, 32, ST7735_BLACK);       /* body */
-    st7735_fill_rect(94, 50, 6, 12, ST7735_BLACK);        /* terminal */
-    /* Low-battery fill (red strip) */
-    st7735_fill_rect(36, 42, 16, 28, ST7735_RED);
-    st7735_draw_string(16, 84, "LOW BATTERY!", ST7735_BLACK, ST7735_YELLOW, 1);
+
+    /* Header bar */
+    st7735_fill_rect(0, 0, 128, 18, ST7735_RED);
+    /* "LOW BATTERY": 11*6=66px, x=(128-66)/2=31 */
+    st7735_draw_string(31, 5, "LOW BATTERY", ST7735_WHITE, ST7735_RED, 1);
+
+    /* Battery icon: body x=8, y=26, w=100, h=50 */
+    st7735_fill_rect(8,  26, 100, 50, ST7735_BLACK);   /* border     */
+    st7735_fill_rect(10, 28,  96, 46, ST7735_YELLOW);  /* interior   */
+    st7735_fill_rect(108, 40, 12, 22, ST7735_BLACK);   /* terminal   */
+    st7735_fill_rect(10,  28,  14, 46, ST7735_RED);    /* ~15% fill  */
+
+    /* Voltage size 2: 5 chars*12=60px, x=(128-60)/2=34 */
     float bat_v = adc_to_volts(g_latest_adc.ch[0], BAT_DIVIDER);
     char buf[16];
     snprintf(buf, sizeof(buf), "%4.1fV", (double)bat_v);
-    st7735_draw_string(44, 96, buf, ST7735_BLACK, ST7735_YELLOW, 1);
+    st7735_draw_string(34, 82, buf, ST7735_BLACK, ST7735_YELLOW, 2);
+
+    /* Footer bar */
+    st7735_fill_rect(0, 108, 128, 20, ST7735_RED);
+    /* "CHARGE NOW!": 11*6=66px, x=31 */
+    st7735_draw_string(31, 113, "CHARGE NOW!", ST7735_WHITE, ST7735_RED, 1);
 }
 
 /* ------------------------------------------------------------------ */
