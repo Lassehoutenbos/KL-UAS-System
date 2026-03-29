@@ -77,6 +77,7 @@ add_executable(GCS
     src/led_ws2811.c
     src/screen_st7735.c
     src/screen_display.c
+    src/veml7700.c
 )
 
 pico_set_program_name(GCS "GCS")

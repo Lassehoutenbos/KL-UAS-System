@@ -31,6 +31,12 @@
 #define MCP3208_SPI_BAUD    1000000  /* 1 MHz — MCP3208 max 2 MHz at 3.3 V */
 
 /* ------------------------------------------------------------------ */
+/* I2C0 — VEML7700 ambient light sensor                                 */
+/* Address is fixed; no hardware configuration pins.                    */
+/* ------------------------------------------------------------------ */
+#define VEML7700_ADDR       0x10
+
+/* ------------------------------------------------------------------ */
 /* MCP23017 register addresses (IOCON.BANK = 0, default)                */
 /* ------------------------------------------------------------------ */
 #define MCP_IODIRA      0x00

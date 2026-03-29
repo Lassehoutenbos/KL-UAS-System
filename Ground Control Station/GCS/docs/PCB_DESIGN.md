@@ -13,6 +13,7 @@ The Pico communicates with the Raspberry Pi host over **USB CDC** (TinyUSB).
 | LED strip | SK6812 RGBW, up to 70 LEDs (fw max 128) | Strip connector | PIO0 SM0 / 800 kbps NRZ | 5 V |
 | Button LEDs | WS2811 RGB, 2 buttons (LED5, LED6) | Integrated in button body | PIO0 SM1 / 400 kbps NRZ | 5 V |
 | GPIO expander | MCP23017-E/SS | SSOP-28 | I2C0 400 kHz, addr 0x20 | 3.3 V |
+| Ambient light sensor | VEML7700 | OPLGA-6 (2 × 2 mm) | I2C0 400 kHz, addr 0x10 | 3.3 V (2.5–3.6 V) |
 | ADC | MCP3208-CI/SL (8-ch, 12-bit) | SOIC-16 | SPI1 1 MHz, CS = GP17 | 3.3 V, Vref = 3.3 V |
 | Display | ST7735S TFT 1.44" 128×128 GreenTab | 8-pin module header | SPI1 4 MHz, CS = GP20 | 3.3 V |
 | Level shifter A | 74AHCT125 (or SN74LVC2T45) | SO-14 | GP0 → SK6812 DIN | IN: 3.3 V / OUT: 5 V |
@@ -28,8 +29,8 @@ The Pico communicates with the Raspberry Pi host over **USB CDC** (TinyUSB).
 | --- | --- | --- | --- |
 | GP0 | 1 | SK6812_DATA | Level shifter A pin 2 (1A input) |
 | GP1 | 2 | WS2811_DATA | Level shifter B pin 2 (1A input) |
-| GP4 | 6 | I2C0 SDA | MCP23017 pin 13 (SDA) + 4.7 kΩ pull-up to 3.3 V |
-| GP5 | 7 | I2C0 SCL | MCP23017 pin 12 (SCL) + 4.7 kΩ pull-up to 3.3 V |
+| GP4 | 6 | I2C0 SDA | MCP23017 pin 13 + VEML7700 pin SDA + 4.7 kΩ pull-up to 3.3 V |
+| GP5 | 7 | I2C0 SCL | MCP23017 pin 12 + VEML7700 pin SCL + 4.7 kΩ pull-up to 3.3 V |
 | GP16 | 21 | SPI1 MISO (RX) | MCP3208 pin 12 (DOUT) |
 | GP17 | 22 | MCP3208 CS (active low) | MCP3208 pin 10 (/CS-/SHDN) |
 | GP18 | 24 | SPI1 SCK | MCP3208 pin 13 (CLK) + ST7735 SCK |
@@ -105,6 +106,28 @@ The Pico communicates with the Raspberry Pi host over **USB CDC** (TinyUSB).
 ```
 R = (3.3 V − 2.1 V) / 10 mA = 120 Ω  →  use 120 Ω or 150 Ω (0402/0603)
 ```
+
+### I2C0 — VEML7700 ambient light sensor (OPLGA-6, 2 × 2 mm)
+
+Shares the same I2C0 bus as the MCP23017. No address configuration — I2C address is fixed at **0x10**.
+
+**VEML7700 full pin wiring:**
+
+| IC pin | Name | Connect to |
+| --- | --- | --- |
+| 1 | VDD | 3.3 V + 100 nF to GND (within 1 mm — small package) |
+| 2 | SDA | GP4 (Pico pin 6) — shared I2C0 SDA bus wire |
+| 3 | SCL | GP5 (Pico pin 7) — shared I2C0 SCL bus wire |
+| 4 | INT | Optional: GPIO input on Pico (e.g. GP26) for threshold interrupt; or leave unconnected. Open-drain, active low — add 10 kΩ pull-up to 3.3 V if used. |
+| 5 | NC | Leave unconnected |
+| 6 | GND | GND |
+
+**Notes:**
+
+- Pull-ups on SDA/SCL are shared with MCP23017 — one pair of 4.7 kΩ resistors on the bus is sufficient for both devices.
+- The VEML7700 has a photodiode window on the top face; position it with an unobstructed view of the ambient light source (panel front or display area). Do not cover with silkscreen or conformal coating.
+- The OPLGA package has an exposed pad on the underside — tie it to GND.
+- Measurement range: 0–120,000 lux (gain/integration time configurable over I2C). Typical use: auto-adjust SK6812 / ST7735 brightness via `PROTO_TYPE_BRIGHTNESS` command.
 
 ---
 
@@ -290,9 +313,87 @@ Size the 5 V supply for **≥ 3 A** typical, or up to **5 A** if strip runs at f
 
 ---
 
-## USB
+## USB CDC
 
-Pico onboard micro-USB is used for CDC (`tud_cdc`, TinyUSB). No additional USB circuitry required. Keep **BOOTSEL** button accessible for firmware flashing.
+### Physical connection
+
+The Pico's onboard **micro-USB connector** carries the CDC link to the Raspberry Pi host. USB D+ and D− are routed internally on the Pico board — no additional USB circuitry is required on this PCB.
+
+```
+Raspberry Pi USB-A port
+    │
+USB A–to–micro-B cable
+    │
+Pico micro-USB connector (D+, D−, VBUS, GND)
+```
+
+- **USB speed:** Full Speed (12 Mbps) — RP2040 supports FS only.
+- **VBUS:** the Pico can optionally be powered from the Pi's USB VBUS (5 V, 500 mA). If the board is also powered from an external 5 V supply via VSYS, add a **Schottky diode** (e.g. BAT54, 200 mA) in series with VBUS to VSYS to prevent back-feeding the Pi.
+- Keep the **BOOTSEL** button accessible for firmware flashing (hold BOOTSEL, power-cycle → Pico appears as USB mass storage).
+
+### TinyUSB configuration ([tusb_config.h](../tusb_config.h))
+
+| Parameter | Value | Notes |
+| --- | --- | --- |
+| MCU | `OPT_MCU_RP2040` | |
+| OS | `OPT_OS_FREERTOS` | TinyUSB uses FreeRTOS task notifications |
+| Classes enabled | CDC only | MSC, HID, MIDI, VENDOR all disabled |
+| Endpoint 0 size | 64 bytes | |
+| CDC RX buffer | 64 bytes (`CFG_TUD_CDC_RX_BUFSIZE`) | Read per `cdc_task` poll |
+| CDC TX buffer | 256 bytes (`CFG_TUD_CDC_TX_BUFSIZE`) | Larger to absorb burst ADC packets |
+| CDC endpoint buffer | 64 bytes (`CFG_TUD_CDC_EP_BUFSIZE`) | |
+
+### FreeRTOS tasks ([usb_cdc.c](../src/usb_cdc.c), [main.c](../src/main.c))
+
+| Task | Priority | Stack | Period | Role |
+| --- | --- | --- | --- | --- |
+| `usb_device_task` | 4 (highest) | 1024 words | 1 ms | Runs `tud_task()` — must be highest priority for timely USB enumeration |
+| `cdc_task` | 3 | 512 words | 1 ms | Drains `g_tx_queue` → `tud_cdc_write()`, reads RX into `proto_handle_rx()`, sends heartbeat |
+
+**TX queue** (`g_tx_queue`): depth 16 items × 64 bytes each. Any FreeRTOS task posts packets here; `cdc_task` flushes them on every tick.
+
+### Packet framing ([protocol.h](../src/protocol.h), [protocol.c](../src/protocol.c))
+
+All packets share the same 4-byte header + payload + checksum structure:
+
+```text
+Byte 0:  SOF = 0xAA
+Byte 1:  Type  (see table below)
+Byte 2:  Payload length (0–255)
+Byte 3…: Payload (0–255 bytes)
+Last:    Checksum = type XOR len XOR payload[0] XOR … XOR payload[n-1]
+```
+
+Packet types:
+
+| Type | Direction | Name | Payload struct |
+| --- | --- | --- | --- |
+| 0x01 | Pico → Pi | ADC data | `adc_packet_t` — 6× uint16 raw counts + uint16 timestamp (14 bytes) |
+| 0x02 | Pico → Pi | Digital I/O state | `digital_packet_t` — port_a, port_b, uint16 timestamp (4 bytes) |
+| 0x03 | Pi → Pico | LED command | `led_cmd_header_t` + pixel data (chain 0x00 = SK6812, 0x01 = WS2811, 0x02 = MCP LEDs) |
+| 0x04 | Pi → Pico | Screen mode | `screen_cmd_t` — mode byte (0=auto, 1=main, 2=warning, 3=lock, 4=bat_warning) |
+| 0x05 | Bidirectional | Heartbeat | `heartbeat_pkt_t` — seq byte |
+| 0x06 | Pico → Pi | Input event | `event_pkt_t` — event_id + uint16 value |
+| 0x07 | Pico → Pi | Error | `error_pkt_t` — error_code byte |
+| 0x08 | Pi → Pico | Brightness | `brightness_cmd_t` — target (0=SK6812, 1=WS2811) + level 0–255 |
+| 0x09 | Pi → Pico | State override | `mode_cmd_t` — state byte |
+| 0x0A | Pi → Pico | Warning severity | `warning_cmd_t` — 9 severity bytes (one per `WARN_ICON_*`) |
+| 0x0B | Pico → Pi | ALS data (VEML7700) | `als_packet_t` — als_raw (u16), white_raw (u16), lux_milli (u32), ts_ms (u16) — 10 bytes |
+
+### Heartbeat & connection state
+
+| Parameter | Value |
+| --- | --- |
+| Heartbeat TX interval | 1000 ms |
+| Heartbeat RX timeout | 3000 ms — triggers `EVT_USB_DISCONNECTED`, state → `SYS_WAITING_FOR_PI` |
+| Watchdog timeout | 5000 ms (hardware watchdog, serviced by `watchdog_task` every 500 ms) |
+
+Connection state machine transitions:
+
+- Power-on → `SYS_BOOT` → `SYS_INIT` → `SYS_WAITING_FOR_PI`
+- USB enumeration + first heartbeat received → `SYS_CONNECTED`
+- No heartbeat for 3 s → `SYS_WAITING_FOR_PI`
+- Watchdog reset detected on boot → `SYS_ERROR` (sends `ERR_WATCHDOG_RESET` packet once CDC connects)
 
 ---
 

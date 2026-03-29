@@ -22,6 +22,7 @@
 #define PROTO_TYPE_BRIGHTNESS   0x08  /* Pi→Pico: global brightness         */
 #define PROTO_TYPE_MODE         0x09  /* Pi→Pico: state machine override    */
 #define PROTO_TYPE_WARNING      0x0A  /* Pi→Pico: warning panel severity    */
+#define PROTO_TYPE_ALS          0x0B  /* Pico→Pi: ambient light sensor data */
 
 /* Warning severity levels — type 0x0A */
 #define WARN_OK                 0
@@ -124,6 +125,14 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
     uint8_t severity[WARN_ICON_COUNT];  /* one WARN_* value per icon, index = WARN_ICON_* */
 } warning_cmd_t;
+
+/* Type 0x0B — Ambient light sensor data (VEML7700) */
+typedef struct __attribute__((packed)) {
+    uint16_t als_raw;   /* raw ALS register count (16-bit) */
+    uint16_t white_raw; /* raw WHITE register count (16-bit) */
+    uint32_t lux_milli; /* lux × 1000 (i.e. millilux), avoids float on wire */
+    uint16_t ts_ms;     /* FreeRTOS tick count in ms */
+} als_packet_t;
 
 /* ------------------------------------------------------------------ */
 /* TX queue                                                              */

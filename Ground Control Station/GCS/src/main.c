@@ -13,6 +13,7 @@
 #include "led_ws2811.h"
 #include "usb_cdc.h"
 #include "screen_display.h"
+#include "veml7700.h"
 
 /* Task handles — needed so protocol.c can notify LED/screen tasks */
 static TaskHandle_t s_sk6812_handle = NULL;
@@ -66,6 +67,7 @@ int main(void)
     /* ---- Hardware init (before scheduler) ---- */
     analog_init();
     digital_io_init();
+    veml7700_init();
     led_sk6812_init();
     led_ws2811_init();
     screen_display_init();   /* GPIO-only init; full ST7735 init runs in screen_task */
@@ -86,6 +88,7 @@ int main(void)
     /* Sensor tasks */
     xTaskCreate(adc_task,        "ADC",    512,  NULL, 2, NULL);
     xTaskCreate(digital_io_task, "DIO",    512,  NULL, 2, NULL);
+    xTaskCreate(veml7700_task,   "ALS",    512,  NULL, 2, NULL);
 
     /* LED tasks */
     xTaskCreate(sk6812_task,     "SK6812", 512,  NULL, 1, &s_sk6812_handle);

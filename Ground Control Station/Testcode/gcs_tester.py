@@ -33,6 +33,7 @@ class GCSProtocol:
     TYPE_BRIGHTNESS = 0x08
     TYPE_MODE       = 0x09
     TYPE_WARNING    = 0x0A
+    TYPE_ALS        = 0x0B
 
     # LED chain IDs (first byte of LED payload)
     CHAIN_SK6812    = 0x00
@@ -350,6 +351,48 @@ class GCSTesterApp(ctk.CTk):
                                            font=ctk.CTkFont(size=10),
                                            text_color="#666666")
         self._adc_ts_label.pack(anchor="w", padx=10, pady=(0, 8))
+
+        self._section_label(p, "AMBIENT LIGHT  (VEML7700 · 0x0B)")
+
+        als_box = ctk.CTkFrame(p, corner_radius=6)
+        als_box.pack(fill="x", padx=8, pady=(0, 8))
+
+        als_row1 = ctk.CTkFrame(als_box, fg_color="transparent")
+        als_row1.pack(fill="x", padx=8, pady=(8, 2))
+
+        ctk.CTkLabel(als_row1, text="Lux:", width=40, anchor="w",
+                     font=ctk.CTkFont(size=11)).pack(side="left")
+        self._als_lux_label = ctk.CTkLabel(
+            als_row1, text="—",
+            font=ctk.CTkFont(family="Courier New", size=14, weight="bold"),
+            text_color="#FFD700", width=100, anchor="w")
+        self._als_lux_label.pack(side="left", padx=(4, 0))
+
+        self._als_bar = ctk.CTkProgressBar(als_row1, width=100, height=10)
+        self._als_bar.set(0)
+        self._als_bar.pack(side="left", padx=(8, 0))
+
+        als_row2 = ctk.CTkFrame(als_box, fg_color="transparent")
+        als_row2.pack(fill="x", padx=8, pady=(2, 2))
+        ctk.CTkLabel(als_row2, text="ALS raw:", width=68, anchor="w",
+                     font=ctk.CTkFont(size=10),
+                     text_color="#888888").pack(side="left")
+        self._als_raw_label = ctk.CTkLabel(als_row2, text="—",
+                                            font=ctk.CTkFont(family="Courier New", size=10),
+                                            text_color="#888888", width=50, anchor="w")
+        self._als_raw_label.pack(side="left")
+        ctk.CTkLabel(als_row2, text="WHITE raw:", width=80, anchor="w",
+                     font=ctk.CTkFont(size=10),
+                     text_color="#888888").pack(side="left", padx=(8, 0))
+        self._als_white_label = ctk.CTkLabel(als_row2, text="—",
+                                              font=ctk.CTkFont(family="Courier New", size=10),
+                                              text_color="#888888", width=50, anchor="w")
+        self._als_white_label.pack(side="left")
+
+        self._als_ts_label = ctk.CTkLabel(als_box, text="ts: —",
+                                           font=ctk.CTkFont(size=10),
+                                           text_color="#666666")
+        self._als_ts_label.pack(anchor="w", padx=10, pady=(2, 8))
 
     def _add_digital_row(self, parent, name: str, tooltip: str = ""):
         row = ctk.CTkFrame(parent, fg_color="transparent")
@@ -814,6 +857,21 @@ class GCSTesterApp(ctk.CTk):
         self._adc_ts_label.configure(text=f"ts: {ts} ms")
         self._pkt_count += 1
 
+    def _update_als(self, payload: bytes):
+        # als_packet_t: als_raw(u16) + white_raw(u16) + lux_milli(u32) + ts_ms(u16) = 10 bytes
+        try:
+            als_raw, white_raw, lux_milli, ts = struct.unpack_from("<HHIH", payload, 0)
+        except struct.error:
+            return
+        lux = lux_milli / 1000.0
+        self._als_lux_label.configure(text=f"{lux:,.2f} lx")
+        # Bar: 0–120000 lux range (VEML7700 max with gain 1/8)
+        self._als_bar.set(min(1.0, lux / 120000.0))
+        self._als_raw_label.configure(text=str(als_raw))
+        self._als_white_label.configure(text=str(white_raw))
+        self._als_ts_label.configure(text=f"ts: {ts} ms")
+        self._pkt_count += 1
+
     def _update_digital(self, port_a: int, port_b: int, ts: int):
         mapping = {
             "KEY":   (port_a, 5),
@@ -873,6 +931,10 @@ class GCSTesterApp(ctk.CTk):
             if len(payload) >= 3:
                 evt_id, value = payload[0], struct.unpack_from("<H", payload, 1)[0]
                 self.after(0, self._handle_event, evt_id, value)
+
+        elif msg_type == GCSProtocol.TYPE_ALS:
+            if len(payload) >= 10:
+                self.after(0, self._update_als, payload)
 
         elif msg_type == GCSProtocol.TYPE_ERROR:
             code = payload[0] if payload else 0
