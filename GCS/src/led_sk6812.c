@@ -20,7 +20,7 @@
 /* ------------------------------------------------------------------ */
 
 /*
- * Pixel buffer: 32-bit words packed as (G<<24)|(R<<16)|(B<<8).
+ * Pixel buffer: 32-bit words packed as (G<<24)|(R<<16)|(B<<8)|(W<<0).
  * Brightness is applied when led_sk6812_set() is called.
  */
 static uint32_t s_pixel_buf[SK6812_MAX_PIXELS];
@@ -74,7 +74,7 @@ static void warn_update_pixels(uint32_t tick)
             else                           col = COL_GREEN;
         }
 
-        /* Apply brightness per channel */
+        /* Apply brightness per channel; W=0 for all warning colours */
         uint8_t g = (uint8_t)(((col >> 24) & 0xFFu) * (uint16_t)br >> 8);
         uint8_t r = (uint8_t)(((col >> 16) & 0xFFu) * (uint16_t)br >> 8);
         uint8_t b = (uint8_t)(((col >>  8) & 0xFFu) * (uint16_t)br >> 8);
@@ -142,13 +142,15 @@ void led_sk6812_set(const uint8_t *pixel_data, uint8_t num_pixels)
     uint8_t br = s_brightness;
 
     for (uint8_t i = 0; i < num_pixels; i++) {
-        /* Input is GRB order; apply brightness per channel */
-        uint8_t g = (uint8_t)(((uint16_t)pixel_data[i * 3 + 0] * br) >> 8);
-        uint8_t r = (uint8_t)(((uint16_t)pixel_data[i * 3 + 1] * br) >> 8);
-        uint8_t b = (uint8_t)(((uint16_t)pixel_data[i * 3 + 2] * br) >> 8);
+        /* Input is GRBW order; apply brightness per channel */
+        uint8_t g = (uint8_t)(((uint16_t)pixel_data[i * 4 + 0] * br) >> 8);
+        uint8_t r = (uint8_t)(((uint16_t)pixel_data[i * 4 + 1] * br) >> 8);
+        uint8_t b = (uint8_t)(((uint16_t)pixel_data[i * 4 + 2] * br) >> 8);
+        uint8_t w = (uint8_t)(((uint16_t)pixel_data[i * 4 + 3] * br) >> 8);
         s_pixel_buf[i] = ((uint32_t)g << 24) |
                          ((uint32_t)r << 16) |
-                         ((uint32_t)b <<  8);
+                         ((uint32_t)b <<  8) |
+                         ((uint32_t)w      );
     }
 
     /* Always cover the warning panel so it is included in every DMA transfer */

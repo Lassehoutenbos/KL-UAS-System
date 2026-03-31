@@ -127,11 +127,11 @@ static void dispatch_led_command(void)
     uint8_t chain = s_rx_buf[0];
 
     if (chain == 0x00) {
-        /* SK6812 — raw GRB pixels: [chain][num_pixels][G R B ...] */
+        /* SK6812 — raw GRBW pixels: [chain][num_pixels][G R B W ...] */
         if (s_rx_len < 2) return;
         uint8_t num_pixels = s_rx_buf[1];
         uint8_t data_len   = (uint8_t)(s_rx_len - 2);
-        if (num_pixels == 0 || data_len < (uint8_t)(num_pixels * 3)) return;
+        if (num_pixels == 0 || data_len < (uint8_t)(num_pixels * 4)) return;
         led_sk6812_set(&s_rx_buf[2], num_pixels);
         if (s_sk6812_handle) xTaskNotifyGive(s_sk6812_handle);
 

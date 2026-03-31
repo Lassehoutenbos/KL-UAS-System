@@ -13,7 +13,7 @@ void led_sk6812_init(void);
 
 /**
  * Copy pixel data into the SK6812 pixel buffer.
- * pixel_data: array of num_pixels * 3 bytes in GRB order.
+ * pixel_data: array of num_pixels * 4 bytes in GRBW order.
  * Applies current brightness scale. Thread-safe: call from any task,
  * then xTaskNotifyGive(sk6812_task_handle) to trigger DMA transfer.
  */

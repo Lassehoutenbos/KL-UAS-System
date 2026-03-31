@@ -62,8 +62,8 @@ class GCSProtocol:
     WARN_SEVERITY_NAMES = ["OK", "WARNING", "CRITICAL"]
 
     # Firmware max payload = 256 bytes.
-    # SK6812 chain: payload = [chain(1), num_px(1), GRB*n] → max n = (256-2)/3 = 84
-    SK6812_MAX_PIXELS_PER_SEND = 84
+    # SK6812 chain: payload = [chain(1), num_px(1), GRBW*n] → max n = (256-2)/4 = 63
+    SK6812_MAX_PIXELS_PER_SEND = 63
 
     @staticmethod
     def _checksum(msg_type: int, length: int, payload: bytes) -> int:
@@ -591,7 +591,7 @@ class GCSTesterApp(ctk.CTk):
                           ).pack(side="left")
 
         # --- SK6812 Strip (Chain 0x00) --------------------------------------
-        self._section_label(p, "SK6812 STRIP  (Chain 0x00 · GRB)")
+        self._section_label(p, "SK6812 STRIP  (Chain 0x00 · GRBW)")
         sk_box = ctk.CTkFrame(p, corner_radius=6)
         sk_box.pack(fill="x", padx=8, pady=(0, 8))
 
@@ -610,7 +610,7 @@ class GCSTesterApp(ctk.CTk):
                              font=ctk.CTkFont(size=10), text_color="#888888")
         note.pack(anchor="w", padx=10, pady=(0, 4))
 
-        self._sk_g = self._sk_r = self._sk_b = None  # will be set below
+        self._sk_g = self._sk_r = self._sk_b = self._sk_w = None  # will be set below
         self._sk_preview = None
 
         sk_color_frame = ctk.CTkFrame(sk_box, fg_color="transparent")
@@ -644,6 +644,7 @@ class GCSTesterApp(ctk.CTk):
         self._sk_g = sk_slider_row(sk_color_frame, "G")
         self._sk_r = sk_slider_row(sk_color_frame, "R")
         self._sk_b = sk_slider_row(sk_color_frame, "B")
+        self._sk_w = sk_slider_row(sk_color_frame, "W")
 
         btn_row = ctk.CTkFrame(sk_box, fg_color="transparent")
         btn_row.pack(fill="x", padx=8, pady=(4, 8))
@@ -797,6 +798,7 @@ class GCSTesterApp(ctk.CTk):
         g_val = int(self._sk_g.get())
         r_val = int(self._sk_r.get())
         b_val = int(self._sk_b.get())
+        w_val = int(self._sk_w.get())
 
         cap = GCSProtocol.SK6812_MAX_PIXELS_PER_SEND
         # Send in chunks of at most cap pixels
@@ -805,24 +807,25 @@ class GCSTesterApp(ctk.CTk):
             chunk_end  = min(end, px + cap - 1)
             # Payload: all pixels from 0 to chunk_end (zeros before 'px')
             num_pixels = chunk_end + 1
-            pixel_data = bytearray(num_pixels * 3)
+            pixel_data = bytearray(num_pixels * 4)
             for p in range(px, chunk_end + 1):
-                base = p * 3
+                base = p * 4
                 pixel_data[base]     = g_val
                 pixel_data[base + 1] = r_val
                 pixel_data[base + 2] = b_val
+                pixel_data[base + 3] = w_val
             payload = bytes([GCSProtocol.CHAIN_SK6812, num_pixels]) + bytes(pixel_data)
             pkt = GCSProtocol.build_packet(GCSProtocol.TYPE_LED, payload)
             if self._driver.send(pkt):
                 self._log_tx(GCSProtocol.TYPE_LED, payload,
-                             f"SK6812 px {px}-{chunk_end} G={g_val} R={r_val} B={b_val}")
+                             f"SK6812 px {px}-{chunk_end} G={g_val} R={r_val} B={b_val} W={w_val}")
             px = chunk_end + 1
 
     def _send_sk6812_clear(self):
         cap = GCSProtocol.SK6812_MAX_PIXELS_PER_SEND
         for start in range(0, 128, cap):
             num = min(cap, 128 - start)
-            pixel_data = bytes(num * 3)
+            pixel_data = bytes(num * 4)
             payload = bytes([GCSProtocol.CHAIN_SK6812, num]) + pixel_data
             pkt = GCSProtocol.build_packet(GCSProtocol.TYPE_LED, payload)
             self._driver.send(pkt)
@@ -1039,7 +1042,12 @@ class GCSTesterApp(ctk.CTk):
         g = int(self._sk_g.get())
         r = int(self._sk_r.get())
         b = int(self._sk_b.get())
-        color = f"#{r:02x}{g:02x}{b:02x}"
+        w = int(self._sk_w.get())
+        # Blend white channel additively for preview approximation
+        r_eff = min(255, r + w)
+        g_eff = min(255, g + w)
+        b_eff = min(255, b + w)
+        color = f"#{r_eff:02x}{g_eff:02x}{b_eff:02x}"
         self._sk_preview.itemconfig("fill", fill=color)
 
     # -----------------------------------------------------------------------

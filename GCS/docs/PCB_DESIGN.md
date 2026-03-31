@@ -14,8 +14,8 @@ The Pico communicates with the Raspberry Pi host over **USB CDC** (TinyUSB).
 | Button LEDs | WS2811 RGB, 2 buttons (LED5, LED6) | Integrated in button body | PIO0 SM1 / 400 kbps NRZ | 5 V |
 | GPIO expander | MCP23017-E/SS | SSOP-28 | I2C0 400 kHz, addr 0x20 | 3.3 V |
 | Ambient light sensor | VEML7700 | OPLGA-6 (2 × 2 mm) | I2C0 400 kHz, addr 0x10 | 3.3 V (2.5–3.6 V) |
-| ADC | MCP3208-CI/SL (8-ch, 12-bit) | SOIC-16 | SPI1 1 MHz, CS = GP17 | 3.3 V, Vref = 3.3 V |
-| Display | ST7735S TFT 1.44" 128×128 GreenTab | 8-pin module header | SPI1 4 MHz, CS = GP20 | 3.3 V |
+| ADC | MCP3208-CI/SL (8-ch, 12-bit) | SOIC-16 | SPI0 1 MHz, CS = GP17 | 3.3 V, Vref = 3.3 V |
+| Display | ST7735S TFT 1.44" 128×128 GreenTab | 8-pin module header | SPI1 15.625 MHz, CS = GP12 | 3.3 V |
 | Level shifter A | 74AHCT125 (or SN74LVC2T45) | SO-14 | GP0 → SK6812 DIN | IN: 3.3 V / OUT: 5 V |
 | Level shifter B | 74AHCT125 (or SN74LVC2T45) | SO-14 | GP1 → WS2811 DIN | IN: 3.3 V / OUT: 5 V |
 
@@ -31,13 +31,15 @@ The Pico communicates with the Raspberry Pi host over **USB CDC** (TinyUSB).
 | GP1 | 2 | WS2811_DATA | Level shifter B pin 2 (1A input) |
 | GP4 | 6 | I2C0 SDA | MCP23017 pin 13 + VEML7700 pin SDA + 4.7 kΩ pull-up to 3.3 V |
 | GP5 | 7 | I2C0 SCL | MCP23017 pin 12 + VEML7700 pin SCL + 4.7 kΩ pull-up to 3.3 V |
-| GP16 | 21 | SPI1 MISO (RX) | MCP3208 pin 12 (DOUT) |
+| GP10 | 14 | SPI1 SCK | ST7735 module pin SCL/SCK |
+| GP11 | 15 | SPI1 MOSI (TX) | ST7735 module pin SDA/MOSI |
+| GP12 | 16 | ST7735 CS (active low) | ST7735 module pin CS |
+| GP13 | 17 | ST7735 DC | ST7735 module pin DC/RS |
+| GP14 | 19 | ST7735 RST (active low) | ST7735 module pin RES (10 kΩ pull-up to 3.3 V) |
+| GP16 | 21 | SPI0 MISO (RX) | MCP3208 pin 12 (DOUT) |
 | GP17 | 22 | MCP3208 CS (active low) | MCP3208 pin 10 (/CS-/SHDN) |
-| GP18 | 24 | SPI1 SCK | MCP3208 pin 13 (CLK) + ST7735 SCK |
-| GP19 | 25 | SPI1 MOSI (TX) | MCP3208 pin 11 (DIN) + ST7735 SDA/MOSI |
-| GP20 | 26 | ST7735 CS (active low) | ST7735 module pin CS |
-| GP21 | 27 | ST7735 DC | ST7735 module pin DC/RS |
-| GP22 | 29 | ST7735 RST (active low) | ST7735 module pin RES (10 kΩ pull-up to 3.3 V) |
+| GP18 | 24 | SPI0 SCK | MCP3208 pin 13 (CLK) |
+| GP19 | 25 | SPI0 MOSI (TX) | MCP3208 pin 11 (DIN) |
 | VSYS | 39 | 5 V input | 5 V rail via Schottky diode (BAT54 or similar) |
 | 3V3 OUT | 36 | 3.3 V output | 3.3 V rail — powers MCP23017, MCP3208, level shifter VCC_A |
 | GND | 3/8/13/18/23/28/33/38 | GND | Common GND plane |
@@ -131,7 +133,7 @@ Shares the same I2C0 bus as the MCP23017. No address configuration — I2C addre
 
 ---
 
-### SPI1 — MCP3208 ADC (SOIC-16)
+### SPI0 — MCP3208 ADC (SOIC-16)
 
 **Chip select:** GP17 (Pico pin 22), software-controlled, active low, 1 MHz clock.
 
@@ -149,9 +151,9 @@ Shares the same I2C0 bus as the MCP23017. No address configuration — I2C addre
 | 8 | CH7 | Reserved — leave unconnected |
 | 9 | DGND | GND |
 | 10 | /CS-/SHDN | GP17 (Pico pin 22) |
-| 11 | DIN | GP19 / SPI1 MOSI (Pico pin 25) |
-| 12 | DOUT | GP16 / SPI1 MISO (Pico pin 21) |
-| 13 | CLK | GP18 / SPI1 SCK (Pico pin 24) |
+| 11 | DIN | GP19 / SPI0 MOSI (Pico pin 25) |
+| 12 | DOUT | GP16 / SPI0 MISO (Pico pin 21) |
+| 13 | CLK | GP18 / SPI0 SCK (Pico pin 24) |
 | 14 | AGND | GND (star-point, isolated from 5 V LED return where possible) |
 | 15 | VREF | 3.3 V — tied to VDD pin 16 (single-supply, Vref = VDD = 3.3 V) |
 | 16 | VDD | 3.3 V + 100 nF to AGND (place cap within 2 mm of pin) |
@@ -179,22 +181,22 @@ Firmware conversion: `Vbat = (raw / 4095.0) × 3.3 × 4.0`
 
 ### SPI1 — ST7735S TFT 1.44" 128×128 (module)
 
-**Chip select:** GP20 (Pico pin 26), software-controlled, active low, 4 MHz clock.
+**Chip select:** GP12 (Pico pin 16), software-controlled, active low, 15.625 MHz clock (125 MHz / 8).
 
-The ST7735 module shares SCK and MOSI with the MCP3208. MISO is not connected to the display (display is write-only). Bus access is protected by `g_spi1_mutex`.
+The ST7735 has a dedicated SPI1 bus — it no longer shares pins with the MCP3208.
 
 | Module pin | Signal | Connected to |
 | --- | --- | --- |
 | GND | Power GND | GND |
 | VCC | 3.3 V supply | 3.3 V + 100 nF local decoupling |
-| SCL / SCK | SPI clock | GP18 (Pico pin 24) / SPI1 SCK |
-| SDA / MOSI | SPI data | GP19 (Pico pin 25) / SPI1 TX |
-| RES | Hardware reset (active low) | GP22 (Pico pin 29); 10 kΩ pull-up to 3.3 V |
-| DC / RS | Data=1 / Command=0 | GP21 (Pico pin 27) |
-| CS | Chip select (active low) | GP20 (Pico pin 26) |
-| BL | Backlight LED anode | 3.3 V via 10 Ω resistor (or GP26 for PWM dimming) |
+| SCL / SCK | SPI clock | GP10 (Pico pin 14) / SPI1 SCK |
+| SDA / MOSI | SPI data | GP11 (Pico pin 15) / SPI1 TX |
+| RES | Hardware reset (active low) | GP14 (Pico pin 19); 10 kΩ pull-up to 3.3 V |
+| DC / RS | Data=1 / Command=0 | GP13 (Pico pin 17) |
+| CS | Chip select (active low) | GP12 (Pico pin 16) |
+| BL | Backlight LED anode | 3.3 V via 10 Ω resistor (or PWM-capable GPIO for dimming) |
 
-**Note:** if ST7735 displays a white screen, reduce `ST7735_SPI_BAUD` from 4 MHz to 2 MHz in [pins.h](../src/pins.h#L84).
+**Note:** if ST7735 displays a white screen, reduce `ST7735_SPI_BAUD` from 15.625 MHz to a lower divisor (e.g. 125 MHz / 16 = 7.8 MHz) in [pins.h](../src/pins.h#L91).
 
 ---
 
@@ -410,7 +412,7 @@ Connection state machine transitions:
 | Indicator LED 2 | JST-XH 2-pin | PA0 via 120 Ω, GND | MCP23017 pin 21 |
 | Indicator LED 3 | JST-XH 2-pin | PA1 via 120 Ω, GND | MCP23017 pin 22 |
 | Indicator LED 4 | JST-XH 2-pin | PA2 via 120 Ω, GND | MCP23017 pin 23 |
-| ST7735 TFT | 8-pin 0.1" header | GND, VCC, SCL, SDA, RES, DC, CS, BL | See ST7735 table above |
+| ST7735 TFT | 8-pin 0.1" header | GND, VCC, SCL, SDA, RES, DC, CS, BL | GP10–GP14 / SPI1 — see ST7735 table above |
 | Battery voltage | Screw terminal 2-pin | Vin (≤ 13.2 V), GND | CH0 via 30 kΩ/10 kΩ divider |
 | External voltage | Screw terminal 2-pin | Vin (≤ 13.2 V), GND | CH1 via 30 kΩ/10 kΩ divider |
 | Spare analog CH2–CH5 | 0.1" header | CH2, CH3, CH4, CH5, GND | Direct 0–3.3 V input |
@@ -425,7 +427,7 @@ Connection state machine transitions:
 - Keep GP0 and GP1 traces < 30 mm from Pico to level shifter input.
 - Place 330–470 Ω series resistors at the LED DIN connector pads, not at the level shifter output.
 - Route I2C pull-up resistors within 10 mm of MCP23017 pins 12–13.
-- Keep SPI traces (GP16–GP22) away from 5 V high-current traces.
+- Keep SPI0 traces (GP16–GP19) and SPI1 traces (GP10–GP14) away from 5 V high-current traces.
 - Voltage divider resistors for CH0/CH1 should sit close to MCP3208 input pins (high-impedance nodes pick up noise easily).
 - Separate analog GND return from the 5 V LED supply return; join at a single star point near the main 5 V input connector.
 - Use a continuous GND copper pour on the bottom layer.
