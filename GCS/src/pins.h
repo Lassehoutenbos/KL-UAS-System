@@ -20,14 +20,14 @@
 #define MCP23017_ADDR       0x20  /* A2/A1/A0 all tied to GND */
 
 /* ------------------------------------------------------------------ */
-/* SPI1 — MCP3208 8-channel ADC                                         */
-/* GP16-GP19 map to spi1 on RP2040                                      */
+/* SPI0 — MCP3208 8-channel ADC                                         */
+/* GP16-GP19 map to spi0 on RP2040                                      */
 /* ------------------------------------------------------------------ */
-#define PIN_SPI_MISO        16  /* GP16 — spi1 RX  */
+#define PIN_SPI_MISO        16  /* GP16 — spi0 RX  */
 #define PIN_SPI_CS          17  /* GP17 — software CS (active low) */
-#define PIN_SPI_SCK         18  /* GP18 — spi1 SCK */
-#define PIN_SPI_MOSI        19  /* GP19 — spi1 TX  */
-#define MCP3208_SPI_INST    spi1
+#define PIN_SPI_SCK         18  /* GP18 — spi0 SCK */
+#define PIN_SPI_MOSI        19  /* GP19 — spi0 TX  */
+#define MCP3208_SPI_INST    spi0
 #define MCP3208_SPI_BAUD    1000000  /* 1 MHz — MCP3208 max 2 MHz at 3.3 V */
 
 /* ------------------------------------------------------------------ */
@@ -80,14 +80,15 @@
 #define MCP_GPPUB_VAL       0xFF
 
 /* ------------------------------------------------------------------ */
-/* SPI1 — ST7735 TFT display (shares SPI1 bus with MCP3208)           */
-/* Use separate CS/DC/RST; bus protected by g_spi1_mutex               */
+/* SPI1 — ST7735S TFT display (dedicated bus, GP10-GP11)               */
 /* ------------------------------------------------------------------ */
-#define PIN_TFT_CS          20  /* GP20 — software CS (active low)   */
-#define PIN_TFT_DC          21  /* GP21 — data(1) / command(0)        */
-#define PIN_TFT_RST         22  /* GP22 — hardware reset (active low) */
+#define PIN_TFT_SCK         10  /* GP10 — spi1 SCK                    */
+#define PIN_TFT_MOSI        11  /* GP11 — spi1 TX                     */
+#define PIN_TFT_CS          12  /* GP12 — software CS (active low)    */
+#define PIN_TFT_DC          13  /* GP13 — data(1) / command(0)        */
+#define PIN_TFT_RST         14  /* GP14 — hardware reset (active low) */
 #define ST7735_SPI_INST     spi1
-#define ST7735_SPI_BAUD     4000000   /* 4 MHz — reduce if display stays white */
+#define ST7735_SPI_BAUD     15625000  /* 15.625 MHz — 125 MHz / 8, near ST7735S max */
 
 /* ------------------------------------------------------------------ */
 /* MCP3208 channel assignments                                          */

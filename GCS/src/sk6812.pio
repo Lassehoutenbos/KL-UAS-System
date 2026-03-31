@@ -1,5 +1,5 @@
 ;
-; SK6812 addressable LED driver — 800 Kbps NRZ, GRB 24-bit
+; SK6812 addressable LED driver — 800 Kbps NRZ, GRBW 32-bit
 ;
 ; Adapted from the Raspberry Pi Pico SDK ws2812.pio example.
 ; Drives PIO0 SM0 on PIN_SK6812_DATA (GP0) via a 3.3V→5V level shifter.
@@ -9,9 +9,8 @@
 ;   T1H = 6 cycles (0.750 µs),  T1L = 4 cycles (0.500 µs)
 ;   Reset: >80 µs low — handled in C by delaying before next DMA transfer
 ;
-; Pixel data is pushed 32 bits at a time (MSB first) with the 24 colour
-; bits left-aligned: bits[31:8] = GRB, bits[7:0] ignored.
-; Set autopull threshold to 24 in the init function.
+; Pixel data is pushed 32 bits at a time (MSB first): bits[31:24]=G, [23:16]=R,
+; [15:8]=B, [7:0]=W. Set autopull threshold to 32 in the init function.
 ;
 
 .program sk6812
@@ -41,7 +40,7 @@ static inline void sk6812_program_init(PIO pio, uint sm, uint offset,
 
     pio_sm_config c = sk6812_program_get_default_config(offset);
     sm_config_set_sideset_pins(&c, pin);
-    sm_config_set_out_shift(&c, false, true, 24);   /* shift left, autopull at 24 bits */
+    sm_config_set_out_shift(&c, false, true, 32);   /* shift left, autopull at 32 bits (SK6812 GRBW) */
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
 
     float div = clock_get_hz(clk_sys) / (freq * 10.0f);

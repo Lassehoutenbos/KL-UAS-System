@@ -15,7 +15,6 @@
 /* Shared state                                                          */
 /* ------------------------------------------------------------------ */
 
-SemaphoreHandle_t    g_spi1_mutex  = NULL;
 volatile adc_packet_t g_latest_adc = {0};
 
 /* ------------------------------------------------------------------ */
@@ -24,7 +23,7 @@ volatile adc_packet_t g_latest_adc = {0};
 
 /*
  * Read one channel from the MCP3208 in single-ended mode.
- * Caller must hold g_spi1_mutex and have set SPI baud to MCP3208_SPI_BAUD.
+ * Caller must be adc_task (sole owner of SPI0 bus).
  */
 static uint16_t mcp3208_read(uint8_t channel)
 {
@@ -48,8 +47,7 @@ static uint16_t mcp3208_read(uint8_t channel)
 
 void analog_init(void)
 {
-    /* SPI1 hardware lines — set by whichever caller wins init first.
-     * Both MCP3208 and ST7735 use CPOL=0 CPHA=0; baud rate is set per-transaction. */
+    /* SPI0 hardware — dedicated to MCP3208 ADC */
     spi_init(MCP3208_SPI_INST, MCP3208_SPI_BAUD);
     spi_set_format(MCP3208_SPI_INST, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
@@ -74,15 +72,9 @@ void adc_task(void *param)
     while (1) {
         adc_packet_t pkt;
 
-        /* Acquire SPI1 bus and set MCP3208 baud rate */
-        xSemaphoreTake(g_spi1_mutex, portMAX_DELAY);
-        spi_set_baudrate(MCP3208_SPI_INST, MCP3208_SPI_BAUD);
-
         for (int ch = 0; ch < ADC_NUM_CHANNELS; ch++) {
             pkt.ch[ch] = mcp3208_read((uint8_t)ch);
         }
-
-        xSemaphoreGive(g_spi1_mutex);
 
         pkt.ts_ms = (uint16_t)(xTaskGetTickCount() & 0xFFFF);
 

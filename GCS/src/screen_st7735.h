@@ -27,7 +27,7 @@
 
 /**
  * Initialise the ST7735 display and clear it to black.
- * Must be called after g_spi1_mutex is created and SPI1 GPIO is configured.
+ * Must be called from a FreeRTOS task context (uses vTaskDelay).
  */
 void st7735_init(void);
 

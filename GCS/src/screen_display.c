@@ -35,6 +35,33 @@ static float adc_to_volts(uint16_t raw, float divider)
 static volatile uint8_t s_mode      = SCREEN_MODE_AUTO;
 static          uint8_t s_last_mode = 0xFF; /* forces first render */
 
+/* Snapshot of last rendered main-screen data — redraw only on change */
+static uint16_t    s_last_bat_raw  = 0xFFFF;
+static uint16_t    s_last_ext_raw  = 0xFFFF;
+static uint8_t     s_last_porta    = 0xFF;
+static uint8_t     s_last_portb    = 0xFF;
+static sys_state_t s_last_sysstate = 0xFF;
+
+static bool main_needs_redraw(void)
+{
+    uint16_t    bat = g_latest_adc.ch[ADC_CH_BAT_VIN];
+    uint16_t    ext = g_latest_adc.ch[ADC_CH_EXT_VIN];
+    uint8_t     pa  = g_latest_digital.port_a;
+    uint8_t     pb  = g_latest_digital.port_b;
+    sys_state_t st  = g_sys_state;
+
+    if (bat == s_last_bat_raw && ext == s_last_ext_raw &&
+        pa == s_last_porta && pb == s_last_portb && st == s_last_sysstate)
+        return false;
+
+    s_last_bat_raw  = bat;
+    s_last_ext_raw  = ext;
+    s_last_porta    = pa;
+    s_last_portb    = pb;
+    s_last_sysstate = st;
+    return true;
+}
+
 /* ------------------------------------------------------------------ */
 /* Render helpers                                                         */
 /* ------------------------------------------------------------------ */
@@ -265,8 +292,7 @@ void screen_task(void *param)
                 case 0xFF:                               break; /* boot — skip */
                 default:                  render_main();       break;
             }
-        } else if (effective == SCREEN_MODE_MAIN) {
-            /* Refresh live data on main screen even if mode hasn't changed */
+        } else if (effective == SCREEN_MODE_MAIN && main_needs_redraw()) {
             render_main();
         }
 

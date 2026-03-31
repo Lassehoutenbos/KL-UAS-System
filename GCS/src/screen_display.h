@@ -10,7 +10,7 @@
 
 /**
  * Initialise the ST7735 display and set initial state.
- * Must be called after g_spi1_mutex is created and SPI1 GPIO is configured.
+ * Must be called before starting the FreeRTOS scheduler.
  */
 void screen_display_init(void);
 

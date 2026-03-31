@@ -1,13 +1,12 @@
 #include "screen_st7735.h"
 #include "pins.h"
-#include "analog.h"   /* g_spi1_mutex */
 
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
 #include "FreeRTOS.h"
-#include "semphr.h"
+#include "task.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -40,8 +39,10 @@
 #define ST77_GMCTRN1    0xE1
 #define ST77_NORON      0x13
 
-/* GreenTab 1.44" pixel offsets */
-#define XSTART  2
+/* ST7735S 128x128 pixel offsets for 90° CCW rotation (MV=1).
+ * With MV set, CASET addresses rows (132→offset 3) and
+ * RASET addresses columns (162→offset 2). */
+#define XSTART  1
 #define YSTART  1
 
 /* ------------------------------------------------------------------ */
@@ -148,7 +149,7 @@ static const uint8_t s_font5x7[][5] = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Low-level SPI helpers (caller must hold g_spi1_mutex)                */
+/* Low-level SPI helpers                                                 */
 /* ------------------------------------------------------------------ */
 
 static inline void dc_cmd(void) { gpio_put(PIN_TFT_DC, 0); }
@@ -206,6 +207,12 @@ static void flood_colour(uint16_t color, uint32_t n)
 /* ------------------------------------------------------------------ */
 void st7735_init(void)
 {
+    /* SPI1 hardware — dedicated to ST7735S display */
+    spi_init(ST7735_SPI_INST, ST7735_SPI_BAUD);
+    spi_set_format(ST7735_SPI_INST, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+    gpio_set_function(PIN_TFT_SCK,  GPIO_FUNC_SPI);
+    gpio_set_function(PIN_TFT_MOSI, GPIO_FUNC_SPI);
+
     /* Configure CS, DC, RST as GPIO outputs */
     gpio_init(PIN_TFT_CS);  gpio_set_dir(PIN_TFT_CS,  GPIO_OUT); gpio_put(PIN_TFT_CS,  1);
     gpio_init(PIN_TFT_DC);  gpio_set_dir(PIN_TFT_DC,  GPIO_OUT); gpio_put(PIN_TFT_DC,  1);
@@ -217,11 +224,16 @@ void st7735_init(void)
     gpio_put(PIN_TFT_RST, 1);
     vTaskDelay(pdMS_TO_TICKS(120));
 
-    xSemaphoreTake(g_spi1_mutex, portMAX_DELAY);
-    spi_set_baudrate(ST7735_SPI_INST, ST7735_SPI_BAUD);
+    /* SWRESET — wait 150 ms after */
+    write_cmd(ST77_SWRESET);
+    vTaskDelay(pdMS_TO_TICKS(150));
 
-    write_cmd(ST77_SWRESET); vTaskDelay(pdMS_TO_TICKS(150));
-    write_cmd(ST77_SLPOUT);  vTaskDelay(pdMS_TO_TICKS(500));
+    /* SLPOUT — wait 500 ms after */
+    write_cmd(ST77_SLPOUT);
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    /* Main register setup */
+    {
 
     /* Frame rate */
     write_cmd(ST77_FRMCTR1);
@@ -250,8 +262,9 @@ void st7735_init(void)
 
     write_cmd(ST77_INVOFF);
 
-    /* Memory access control: rotation 3 (MX+MY) */
-    write_cmd(ST77_MADCTL);  write_data_byte(0xC0);
+    /* Memory access control: MX+MV = 270° CCW (= 90° CW) rotation, RGB colour order.
+     * If red/blue are swapped on your module, change 0x60 to 0x68 (BGR). */
+    write_cmd(ST77_MADCTL);  write_data_byte(0x68);
 
     /* 16-bit colour */
     write_cmd(ST77_COLMOD);  write_data_byte(0x05);
@@ -274,11 +287,12 @@ void st7735_init(void)
         write_data(g, 16);
     }
 
-    write_cmd(ST77_INVON);                        /* required for GreenTab */
-    write_cmd(ST77_NORON);  vTaskDelay(pdMS_TO_TICKS(10));
-    write_cmd(ST77_DISPON); vTaskDelay(pdMS_TO_TICKS(100));
+    write_cmd(ST77_NORON);
+    }
+    vTaskDelay(pdMS_TO_TICKS(10));
 
-    xSemaphoreGive(g_spi1_mutex);
+    write_cmd(ST77_DISPON);
+    vTaskDelay(pdMS_TO_TICKS(100));
 
     st7735_fill_screen(ST7735_BLACK);
 }
@@ -302,24 +316,18 @@ void st7735_fill_rect(int16_t x, int16_t y, int16_t w, int16_t h,
     if (x + w > ST7735_WIDTH)  w = ST7735_WIDTH  - x;
     if (y + h > ST7735_HEIGHT) h = ST7735_HEIGHT - y;
 
-    xSemaphoreTake(g_spi1_mutex, portMAX_DELAY);
-    spi_set_baudrate(ST7735_SPI_INST, ST7735_SPI_BAUD);
     set_addr_window((uint8_t)x, (uint8_t)y,
                     (uint8_t)(x + w - 1), (uint8_t)(y + h - 1));
     flood_colour(color, (uint32_t)w * (uint32_t)h);
-    xSemaphoreGive(g_spi1_mutex);
 }
 
 void st7735_draw_pixel(int16_t x, int16_t y, uint16_t color)
 {
     if (x < 0 || x >= ST7735_WIDTH || y < 0 || y >= ST7735_HEIGHT) return;
 
-    xSemaphoreTake(g_spi1_mutex, portMAX_DELAY);
-    spi_set_baudrate(ST7735_SPI_INST, ST7735_SPI_BAUD);
     set_addr_window((uint8_t)x, (uint8_t)y, (uint8_t)x, (uint8_t)y);
     uint8_t pix[2] = { (uint8_t)(color >> 8), (uint8_t)(color & 0xFF) };
     write_data(pix, 2);
-    xSemaphoreGive(g_spi1_mutex);
 }
 
 void st7735_draw_hline(int16_t x, int16_t y, int16_t len, uint16_t color)

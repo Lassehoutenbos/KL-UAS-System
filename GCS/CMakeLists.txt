@@ -116,3 +116,34 @@ target_link_libraries(GCS
 )
 
 pico_add_extra_outputs(GCS)
+
+# ------------------------------------------------------------------ #
+# TFT display self-test (flash instead of GCS.uf2 to test display)   #
+# ------------------------------------------------------------------ #
+add_executable(GCS_TFT_Test
+    src/test_tft.c
+    src/screen_st7735.c
+)
+
+pico_set_program_name(GCS_TFT_Test "GCS_TFT_Test")
+pico_set_program_version(GCS_TFT_Test "1.0")
+
+pico_enable_stdio_uart(GCS_TFT_Test 0)
+pico_enable_stdio_usb(GCS_TFT_Test 0)
+
+target_include_directories(GCS_TFT_Test PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}/src
+    ${FREERTOS_KERNEL_PATH}/include
+    ${FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2040/include
+)
+
+target_link_libraries(GCS_TFT_Test
+    pico_stdlib
+    hardware_i2c
+    hardware_spi
+    hardware_gpio
+    freertos_kernel
+)
+
+pico_add_extra_outputs(GCS_TFT_Test)

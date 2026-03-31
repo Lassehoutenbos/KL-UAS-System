@@ -60,10 +60,6 @@ int main(void)
     /* Report watchdog reset as error (checked before re-enabling watchdog) */
     bool wdog_reset = watchdog_caused_reboot();
 
-    /* ---- SPI1 mutex (must exist before analog_init or screen_display_init) ---- */
-    g_spi1_mutex = xSemaphoreCreateMutex();
-    configASSERT(g_spi1_mutex != NULL);
-
     /* ---- Hardware init (before scheduler) ---- */
     analog_init();
     digital_io_init();
