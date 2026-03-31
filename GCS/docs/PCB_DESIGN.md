@@ -141,8 +141,8 @@ Shares the same I2C0 bus as the MCP23017. No address configuration — I2C addre
 
 | IC pin | Name | Connect to |
 | --- | --- | --- |
-| 1 | CH0 | Battery voltage input (via 4:1 divider — see below) |
-| 2 | CH1 | External voltage input (via 4:1 divider — see below) |
+| 1 | CH0 | Battery voltage input (via 8:1 divider — see below) |
+| 2 | CH1 | External voltage input (via 8:1 divider — see below) |
 | 3 | CH2 | Spare sensor input (direct 0–3.3 V) |
 | 4 | CH3 | Spare sensor input |
 | 5 | CH4 | Spare sensor input |
@@ -162,18 +162,18 @@ Shares the same I2C0 bus as the MCP23017. No address configuration — I2C addre
 
 **Voltage divider for CH0 (battery) and CH1 (external):**
 ```
-Vin (up to 13.2 V)
+Vin (up to 25.2 V)
     │
-   R1 = 30 kΩ (0402, 1%)
+   R1 = 33 kΩ (0402, 1%)
     │
     ├──── CH0 or CH1 (MCP3208 input)
     │     └── 100 nF to GND  (noise filter)
-   R2 = 10 kΩ (0402, 1%)
+   R2 = 4.7 kΩ (0402, 1%)
     │
    GND
 ```
-Ratio = 4:1. Max input = 3.3 V × 4 = **13.2 V** (covers 3S LiPo max 12.6 V).
-Firmware conversion: `Vbat = (raw / 4095.0) × 3.3 × 4.0`
+Ratio = (33 + 4.7) / 4.7 ≈ **8.02:1**. Max input = 3.3 V × 8.02 = **26.5 V** (covers 6S LiPo max 25.2 V).
+Firmware conversion: `Vbat = (raw / 4095.0) × 3.3 × 8.021`
 
 **Spare channels CH2–CH5:** connect directly to 0–3.3 V analog signals. Add 100 nF to GND at each input pin.
 
@@ -413,8 +413,8 @@ Connection state machine transitions:
 | Indicator LED 3 | JST-XH 2-pin | PA1 via 120 Ω, GND | MCP23017 pin 22 |
 | Indicator LED 4 | JST-XH 2-pin | PA2 via 120 Ω, GND | MCP23017 pin 23 |
 | ST7735 TFT | 8-pin 0.1" header | GND, VCC, SCL, SDA, RES, DC, CS, BL | GP10–GP14 / SPI1 — see ST7735 table above |
-| Battery voltage | Screw terminal 2-pin | Vin (≤ 13.2 V), GND | CH0 via 30 kΩ/10 kΩ divider |
-| External voltage | Screw terminal 2-pin | Vin (≤ 13.2 V), GND | CH1 via 30 kΩ/10 kΩ divider |
+| Battery voltage | Screw terminal 2-pin | Vin (≤ 26.5 V), GND | CH0 via 33 kΩ/4.7 kΩ divider |
+| External voltage | Screw terminal 2-pin | Vin (≤ 26.5 V), GND | CH1 via 33 kΩ/4.7 kΩ divider |
 | Spare analog CH2–CH5 | 0.1" header | CH2, CH3, CH4, CH5, GND | Direct 0–3.3 V input |
 | 5 V power input | Screw terminal / XT30 | 5 V, GND | Size for ≥ 3 A |
 | USB to Pi host | Pico onboard micro-USB | D+, D−, GND | TinyUSB CDC |

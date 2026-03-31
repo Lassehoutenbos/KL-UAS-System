@@ -4,7 +4,8 @@
       "Bash(python -c \":*)",
       "Read(//c/Users/houte/.pico-sdk/sdk/2.2.0//**)",
       "Bash(xargs grep:*)",
-      "Read(//c/Users/houte//**)"
+      "Read(//c/Users/houte//**)",
+      "Bash(grep -l \"ST7735\\\\|display\\\\|screen\" /c/Users/houte/Desktop/Overig/Projects/KL-UAS-System/GCS/src/*.h /c/Users/houte/Desktop/Overig/Projects/KL-UAS-System/GCS/src/*.c)"
     ]
   }
 }
