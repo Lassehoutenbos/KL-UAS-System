@@ -18,6 +18,7 @@ The Pico communicates with the Raspberry Pi host over **USB CDC** (TinyUSB).
 | Display | ST7735S TFT 1.44" 128×128 GreenTab | 8-pin module header | SPI1 15.625 MHz, CS = GP12 | 3.3 V |
 | Level shifter A | 74AHCT125 (or SN74LVC2T45) | SO-14 | GP0 → SK6812 DIN | IN: 3.3 V / OUT: 5 V |
 | Level shifter B | 74AHCT125 (or SN74LVC2T45) | SO-14 | GP1 → WS2811 DIN | IN: 3.3 V / OUT: 5 V |
+| RS-485 transceiver | SP3485EN | SOIC-8 | UART1 (GP8/GP9) + DE/RE (GP2) | 3.3 V |
 
 ---
 
@@ -31,6 +32,10 @@ The Pico communicates with the Raspberry Pi host over **USB CDC** (TinyUSB).
 | GP1 | 2 | WS2811_DATA | Level shifter B pin 2 (1A input) |
 | GP4 | 6 | I2C0 SDA | MCP23017 pin 13 + VEML7700 pin SDA + 4.7 kΩ pull-up to 3.3 V |
 | GP5 | 7 | I2C0 SCL | MCP23017 pin 12 + VEML7700 pin SCL + 4.7 kΩ pull-up to 3.3 V |
+| GP2  | 4  | RS485 DE/RE | SP3485 pin 3 (DE) + pin 2 (/RE) tied together |
+| GP6  | 9  | RS485 /INT (input) | 8-pin rear connector pin 6; 10 kΩ pull-up to 3.3 V; peripherals open-drain to GND |
+| GP8  | 11 | UART1 TX | SP3485 pin 4 (DI) |
+| GP9  | 12 | UART1 RX | SP3485 pin 1 (RO) |
 | GP10 | 14 | SPI1 SCK | ST7735 module pin SCL/SCK |
 | GP11 | 15 | SPI1 MOSI (TX) | ST7735 module pin SDA/MOSI |
 | GP12 | 16 | ST7735 CS (active low) | ST7735 module pin CS |
@@ -421,6 +426,7 @@ Connection state machine transitions:
 | Spare analog CH2–CH5 | 0.1" header | CH2, CH3, CH4, CH5, GND | Direct 0–3.3 V input |
 | 5 V power input | Screw terminal / XT30 | 5 V, GND | Size for ≥ 3 A |
 | USB to Pi host | Pico onboard micro-USB | D+, D−, GND | TinyUSB CDC |
+| Rear peripheral bus | GX16-8 circular | GND, +5 V, VBAT, RS-485 A, RS-485 B, /INT, spare, spare | See [RS485_PERIPHERAL_BUS.md](RS485_PERIPHERAL_BUS.md) |
 
 ---
 

@@ -80,6 +80,8 @@ Pico GP8 (UART1 TX) ──── SP3485 pin 4 (DI)
 Pico GP9 (UART1 RX) ──── SP3485 pin 1 (RO)
 Pico GP2            ──┬─ SP3485 pin 3 (DE)   ← drive high to transmit
                       └─ SP3485 pin 2 (/RE)  ← tie to DE (both together)
+Pico GP6 (/INT in)  ──── 8-pin connector pin 6 + 10 kΩ pull-up to 3.3 V
+                         (open-drain; peripherals pull low to signal event)
 
 SP3485 pin 6 (A) ──── bus A (via TVS)
 SP3485 pin 7 (B) ──── bus B (via TVS)
