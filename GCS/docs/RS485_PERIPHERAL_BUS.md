@@ -292,9 +292,11 @@ Add the following block:
 /* ------------------------------------------------------------------ */
 /* UART1 — RS-485 peripheral bus (GP8/GP9 + GP2 DE/RE)                 */
 /* ------------------------------------------------------------------ */
-#define PIN_RS485_TX        8   /* GP8  — UART1 TX → SP3485 DI        */
-#define PIN_RS485_RX        9   /* GP9  — UART1 RX ← SP3485 RO        */
-#define PIN_RS485_DE        2   /* GP2  — SP3485 DE + /RE (active high)*/
+#define PIN_RS485_TX        8   /* GP8  — UART1 TX → SP3485 DI          */
+#define PIN_RS485_RX        9   /* GP9  — UART1 RX ← SP3485 RO          */
+#define PIN_RS485_DE        2   /* GP2  — SP3485 DE + /RE (active high)  */
+#define PIN_RS485_INT       6   /* GP6  — /INT input (active low, pulled */
+                                /*         high; peripheral open-drains) */
 #define RS485_UART_INST     uart1
 #define RS485_BAUD          115200
 ```
@@ -520,6 +522,10 @@ void rs485_init(void)
     gpio_init(PIN_RS485_DE);
     gpio_set_dir(PIN_RS485_DE, GPIO_OUT);
     gpio_put(PIN_RS485_DE, 0);   /* receive mode by default */
+
+    gpio_init(PIN_RS485_INT);
+    gpio_set_dir(PIN_RS485_INT, GPIO_IN);
+    gpio_pull_up(PIN_RS485_INT); /* open-drain line — pulled high at rest */
 }
 
 void rs485_forward_cmd(const uint8_t *payload, uint16_t len)
@@ -553,7 +559,20 @@ void rs485_task(void *arg)
             }
         }
 
-        /* 2. Periodic PING sweep */
+        /* 2. Check /INT line — any peripheral asserting an async event */
+        if (!gpio_get(PIN_RS485_INT)) {
+            /* Line is low — poll all known peripherals for status */
+            for (int i = 0; i < RS485_MAX_PERIPHERALS; i++) {
+                if (!s_known_addrs[i] || !s_online[i]) continue;
+                rs485_send(s_known_addrs[i], RS485_CMD_GET_STATUS, NULL, 0);
+                int r = rs485_recv(&resp_addr, &resp_cmd,
+                                   resp_buf, sizeof(resp_buf));
+                if (r >= 0)
+                    forward_to_pi(resp_addr, resp_cmd, resp_buf, (uint8_t)r);
+            }
+        }
+
+        /* 3. Periodic PING sweep */
         if ((xTaskGetTickCount() - last_ping) >= pdMS_TO_TICKS(RS485_PING_INTERVAL_MS)) {
             last_ping = xTaskGetTickCount();
             for (int i = 0; i < RS485_MAX_PERIPHERALS; i++) {
