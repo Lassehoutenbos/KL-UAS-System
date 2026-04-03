@@ -61,13 +61,13 @@ class GCSProtocol:
     ]
     WARN_SEVERITY_NAMES = ["OK", "WARNING", "CRITICAL"]
 
-    # Firmware max payload = 256 bytes.
-    # SK6812 chain: payload = [chain(1), num_px(1), GRBW*n] → max n = (256-2)/4 = 63
-    SK6812_MAX_PIXELS_PER_SEND = 63
+    # Firmware max payload = 514 bytes.
+    # SK6812 chain: payload = [chain(1), num_px(1), GRBW*n] → max n = (514-2)/4 = 128
+    SK6812_MAX_PIXELS_PER_SEND = 128
 
     @staticmethod
     def _checksum(msg_type: int, length: int, payload: bytes) -> int:
-        c = msg_type ^ length
+        c = msg_type ^ (length & 0xFF) ^ ((length >> 8) & 0xFF)
         for b in payload:
             c ^= b
         return c & 0xFF
@@ -76,7 +76,8 @@ class GCSProtocol:
     def build_packet(msg_type: int, payload: bytes) -> bytes:
         length = len(payload)
         cksum = GCSProtocol._checksum(msg_type, length, payload)
-        return bytes([GCSProtocol.SOF, msg_type, length]) + payload + bytes([cksum])
+        return bytes([GCSProtocol.SOF, msg_type,
+                      length & 0xFF, (length >> 8) & 0xFF]) + payload + bytes([cksum])
 
     @staticmethod
     def parse_stream(buffer: bytes) -> tuple:
@@ -91,20 +92,20 @@ class GCSProtocol:
             if buffer[i] != GCSProtocol.SOF:
                 i += 1
                 continue
-            # Need SOF + TYPE + LEN + CKSUM = 4 bytes minimum
-            if i + 3 >= len(buffer):
+            # Need SOF + TYPE + LEN_LO + LEN_HI + CKSUM = 5 bytes minimum
+            if i + 4 >= len(buffer):
                 break
             msg_type = buffer[i + 1]
-            length   = buffer[i + 2]
+            length   = buffer[i + 2] | (buffer[i + 3] << 8)
             # Need full payload + checksum byte
-            if i + 3 + length >= len(buffer):
+            if i + 4 + length >= len(buffer):
                 break
-            payload   = buffer[i + 3 : i + 3 + length]
-            cksum_rx  = buffer[i + 3 + length]
+            payload   = buffer[i + 4 : i + 4 + length]
+            cksum_rx  = buffer[i + 4 + length]
             cksum_exp = GCSProtocol._checksum(msg_type, length, payload)
             if cksum_rx == cksum_exp:
                 packets.append((msg_type, bytes(payload)))
-                i += 4 + length
+                i += 5 + length
             else:
                 i += 1  # bad checksum, skip this SOF byte and keep scanning
         return packets, buffer[i:]
@@ -663,7 +664,8 @@ class GCSTesterApp(ctk.CTk):
         br_row.pack(fill="x", padx=8, pady=8)
         ctk.CTkLabel(br_row, text="Target:", width=50, anchor="w").pack(side="left")
         self._bright_target = ctk.CTkComboBox(br_row,
-                                               values=["SK6812 Strip (0)", "WS2811 Buttons (1)"],
+                                               values=["SK6812 Strip (0)", "WS2811 Buttons (1)",
+                                                       "TFT Backlight (2)"],
                                                width=160)
         self._bright_target.set("SK6812 Strip (0)")
         self._bright_target.pack(side="left", padx=(0, 10))
@@ -832,7 +834,13 @@ class GCSTesterApp(ctk.CTk):
         self._log_tx(GCSProtocol.TYPE_LED, b"", "SK6812 clear all (black)")
 
     def _send_brightness(self):
-        target = 0 if "SK6812" in self._bright_target.get() else 1
+        val = self._bright_target.get()
+        if "TFT" in val:
+            target = 2
+        elif "WS2811" in val:
+            target = 1
+        else:
+            target = 0
         level  = int(self._bright_slider.get())
         payload = bytes([target, level])
         pkt = GCSProtocol.build_packet(GCSProtocol.TYPE_BRIGHTNESS, payload)

@@ -87,6 +87,7 @@
 #define PIN_TFT_CS          12  /* GP12 — software CS (active low)    */
 #define PIN_TFT_DC          13  /* GP13 — data(1) / command(0)        */
 #define PIN_TFT_RST         14  /* GP14 — hardware reset (active low) */
+#define PIN_TFT_BLK         15  /* GP15 — backlight PWM (PWM slice 7 ch B)  */
 #define ST7735_SPI_INST     spi1
 #define ST7735_SPI_BAUD     15625000  /* 15.625 MHz — 125 MHz / 8, near ST7735S max */
 

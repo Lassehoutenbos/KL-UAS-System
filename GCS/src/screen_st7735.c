@@ -4,6 +4,7 @@
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
+#include "hardware/pwm.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -43,7 +44,7 @@
  * With MV set, CASET addresses rows (132→offset 3) and
  * RASET addresses columns (162→offset 2). */
 #define XSTART  1
-#define YSTART  1
+#define YSTART  2
 
 /* ------------------------------------------------------------------ */
 /* Standard Adafruit 5×7 font (95 printable ASCII, 0x20–0x7E)           */
@@ -218,6 +219,17 @@ void st7735_init(void)
     gpio_init(PIN_TFT_DC);  gpio_set_dir(PIN_TFT_DC,  GPIO_OUT); gpio_put(PIN_TFT_DC,  1);
     gpio_init(PIN_TFT_RST); gpio_set_dir(PIN_TFT_RST, GPIO_OUT); gpio_put(PIN_TFT_RST, 1);
 
+    /* Backlight PWM on PIN_TFT_BLK (GP15, slice 7 ch B).
+     * Wrap = 255 → PWM frequency = 125 MHz / 256 ≈ 488 kHz (no visible flicker).
+     * Start at full brightness. */
+    gpio_set_function(PIN_TFT_BLK, GPIO_FUNC_PWM);
+    {
+        uint slice = pwm_gpio_to_slice_num(PIN_TFT_BLK);
+        pwm_set_wrap(slice, 255);
+        pwm_set_gpio_level(PIN_TFT_BLK, 255);
+        pwm_set_enabled(slice, true);
+    }
+
     /* Hardware reset */
     gpio_put(PIN_TFT_RST, 0);
     vTaskDelay(pdMS_TO_TICKS(10));
@@ -346,26 +358,34 @@ void st7735_draw_char(int16_t x, int16_t y, char c,
     if (c < 0x20 || c > 0x7E) c = '?';
     const uint8_t *glyph = s_font5x7[(uint8_t)(c - 0x20)];
 
-    for (int col = 0; col < 5; col++) {
-        uint8_t line = glyph[col];
-        for (int row = 0; row < 7; row++) {
-            uint16_t color = (line & 1) ? fg : bg;
-            if (size == 1) {
-                st7735_draw_pixel(x + col, y + row, color);
-            } else {
-                st7735_fill_rect(x + col * size, y + row * size,
-                                 size, size, color);
-            }
-            line >>= 1;
-        }
-    }
-    /* One-pixel spacer column */
     if (size == 1) {
+        /* Simple 1:1 rendering, no anti-aliasing */
+        for (int col = 0; col < 5; col++) {
+            uint8_t line = glyph[col];
+            for (int row = 0; row < 7; row++) {
+                uint16_t color = (line & 1) ? fg : bg;
+                st7735_draw_pixel(x + col, y + row, color);
+                line >>= 1;
+            }
+        }
+        /* One-pixel spacer column */
         for (int row = 0; row < 7; row++) {
             st7735_draw_pixel(x + 5, y + row, bg);
         }
     } else {
-        st7735_fill_rect(x + 5 * size, y, size, 7 * size, bg);
+        /* Scaled rendering for size >= 2: simple pixel scaling without edge AA */
+        for (int col = 0; col < 5; col++) {
+            uint8_t line = glyph[col];
+            for (int row = 0; row < 7; row++) {
+                uint16_t color = (line & 1) ? fg : bg;
+                st7735_fill_rect(x + col * size, y + row * size, size, size, color);
+                line >>= 1;
+            }
+        }
+        /* Spacer column */
+        for (int row = 0; row < 7; row++) {
+            st7735_fill_rect(x + 5 * size, y + row * size, size, size, bg);
+        }
     }
 }
 
@@ -397,4 +417,9 @@ void st7735_draw_mono_bitmap(int16_t x, int16_t y,
             st7735_draw_pixel(x + col, y + row, color);
         }
     }
+}
+
+void st7735_set_backlight(uint8_t level)
+{
+    pwm_set_gpio_level(PIN_TFT_BLK, level);
 }

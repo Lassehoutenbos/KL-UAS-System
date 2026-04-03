@@ -36,6 +36,7 @@ The Pico communicates with the Raspberry Pi host over **USB CDC** (TinyUSB).
 | GP12 | 16 | ST7735 CS (active low) | ST7735 module pin CS |
 | GP13 | 17 | ST7735 DC | ST7735 module pin DC/RS |
 | GP14 | 19 | ST7735 RST (active low) | ST7735 module pin RES (10 kΩ pull-up to 3.3 V) |
+| GP15 | 20 | ST7735 BLK (backlight PWM) | ST7735 module pin BL via 10 Ω resistor |
 | GP16 | 21 | SPI0 MISO (RX) | MCP3208 pin 12 (DOUT) |
 | GP17 | 22 | MCP3208 CS (active low) | MCP3208 pin 10 (/CS-/SHDN) |
 | GP18 | 24 | SPI0 SCK | MCP3208 pin 13 (CLK) |
@@ -194,7 +195,9 @@ The ST7735 has a dedicated SPI1 bus — it no longer shares pins with the MCP320
 | RES | Hardware reset (active low) | GP14 (Pico pin 19); 10 kΩ pull-up to 3.3 V |
 | DC / RS | Data=1 / Command=0 | GP13 (Pico pin 17) |
 | CS | Chip select (active low) | GP12 (Pico pin 16) |
-| BL | Backlight LED anode | 3.3 V via 10 Ω resistor (or PWM-capable GPIO for dimming) |
+| BL | Backlight LED anode | GP15 (Pico pin 20) via 10 Ω series resistor; PWM brightness control |
+
+**Backlight:** GP15 drives BL via a 10 Ω series resistor. Firmware configures PWM slice 7 channel B at wrap=255 (~488 kHz). Call `st7735_set_backlight(level)` with level 0–255 to dim or turn off. Initialises to 255 (full brightness) inside `st7735_init()`.
 
 **Note:** if ST7735 displays a white screen, reduce `ST7735_SPI_BAUD` from 15.625 MHz to a lower divisor (e.g. 125 MHz / 16 = 7.8 MHz) in [pins.h](../src/pins.h#L91).
 
@@ -377,7 +380,7 @@ Packet types:
 | 0x05 | Bidirectional | Heartbeat | `heartbeat_pkt_t` — seq byte |
 | 0x06 | Pico → Pi | Input event | `event_pkt_t` — event_id + uint16 value |
 | 0x07 | Pico → Pi | Error | `error_pkt_t` — error_code byte |
-| 0x08 | Pi → Pico | Brightness | `brightness_cmd_t` — target (0=SK6812, 1=WS2811) + level 0–255 |
+| 0x08 | Pi → Pico | Brightness | `brightness_cmd_t` — target (0=SK6812, 1=WS2811, 2=TFT backlight) + level 0–255 |
 | 0x09 | Pi → Pico | State override | `mode_cmd_t` — state byte |
 | 0x0A | Pi → Pico | Warning severity | `warning_cmd_t` — 9 severity bytes (one per `WARN_ICON_*`) |
 | 0x0B | Pico → Pi | ALS data (VEML7700) | `als_packet_t` — als_raw (u16), white_raw (u16), lux_milli (u32), ts_ms (u16) — 10 bytes |
@@ -412,7 +415,7 @@ Connection state machine transitions:
 | Indicator LED 2 | JST-XH 2-pin | PA0 via 120 Ω, GND | MCP23017 pin 21 |
 | Indicator LED 3 | JST-XH 2-pin | PA1 via 120 Ω, GND | MCP23017 pin 22 |
 | Indicator LED 4 | JST-XH 2-pin | PA2 via 120 Ω, GND | MCP23017 pin 23 |
-| ST7735 TFT | 8-pin 0.1" header | GND, VCC, SCL, SDA, RES, DC, CS, BL | GP10–GP14 / SPI1 — see ST7735 table above |
+| ST7735 TFT | 8-pin 0.1" header | GND, VCC, SCL, SDA, RES, DC, CS, BL | GP10–GP15 / SPI1 + PWM — see ST7735 table above |
 | Battery voltage | Screw terminal 2-pin | Vin (≤ 26.5 V), GND | CH0 via 33 kΩ/4.7 kΩ divider |
 | External voltage | Screw terminal 2-pin | Vin (≤ 26.5 V), GND | CH1 via 33 kΩ/4.7 kΩ divider |
 | Spare analog CH2–CH5 | 0.1" header | CH2, CH3, CH4, CH5, GND | Direct 0–3.3 V input |

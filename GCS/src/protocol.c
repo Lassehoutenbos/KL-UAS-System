@@ -4,6 +4,7 @@
 #include "digital_io.h"
 #include "system_state.h"
 #include "usb_cdc.h"
+#include "screen_st7735.h"
 #include <string.h>
 
 QueueHandle_t g_tx_queue = NULL;
@@ -28,21 +29,25 @@ void proto_set_screen_task_handle(TaskHandle_t screen_handle)
 /* Serialize                                                             */
 /* ------------------------------------------------------------------ */
 int proto_serialize(uint8_t *buf, int buf_size,
-                    uint8_t type, const uint8_t *payload, uint8_t payload_len)
+                    uint8_t type, const uint8_t *payload, uint16_t payload_len)
 {
-    int total = 4 + payload_len;
+    int total = 5 + payload_len;
     if (buf_size < total) return -1;
+
+    uint8_t len_lo = (uint8_t)(payload_len & 0xFF);
+    uint8_t len_hi = (uint8_t)(payload_len >> 8);
 
     buf[0] = PROTO_SOF;
     buf[1] = type;
-    buf[2] = payload_len;
+    buf[2] = len_lo;
+    buf[3] = len_hi;
     if (payload_len > 0) {
-        memcpy(&buf[3], payload, payload_len);
+        memcpy(&buf[4], payload, payload_len);
     }
 
-    uint8_t cksum = type ^ payload_len;
-    for (uint8_t i = 0; i < payload_len; i++) cksum ^= payload[i];
-    buf[3 + payload_len] = cksum;
+    uint8_t cksum = type ^ len_lo ^ len_hi;
+    for (uint16_t i = 0; i < payload_len; i++) cksum ^= payload[i];
+    buf[4 + payload_len] = cksum;
 
     return total;
 }
@@ -50,23 +55,25 @@ int proto_serialize(uint8_t *buf, int buf_size,
 /* ------------------------------------------------------------------ */
 /* Parse                                                                 */
 /* ------------------------------------------------------------------ */
-int proto_parse(const uint8_t *buf, uint8_t buf_len,
+int proto_parse(const uint8_t *buf, uint16_t buf_len,
                 uint8_t *type_out, uint8_t *payload_out)
 {
-    if (buf_len < 4) return -1;
+    if (buf_len < 5) return -1;
     if (buf[0] != PROTO_SOF) return -1;
 
-    uint8_t type        = buf[1];
-    uint8_t payload_len = buf[2];
+    uint8_t  type        = buf[1];
+    uint8_t  len_lo      = buf[2];
+    uint8_t  len_hi      = buf[3];
+    uint16_t payload_len = (uint16_t)len_lo | ((uint16_t)len_hi << 8);
 
-    if (buf_len < (uint8_t)(4 + payload_len)) return -1;
+    if (buf_len < (uint16_t)(5 + payload_len)) return -1;
 
-    uint8_t cksum = type ^ payload_len;
-    for (uint8_t i = 0; i < payload_len; i++) cksum ^= buf[3 + i];
-    if (cksum != buf[3 + payload_len]) return -1;
+    uint8_t cksum = type ^ len_lo ^ len_hi;
+    for (uint16_t i = 0; i < payload_len; i++) cksum ^= buf[4 + i];
+    if (cksum != buf[4 + payload_len]) return -1;
 
     *type_out = type;
-    if (payload_len > 0) memcpy(payload_out, &buf[3], payload_len);
+    if (payload_len > 0) memcpy(payload_out, &buf[4], payload_len);
     return payload_len;
 }
 
@@ -108,15 +115,16 @@ typedef enum {
     RX_WAIT_SOF,
     RX_WAIT_TYPE,
     RX_WAIT_LEN,
+    RX_WAIT_LEN2,
     RX_WAIT_PAYLOAD,
     RX_WAIT_CHECKSUM
 } rx_state_t;
 
 static rx_state_t s_rx_state = RX_WAIT_SOF;
 static uint8_t    s_rx_type  = 0;
-static uint8_t    s_rx_len   = 0;
+static uint16_t   s_rx_len   = 0;
 static uint8_t    s_rx_buf[PROTO_MAX_PAYLOAD];
-static uint8_t    s_rx_idx   = 0;
+static uint16_t   s_rx_idx   = 0;
 
 /* ------------------------------------------------------------------ */
 /* LED command dispatcher                                                */
@@ -129,9 +137,9 @@ static void dispatch_led_command(void)
     if (chain == 0x00) {
         /* SK6812 — raw GRBW pixels: [chain][num_pixels][G R B W ...] */
         if (s_rx_len < 2) return;
-        uint8_t num_pixels = s_rx_buf[1];
-        uint8_t data_len   = (uint8_t)(s_rx_len - 2);
-        if (num_pixels == 0 || data_len < (uint8_t)(num_pixels * 4)) return;
+        uint8_t  num_pixels = s_rx_buf[1];
+        uint16_t data_len   = (uint16_t)(s_rx_len - 2);
+        if (num_pixels == 0 || data_len < (uint16_t)num_pixels * 4) return;
         led_sk6812_set(&s_rx_buf[2], num_pixels);
         if (s_sk6812_handle) xTaskNotifyGive(s_sk6812_handle);
 
@@ -173,8 +181,13 @@ void proto_handle_rx(const uint8_t *data, uint32_t len)
                 break;
 
             case RX_WAIT_LEN:
-                s_rx_len = byte;
-                s_rx_idx = 0;
+                s_rx_len   = byte;   /* low byte */
+                s_rx_state = RX_WAIT_LEN2;
+                break;
+
+            case RX_WAIT_LEN2:
+                s_rx_len |= ((uint16_t)byte << 8);  /* high byte */
+                s_rx_idx   = 0;
                 if (s_rx_len == 0) {
                     s_rx_state = RX_WAIT_CHECKSUM;
                 } else if (s_rx_len > PROTO_MAX_PAYLOAD) {
@@ -190,8 +203,10 @@ void proto_handle_rx(const uint8_t *data, uint32_t len)
                 break;
 
             case RX_WAIT_CHECKSUM: {
-                uint8_t cksum = s_rx_type ^ s_rx_len;
-                for (uint8_t j = 0; j < s_rx_len; j++) cksum ^= s_rx_buf[j];
+                uint8_t cksum = s_rx_type
+                              ^ (uint8_t)(s_rx_len & 0xFF)
+                              ^ (uint8_t)(s_rx_len >> 8);
+                for (uint16_t j = 0; j < s_rx_len; j++) cksum ^= s_rx_buf[j];
 
                 if (cksum == byte) {
                     switch (s_rx_type) {
@@ -226,10 +241,12 @@ void proto_handle_rx(const uint8_t *data, uint32_t len)
 
                         case PROTO_TYPE_BRIGHTNESS:
                             if (s_rx_len >= 2) {
-                                if (s_rx_buf[0] == 0x00) {
+                                if (s_rx_buf[0] == BRIGHTNESS_TGT_SK6812) {
                                     led_sk6812_set_brightness(s_rx_buf[1]);
-                                } else if (s_rx_buf[0] == 0x01) {
+                                } else if (s_rx_buf[0] == BRIGHTNESS_TGT_WS2811) {
                                     led_ws2811_set_brightness(s_rx_buf[1]);
+                                } else if (s_rx_buf[0] == BRIGHTNESS_TGT_TFT_BLK) {
+                                    st7735_set_backlight(s_rx_buf[1]);
                                 }
                             }
                             break;

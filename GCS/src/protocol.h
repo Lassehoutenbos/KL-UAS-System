@@ -40,7 +40,7 @@
 #define WARN_ICON_LOCKED        7   /* locked state            */
 #define WARN_ICON_DRONE_STATUS  8   /* drone status            */
 #define WARN_ICON_COUNT         9
-#define WARN_PANEL_LED_BASE     61
+#define WARN_PANEL_LED_BASE     61  /* first LED index of warning panel — change to relocate */
 
 /* LED animation modes — type 0x03, chain=0x01 (WS2811 RGB buttons) */
 #define LED_ANIM_OFF            0
@@ -63,8 +63,10 @@
 #define ERR_STACK_OVERFLOW      0x02
 #define ERR_MALLOC_FAILED       0x03
 
-#define PROTO_MAX_PAYLOAD   256
-#define PROTO_MAX_PACKET    (4 + PROTO_MAX_PAYLOAD)
+/* SK6812 chain: 2-byte header + SK6812_MAX_PIXELS(128) * 4 bytes GRBW = 514 */
+#define PROTO_MAX_PAYLOAD   514
+/* Frame: SOF(1)+TYPE(1)+LEN_LO(1)+LEN_HI(1)+PAYLOAD+CKSUM(1) */
+#define PROTO_MAX_PACKET    (5 + PROTO_MAX_PAYLOAD)
 
 /* ------------------------------------------------------------------ */
 /* Packet payload structures                                            */
@@ -111,8 +113,12 @@ typedef struct __attribute__((packed)) {
 } error_pkt_t;
 
 /* Type 0x08 — Brightness */
+#define BRIGHTNESS_TGT_SK6812   0   /* SK6812 LED strip        */
+#define BRIGHTNESS_TGT_WS2811   1   /* WS2811 RGB buttons      */
+#define BRIGHTNESS_TGT_TFT_BLK  2   /* ST7735 TFT backlight    */
+
 typedef struct __attribute__((packed)) {
-    uint8_t target;   /* 0=SK6812 strip, 1=WS2811 buttons */
+    uint8_t target;   /* BRIGHTNESS_TGT_* */
     uint8_t level;    /* 0-255 */
 } brightness_cmd_t;
 
@@ -151,8 +157,8 @@ extern QueueHandle_t g_tx_queue;
 /* API                                                                   */
 /* ------------------------------------------------------------------ */
 int  proto_serialize(uint8_t *buf, int buf_size,
-                     uint8_t type, const uint8_t *payload, uint8_t payload_len);
-int  proto_parse(const uint8_t *buf, uint8_t buf_len,
+                     uint8_t type, const uint8_t *payload, uint16_t payload_len);
+int  proto_parse(const uint8_t *buf, uint16_t buf_len,
                  uint8_t *type_out, uint8_t *payload_out);
 void proto_handle_rx(const uint8_t *data, uint32_t len);
 void proto_set_led_task_handles(TaskHandle_t sk6812_handle,

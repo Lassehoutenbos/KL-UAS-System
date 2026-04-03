@@ -62,4 +62,11 @@ void st7735_draw_hline(int16_t x, int16_t y, int16_t len, uint16_t color);
 /** Draw a vertical line. */
 void st7735_draw_vline(int16_t x, int16_t y, int16_t len, uint16_t color);
 
+/**
+ * Set backlight brightness via PWM on PIN_TFT_BLK (GP15).
+ * level: 0 = off, 255 = full brightness.
+ * Call st7735_init() before using this function.
+ */
+void st7735_set_backlight(uint8_t level);
+
 #endif /* SCREEN_ST7735_H */
