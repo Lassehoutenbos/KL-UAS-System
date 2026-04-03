@@ -71,7 +71,7 @@ Recommended connector: **GX16-8** circular aviation connector (IP54, field-prove
 | Bus termination | 120 Ω 0402, 1% | — | Across A/B at the PCB-side bus end |
 | ESD / surge protection | **PRTR5V0U2X** or 2× **SMBJ6.5A** TVS | SOT-363 / SMB | On A and B before the connector |
 | VBAT fuse | Polyfuse 1 A (e.g. MF-MSMF110) | 1812 | Inline with VBAT connector pin |
-| Pull-up / pull-down | 560 Ω to +5 V on A, 560 Ω to GND on B | 0402 | Bias bus to idle mark when no driver active |
+| Pull-up / pull-down | 560 Ω to 3.3 V on A, 560 Ω to GND on B | 0402 | Bias bus to idle mark when no driver active |
 
 ### SP3485 wiring (SOIC-8)
 
@@ -284,20 +284,326 @@ When a fault is detected the module sends an `ERROR` frame and asserts `/INT`.
 
 ## Integration with GCS Firmware
 
-The RS-485 bus should run as its own **FreeRTOS task** (`rs485_task`) at the same priority as `cdc_task`. The task:
+### 1. New pin definitions — `src/pins.h`
 
-1. Polls each known peripheral with `PING` every 1000 ms and marks online/offline.
-2. Forwards `SET_OUTPUT` / `SET_PARAM` commands received from the Pi (new CDC packet type `0x0C` — peripheral command passthrough).
-3. Forwards `STATUS` and `STREAM_DATA` responses back to the Pi (new CDC packet type `0x0D` — peripheral data upstream).
-4. Monitors `/INT` line — on assertion, immediately polls the asserting device for status.
+Add the following block:
 
-### Suggested new CDC packet types
+```c
+/* ------------------------------------------------------------------ */
+/* UART1 — RS-485 peripheral bus (GP8/GP9 + GP2 DE/RE)                 */
+/* ------------------------------------------------------------------ */
+#define PIN_RS485_TX        8   /* GP8  — UART1 TX → SP3485 DI        */
+#define PIN_RS485_RX        9   /* GP9  — UART1 RX ← SP3485 RO        */
+#define PIN_RS485_DE        2   /* GP2  — SP3485 DE + /RE (active high)*/
+#define RS485_UART_INST     uart1
+#define RS485_BAUD          115200
+```
 
-| Type | Direction | Name | Payload |
-|------|-----------|------|---------|
-| 0x0C | Pi → Pico | Peripheral command | `addr (u8)` + RS-485 CMD frame payload |
-| 0x0D | Pico → Pi | Peripheral data | `addr (u8)` + RS-485 STATUS/STREAM payload |
-| 0x0E | Pico → Pi | Peripheral online/offline | `addr (u8), online (u8)` |
+---
+
+### 2. New CDC packet types — `src/protocol.h`
+
+Append to the existing `PROTO_TYPE_*` defines:
+
+```c
+#define PROTO_TYPE_PERIPH_CMD   0x0C  /* Pi→Pico:  command for a bus peripheral  */
+#define PROTO_TYPE_PERIPH_DATA  0x0D  /* Pico→Pi:  data from a bus peripheral    */
+#define PROTO_TYPE_PERIPH_STATE 0x0E  /* Pico→Pi:  peripheral online/offline     */
+```
+
+Add the corresponding payload structs:
+
+```c
+/* Type 0x0C — Peripheral command (Pi → Pico → RS-485 bus) */
+typedef struct __attribute__((packed)) {
+    uint8_t addr;       /* target peripheral address (0x01–0xFE) */
+    uint8_t cmd;        /* RS-485 bus CMD byte                   */
+    uint8_t len;        /* payload byte count (0–255)            */
+    uint8_t payload[];  /* flexible array — len bytes            */
+} periph_cmd_t;
+
+/* Type 0x0D — Peripheral data (RS-485 bus → Pico → Pi) */
+typedef struct __attribute__((packed)) {
+    uint8_t addr;       /* source peripheral address             */
+    uint8_t cmd;        /* RS-485 CMD byte of the response       */
+    uint8_t len;        /* payload byte count                    */
+    uint8_t payload[];  /* response payload — len bytes          */
+} periph_data_t;
+
+/* Type 0x0E — Peripheral presence notification */
+typedef struct __attribute__((packed)) {
+    uint8_t addr;       /* peripheral address                    */
+    uint8_t online;     /* 1 = online, 0 = offline               */
+} periph_state_t;
+```
+
+---
+
+### 3. Handle the new CDC packet type — `src/protocol.c`
+
+In `proto_handle_rx()`, add a case inside the checksum-verified `switch (s_rx_type)` block (after `PROTO_TYPE_WARNING`):
+
+```c
+case PROTO_TYPE_PERIPH_CMD:
+    /* Forward to rs485_task via its command queue */
+    if (s_rx_len >= 3) {
+        rs485_forward_cmd(s_rx_buf, s_rx_len);
+    }
+    break;
+```
+
+`rs485_forward_cmd()` is declared in `rs485.h` and posts to the RS-485 task queue.
+
+Also add the include at the top of `protocol.c`:
+
+```c
+#include "rs485.h"
+```
+
+---
+
+### 4. New RS-485 driver — `src/rs485.h` / `src/rs485.c`
+
+Create these two new files.
+
+**`src/rs485.h`**
+
+```c
+#ifndef RS485_H
+#define RS485_H
+
+#include <stdint.h>
+#include "FreeRTOS.h"
+#include "task.h"
+
+/* RS-485 bus frame SOF — distinct from CDC SOF (0xAA) */
+#define RS485_SOF   0xAB
+
+/* RS-485 CMD bytes */
+#define RS485_CMD_PING          0x01
+#define RS485_CMD_PONG          0x02
+#define RS485_CMD_SET_OUTPUT    0x10
+#define RS485_CMD_GET_STATUS    0x11
+#define RS485_CMD_STATUS        0x12
+#define RS485_CMD_SET_PARAM     0x20
+#define RS485_CMD_GET_PARAM     0x21
+#define RS485_CMD_PARAM_VAL     0x22
+#define RS485_CMD_STREAM_ON     0x30
+#define RS485_CMD_STREAM_OFF    0x31
+#define RS485_CMD_STREAM_DATA   0x32
+#define RS485_CMD_ERROR         0xF0
+#define RS485_CMD_SYNC          0xFF
+
+#define RS485_ADDR_BROADCAST    0xFF
+#define RS485_TIMEOUT_MS        50
+#define RS485_PING_INTERVAL_MS  1000
+#define RS485_MAX_PERIPHERALS   8
+
+void rs485_init(void);
+void rs485_task(void *arg);
+void rs485_forward_cmd(const uint8_t *payload, uint16_t len);
+
+#endif /* RS485_H */
+```
+
+**`src/rs485.c` — structure outline**
+
+```c
+#include "rs485.h"
+#include "pins.h"
+#include "protocol.h"
+#include "hardware/uart.h"
+#include "hardware/gpio.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include <string.h>
+
+/* ---- internal command queue (from CDC → RS-485 task) ---- */
+#define RS485_CMD_QUEUE_DEPTH  8
+#define RS485_CMD_BUF_SIZE     64
+
+typedef struct {
+    uint8_t buf[RS485_CMD_BUF_SIZE];
+    uint8_t len;
+} rs485_cmd_item_t;
+
+static QueueHandle_t s_cmd_queue;
+
+/* ---- peripheral registry ---- */
+static uint8_t s_known_addrs[RS485_MAX_PERIPHERALS] = {
+    0x01, 0x02, 0x03, 0x04,   /* extend as you add devices */
+    0x00, 0x00, 0x00, 0x00
+};
+static bool s_online[RS485_MAX_PERIPHERALS];
+
+/* ---- CRC-8/MAXIM ---- */
+static uint8_t crc8(const uint8_t *data, size_t len) {
+    uint8_t crc = 0x00;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (int b = 0; b < 8; b++)
+            crc = (crc & 0x80) ? (crc << 1) ^ 0x31 : (crc << 1);
+    }
+    return crc;
+}
+
+/* ---- transmit one RS-485 frame ---- */
+static void rs485_send(uint8_t addr, uint8_t cmd,
+                       const uint8_t *payload, uint8_t plen)
+{
+    uint8_t frame[4 + 255 + 1];
+    frame[0] = RS485_SOF;
+    frame[1] = addr;
+    frame[2] = cmd;
+    frame[3] = plen;
+    if (plen) memcpy(&frame[4], payload, plen);
+    frame[4 + plen] = crc8(&frame[1], 3 + plen);
+
+    gpio_put(PIN_RS485_DE, 1);          /* enable driver  */
+    uart_write_blocking(RS485_UART_INST, frame, 5 + plen);
+    uart_tx_wait_blocking(RS485_UART_INST);
+    gpio_put(PIN_RS485_DE, 0);          /* back to receive */
+}
+
+/* ---- receive one RS-485 frame (blocking with timeout) ---- */
+/* Returns payload length on success, -1 on timeout/CRC error */
+static int rs485_recv(uint8_t *addr_out, uint8_t *cmd_out,
+                      uint8_t *buf, uint8_t buf_size)
+{
+    /* ... byte-by-byte state machine with xTaskGetTickCount() timeout ... */
+    /* Same pattern as proto_handle_rx() in protocol.c                      */
+}
+
+/* ---- report peripheral state change to Pi over CDC ---- */
+static void notify_state(uint8_t addr, bool online)
+{
+    periph_state_t pkt = { .addr = addr, .online = online ? 1 : 0 };
+    tx_item_t item;
+    int len = proto_serialize(item.buf, sizeof(item.buf),
+                              PROTO_TYPE_PERIPH_STATE,
+                              (const uint8_t *)&pkt, sizeof(pkt));
+    if (len > 0) {
+        item.len = (uint8_t)len;
+        xQueueSend(g_tx_queue, &item, 0);
+    }
+}
+
+/* ---- forward RS-485 response to Pi over CDC ---- */
+static void forward_to_pi(uint8_t addr, uint8_t cmd,
+                           const uint8_t *payload, uint8_t plen)
+{
+    uint8_t cdc_payload[2 + 255];
+    cdc_payload[0] = addr;
+    cdc_payload[1] = cmd;
+    if (plen) memcpy(&cdc_payload[2], payload, plen);
+
+    tx_item_t item;
+    int len = proto_serialize(item.buf, sizeof(item.buf),
+                              PROTO_TYPE_PERIPH_DATA,
+                              cdc_payload, 2 + plen);
+    if (len > 0) {
+        item.len = (uint8_t)len;
+        xQueueSend(g_tx_queue, &item, 0);
+    }
+}
+
+/* ------------------------------------------------------------------ */
+void rs485_init(void)
+{
+    s_cmd_queue = xQueueCreate(RS485_CMD_QUEUE_DEPTH, sizeof(rs485_cmd_item_t));
+
+    uart_init(RS485_UART_INST, RS485_BAUD);
+    gpio_set_function(PIN_RS485_TX, GPIO_FUNC_UART);
+    gpio_set_function(PIN_RS485_RX, GPIO_FUNC_UART);
+
+    gpio_init(PIN_RS485_DE);
+    gpio_set_dir(PIN_RS485_DE, GPIO_OUT);
+    gpio_put(PIN_RS485_DE, 0);   /* receive mode by default */
+}
+
+void rs485_forward_cmd(const uint8_t *payload, uint16_t len)
+{
+    if (!s_cmd_queue || len > RS485_CMD_BUF_SIZE) return;
+    rs485_cmd_item_t item;
+    memcpy(item.buf, payload, len);
+    item.len = (uint8_t)len;
+    xQueueSend(s_cmd_queue, &item, 0);
+}
+
+/* ------------------------------------------------------------------ */
+void rs485_task(void *arg)
+{
+    (void)arg;
+    TickType_t last_ping = xTaskGetTickCount();
+    uint8_t    resp_buf[255];
+    uint8_t    resp_addr, resp_cmd;
+
+    for (;;) {
+        /* 1. Forward any commands queued from the Pi */
+        rs485_cmd_item_t cmd;
+        while (xQueueReceive(s_cmd_queue, &cmd, 0) == pdTRUE) {
+            if (cmd.len >= 3) {
+                rs485_send(cmd.buf[0], cmd.buf[1],
+                           &cmd.buf[3], cmd.buf[2]);
+                int r = rs485_recv(&resp_addr, &resp_cmd,
+                                   resp_buf, sizeof(resp_buf));
+                if (r >= 0)
+                    forward_to_pi(resp_addr, resp_cmd, resp_buf, (uint8_t)r);
+            }
+        }
+
+        /* 2. Periodic PING sweep */
+        if ((xTaskGetTickCount() - last_ping) >= pdMS_TO_TICKS(RS485_PING_INTERVAL_MS)) {
+            last_ping = xTaskGetTickCount();
+            for (int i = 0; i < RS485_MAX_PERIPHERALS; i++) {
+                if (!s_known_addrs[i]) continue;
+                rs485_send(s_known_addrs[i], RS485_CMD_PING, NULL, 0);
+                int r = rs485_recv(&resp_addr, &resp_cmd,
+                                   resp_buf, sizeof(resp_buf));
+                bool now_online = (r >= 0 && resp_cmd == RS485_CMD_PONG);
+                if (now_online != s_online[i]) {
+                    s_online[i] = now_online;
+                    notify_state(s_known_addrs[i], now_online);
+                }
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
+```
+
+---
+
+### 5. Register the task — `src/main.c`
+
+In `main()` after the existing task creations, add:
+
+```c
+#include "rs485.h"
+
+/* ... existing task creates ... */
+
+rs485_init();
+xTaskCreate(rs485_task, "rs485", 512, NULL, 2, NULL);
+```
+
+Priority 2 — same as `cdc_task`, below `usb_device_task` (4).
+
+---
+
+### 6. Summary of all file changes
+
+| File | Change |
+|------|--------|
+| `src/pins.h` | Add `PIN_RS485_TX`, `PIN_RS485_RX`, `PIN_RS485_DE`, `RS485_UART_INST`, `RS485_BAUD` |
+| `src/protocol.h` | Add `PROTO_TYPE_PERIPH_CMD/DATA/STATE` and three new packet structs |
+| `src/protocol.c` | Add `#include "rs485.h"` and `case PROTO_TYPE_PERIPH_CMD` in `proto_handle_rx()` |
+| `src/rs485.h` | New file — RS-485 constants and public API |
+| `src/rs485.c` | New file — UART1 init, DE/RE control, frame TX/RX, FreeRTOS task |
+| `src/main.c` | Call `rs485_init()` and `xTaskCreate(rs485_task, ...)` |
+| `CMakeLists.txt` | Add `rs485.c` to the target sources |
 
 ---
 
@@ -306,6 +612,6 @@ The RS-485 bus should run as its own **FreeRTOS task** (`rs485_task`) at the sam
 - Place the SP3485 as close to the 8-pin rear connector as possible — keep A/B traces short before the TVS diodes.
 - Route A and B as a differential pair with matched length; keep away from the 5 V LED supply traces.
 - Place 120 Ω termination resistor directly at the connector pad (not at the SP3485).
-- Place 560 Ω bias resistors (A pull-up, B pull-down) near the SP3485 — these ensure a defined idle state when no peripheral is connected.
+- Place 560 Ω bias resistors (A to **3.3 V**, B to GND) near the SP3485 — these ensure a defined idle state when no peripheral is connected.
 - The polyfuse on VBAT should be the first component after the connector pin, before any branching.
 - Add a LED (with 1 kΩ resistor) on the DE line to indicate when the bus is transmitting — useful for debugging in the field.
