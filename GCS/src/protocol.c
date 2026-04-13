@@ -5,6 +5,8 @@
 #include "system_state.h"
 #include "usb_cdc.h"
 #include "screen_st7735.h"
+#include "screen_display.h"
+#include "rs485.h"
 #include <string.h>
 
 QueueHandle_t g_tx_queue = NULL;
@@ -264,6 +266,25 @@ void proto_handle_rx(const uint8_t *data, uint32_t len)
                                 }
                                 /* Wake sk6812_task for an immediate visual update */
                                 if (s_sk6812_handle) xTaskNotifyGive(s_sk6812_handle);
+                            }
+                            break;
+
+                        case PROTO_TYPE_PERIPH_CMD:
+                            /* Forward to rs485_task via its command queue */
+                            if (s_rx_len >= 3) {
+                                rs485_forward_cmd(s_rx_buf, s_rx_len);
+                            }
+                            break;
+
+                        case PROTO_TYPE_PERIPH_SCREEN:
+                            /* Select peripheral for detail screen and switch mode */
+                            if (s_rx_len >= 1) {
+                                screen_periph_set_detail_addr(s_rx_buf[0]);
+                                if (s_screen_handle) {
+                                    xTaskNotify(s_screen_handle,
+                                                (uint32_t)SCREEN_MODE_PERIPH_DETAIL,
+                                                eSetValueWithOverwrite);
+                                }
                             }
                             break;
 

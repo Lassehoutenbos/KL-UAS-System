@@ -628,6 +628,110 @@ Priority 2 — same as `cdc_task`, below `usb_device_task` (4).
 
 ---
 
+## Peripheral Status Screens
+
+The GCS ST7735 display (128×128 px) can show peripheral bus status. Two new screen modes are added: a **peripheral overview** listing all known devices and their online/offline state, and a **peripheral detail** view showing live data from a single selected device. The Pi can switch to these screens via the existing CDC screen-mode command (type `0x04`).
+
+### Screen modes
+
+| Mode ID | Name | Description |
+|---------|------|-------------|
+| `5` | `SCREEN_MODE_PERIPH` | Overview — list of all peripherals with online/offline status |
+| `6` | `SCREEN_MODE_PERIPH_DETAIL` | Detail — live telemetry from one selected peripheral |
+
+### Peripheral overview screen (mode 5)
+
+```
+┌────────────────────────────┐
+│  ▓▓ PERIPHERALS ▓▓  (navy)│  ← header, teal accent line
+├────────────────────────────┤
+│  0x01 Searchlight  [ONLINE]│  ← green pill if online
+│  0x02 Radar        [OFFLN] │  ← red pill if offline
+│  0x03 Pan-Tilt     [ONLINE]│
+│  0x04 Light Bar    [OFFLN] │
+│                            │
+│                            │
+│  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
+│  4 devices  2 online (teal)│  ← footer summary
+└────────────────────────────┘
+```
+
+Each peripheral row shows:
+- Address (hex, 4 chars)
+- Short name (up to 10 chars, looked up from a name table)
+- Status pill: green `ON` or red `OFF`
+
+The screen refreshes when `periph_state_t` packets (type `0x0E`) arrive over CDC, updating the cached online/offline flags. Up to 8 peripherals fit on the 128 px display (8 rows × 10 px row height + header + footer).
+
+### Peripheral detail screen (mode 6)
+
+The detail screen shows live data from one peripheral. The Pi selects which peripheral to display via a new CDC packet type (see below). The layout adapts based on the peripheral type.
+
+**Searchlight detail example:**
+
+```
+┌────────────────────────────┐
+│  ▓▓ SEARCHLIGHT ▓▓ (navy) │  ← header with device name
+├────────────────────────────┤
+│  Brightness       ███████  │  ← bar graph, 0–255
+│                    78%     │
+│                            │
+│  Temp              42°C   │  ← colour-coded (green/amber/red)
+│                            │
+│  Faults           NONE    │  ← or list active fault flags
+│                            │
+│  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
+│  addr 0x01    ONLINE      │  ← footer with address + status
+└────────────────────────────┘
+```
+
+**Radar detail example:**
+
+```
+┌────────────────────────────┐
+│  ▓▓ RADAR NODE ▓▓  (navy) │
+├────────────────────────────┤
+│  Distance                  │
+│        1234 mm             │  ← size 2 font
+│                            │
+│  Signal       ████░░░░    │  ← strength bar
+│  Status       OK          │
+│                            │
+│  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
+│  addr 0x02    ONLINE      │
+└────────────────────────────┘
+```
+
+### Peripheral name table
+
+A static lookup table maps addresses to short display names. Default entries match the address space defined earlier in this document:
+
+```c
+static const char *periph_name(uint8_t addr) {
+    switch (addr) {
+        case 0x01: return "Searchlight";
+        case 0x02: return "Radar";
+        case 0x03: return "Pan-Tilt";
+        case 0x04: return "Light Bar";
+        default:   return "Device";
+    }
+}
+```
+
+### Navigating between screens
+
+The Pi controls which screen is displayed via the existing screen-mode CDC packet (`PROTO_TYPE_SCREEN`, type `0x04`). To show the detail view for a specific peripheral, a new CDC packet type is added:
+
+| Type | Direction | Name | Payload |
+|------|-----------|------|---------|
+| `0x0F` | Pi → Pico | `PROTO_TYPE_PERIPH_SCREEN` | `addr (u8)` — peripheral to show in detail view |
+
+When the Pico receives this packet, it caches the target address and switches to `SCREEN_MODE_PERIPH_DETAIL`. Subsequent `STREAM_DATA` or `STATUS` frames from that address are rendered on the detail screen.
+
+The overview screen can also be triggered by a physical switch (e.g. SW3 position) via the auto-mode state machine, allowing the operator to check peripheral status without Pi intervention.
+
+---
+
 ## PCB Layout Notes
 
 - Place the SP3485 as close to the 8-pin rear connector as possible — keep A/B traces short before the TVS diodes.

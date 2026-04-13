@@ -421,5 +421,8 @@ void st7735_draw_mono_bitmap(int16_t x, int16_t y,
 
 void st7735_set_backlight(uint8_t level)
 {
-    pwm_set_gpio_level(PIN_TFT_BLK, level);
+    /* Logarithmic (cubic) curve so the top 50 counts produce the steepest
+     * visible dimming:  255→255, 205→132, 128→32, 50→3, 0→0 */
+    uint32_t pwm = (uint32_t)level * level * level / (255u * 255u);
+    pwm_set_gpio_level(PIN_TFT_BLK, (uint16_t)pwm);
 }

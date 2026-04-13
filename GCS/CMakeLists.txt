@@ -78,6 +78,7 @@ add_executable(GCS
     src/screen_st7735.c
     src/screen_display.c
     src/veml7700.c
+    src/rs485.c
 )
 
 pico_set_program_name(GCS "GCS")
@@ -109,6 +110,8 @@ target_link_libraries(GCS
     hardware_dma
     hardware_gpio
     hardware_clocks
+    hardware_uart
+    hardware_pwm
     pico_unique_id
     tinyusb_device
     tinyusb_board
@@ -143,6 +146,7 @@ target_link_libraries(GCS_TFT_Test
     hardware_i2c
     hardware_spi
     hardware_gpio
+    hardware_pwm
     freertos_kernel
 )
 

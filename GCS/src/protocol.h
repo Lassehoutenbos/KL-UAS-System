@@ -23,6 +23,10 @@
 #define PROTO_TYPE_MODE         0x09  /* Pi→Pico: state machine override    */
 #define PROTO_TYPE_WARNING      0x0A  /* Pi→Pico: warning panel severity    */
 #define PROTO_TYPE_ALS          0x0B  /* Pico→Pi: ambient light sensor data */
+#define PROTO_TYPE_PERIPH_CMD   0x0C  /* Pi→Pico:  command for a bus peripheral  */
+#define PROTO_TYPE_PERIPH_DATA  0x0D  /* Pico→Pi:  data from a bus peripheral    */
+#define PROTO_TYPE_PERIPH_STATE 0x0E  /* Pico→Pi:  peripheral online/offline     */
+#define PROTO_TYPE_PERIPH_SCREEN 0x0F /* Pi→Pico:  select peripheral detail screen */
 
 /* Warning severity levels — type 0x0A */
 #define WARN_OK                 0
@@ -131,6 +135,33 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
     uint8_t severity[WARN_ICON_COUNT];  /* one WARN_* value per icon, index = WARN_ICON_* */
 } warning_cmd_t;
+
+/* Type 0x0C — Peripheral command (Pi → Pico → RS-485 bus) */
+typedef struct __attribute__((packed)) {
+    uint8_t addr;       /* target peripheral address (0x01–0xFE) */
+    uint8_t cmd;        /* RS-485 bus CMD byte                   */
+    uint8_t len;        /* payload byte count (0–255)            */
+    uint8_t payload[];  /* flexible array — len bytes            */
+} periph_cmd_t;
+
+/* Type 0x0D — Peripheral data (RS-485 bus → Pico → Pi) */
+typedef struct __attribute__((packed)) {
+    uint8_t addr;       /* source peripheral address             */
+    uint8_t cmd;        /* RS-485 CMD byte of the response       */
+    uint8_t len;        /* payload byte count                    */
+    uint8_t payload[];  /* response payload — len bytes          */
+} periph_data_t;
+
+/* Type 0x0E — Peripheral presence notification */
+typedef struct __attribute__((packed)) {
+    uint8_t addr;       /* peripheral address                    */
+    uint8_t online;     /* 1 = online, 0 = offline               */
+} periph_state_t;
+
+/* Type 0x0F — Peripheral screen select (Pi → Pico) */
+typedef struct __attribute__((packed)) {
+    uint8_t addr;       /* peripheral address to show on detail screen */
+} periph_screen_cmd_t;
 
 /* Type 0x0B — Ambient light sensor data (VEML7700) */
 typedef struct __attribute__((packed)) {

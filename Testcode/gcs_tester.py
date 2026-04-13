@@ -13,6 +13,7 @@ import threading
 import struct
 import time
 import queue
+import re
 
 
 # ---------------------------------------------------------------------------
@@ -23,17 +24,21 @@ class GCSProtocol:
     SOF = 0xAA
 
     # Message types
-    TYPE_ADC        = 0x01
-    TYPE_DIGITAL    = 0x02
-    TYPE_LED        = 0x03
-    TYPE_SCREEN     = 0x04
-    TYPE_HEARTBEAT  = 0x05
-    TYPE_EVENT      = 0x06
-    TYPE_ERROR      = 0x07
-    TYPE_BRIGHTNESS = 0x08
-    TYPE_MODE       = 0x09
-    TYPE_WARNING    = 0x0A
-    TYPE_ALS        = 0x0B
+    TYPE_ADC           = 0x01
+    TYPE_DIGITAL       = 0x02
+    TYPE_LED           = 0x03
+    TYPE_SCREEN        = 0x04
+    TYPE_HEARTBEAT     = 0x05
+    TYPE_EVENT         = 0x06
+    TYPE_ERROR         = 0x07
+    TYPE_BRIGHTNESS    = 0x08
+    TYPE_MODE          = 0x09
+    TYPE_WARNING       = 0x0A
+    TYPE_ALS           = 0x0B
+    TYPE_PERIPH_CMD    = 0x0C  # Pi→Pico: send command to RS-485 peripheral
+    TYPE_PERIPH_DATA   = 0x0D  # Pico→Pi: response from RS-485 peripheral
+    TYPE_PERIPH_STATE  = 0x0E  # Pico→Pi: peripheral online/offline notification
+    TYPE_PERIPH_SCREEN = 0x0F  # Pi→Pico: select peripheral detail screen
 
     # LED chain IDs (first byte of LED payload)
     CHAIN_SK6812    = 0x00
@@ -52,7 +57,25 @@ class GCSProtocol:
     STATE_NAMES = ["BOOT", "INIT", "WAITING_FOR_PI", "CONNECTED", "LOCKED", "ACTIVE", "ERROR"]
 
     # Screen mode names  (index == mode value)
-    SCREEN_NAMES = ["AUTO", "MAIN", "WARNING", "LOCK", "BATWARNING"]
+    SCREEN_NAMES = ["AUTO", "MAIN", "WARNING", "LOCK", "BATWARNING",
+                    "PERIPH", "PERIPH_DETAIL"]
+
+    # RS-485 peripheral addresses → display names
+    PERIPH_NAMES = {
+        0x01: "Searchlight",
+        0x02: "Radar",
+        0x03: "Pan-Tilt",
+        0x04: "Light Bar",
+    }
+
+    # RS-485 CMD byte names for logging
+    RS485_CMD_NAMES = {
+        0x01: "PING",       0x02: "PONG",
+        0x10: "SET_OUTPUT", 0x11: "GET_STATUS", 0x12: "STATUS",
+        0x20: "SET_PARAM",  0x21: "GET_PARAM",  0x22: "PARAM_VAL",
+        0x30: "STREAM_ON",  0x31: "STREAM_OFF", 0x32: "STREAM_DATA",
+        0xF0: "ERROR",      0xFF: "SYNC",
+    }
 
     # Warning icon names  (index == payload byte position)
     WARN_NAMES = [
@@ -508,6 +531,98 @@ class GCSTesterApp(ctk.CTk):
         ctk.CTkButton(warn_box, text="Send All Warnings",
                       command=self._send_warnings).pack(padx=8, pady=(4, 8))
 
+        # --- RS-485 Peripherals ---------------------------------------------
+        self._section_label(p, "RS-485 PERIPHERALS  (0x0C · 0x0F)")
+        periph_box = ctk.CTkFrame(p, corner_radius=6)
+        periph_box.pack(fill="x", padx=8, pady=(0, 8))
+
+        # --- Status table: one row per known peripheral ---
+        self._periph_status_rows: dict = {}   # addr -> {"dot": canvas, "lbl": label}
+
+        status_hdr = ctk.CTkFrame(periph_box, fg_color="transparent")
+        status_hdr.pack(fill="x", padx=8, pady=(8, 2))
+        ctk.CTkLabel(status_hdr, text="Device status",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color="#cccccc").pack(side="left")
+
+        for addr, name in GCSProtocol.PERIPH_NAMES.items():
+            row = ctk.CTkFrame(periph_box, corner_radius=4, fg_color="#222222")
+            row.pack(fill="x", padx=6, pady=2)
+
+            dot = tk.Canvas(row, width=12, height=12,
+                            bg="#222222", highlightthickness=0)
+            dot.create_oval(1, 1, 11, 11, fill="#444444", outline="", tags="dot")
+            dot.pack(side="left", padx=(6, 4), pady=4)
+
+            ctk.CTkLabel(row, text=f"0x{addr:02X}  {name}",
+                         font=ctk.CTkFont(size=11), width=150, anchor="w"
+                         ).pack(side="left")
+
+            status_lbl = ctk.CTkLabel(row, text="UNKNOWN",
+                                      font=ctk.CTkFont(family="Courier New", size=10),
+                                      text_color="#666666", width=60, anchor="w")
+            status_lbl.pack(side="left", padx=(4, 8))
+
+            detail_btn = ctk.CTkButton(row, text="Detail", width=58,
+                                       command=lambda a=addr: self._send_periph_screen_select(a))
+            detail_btn.pack(side="right", padx=6, pady=4)
+
+            self._periph_status_rows[addr] = {"dot": dot, "lbl": status_lbl}
+
+        # Last received data display
+        self._periph_data_box = ctk.CTkTextbox(
+            periph_box, height=72,
+            font=ctk.CTkFont(family="Courier New", size=10),
+            state="disabled")
+        self._periph_data_box.pack(fill="x", padx=6, pady=(4, 4))
+
+        overview_btn_row = ctk.CTkFrame(periph_box, fg_color="transparent")
+        overview_btn_row.pack(fill="x", padx=8, pady=(0, 4))
+        ctk.CTkButton(overview_btn_row, text="Show Overview Screen", width=180,
+                      command=self._send_periph_overview_screen).pack(side="left")
+
+        # --- Send command sub-section ---
+        send_hdr = ctk.CTkFrame(periph_box, fg_color="transparent")
+        send_hdr.pack(fill="x", padx=8, pady=(6, 2))
+        ctk.CTkLabel(send_hdr, text="Send command",
+                     font=ctk.CTkFont(size=11, weight="bold"),
+                     text_color="#cccccc").pack(side="left")
+
+        cmd_row1 = ctk.CTkFrame(periph_box, fg_color="transparent")
+        cmd_row1.pack(fill="x", padx=8, pady=2)
+        ctk.CTkLabel(cmd_row1, text="Addr:", width=36, anchor="w").pack(side="left")
+        addr_values = [f"0x{a:02X}  {n}" for a, n in GCSProtocol.PERIPH_NAMES.items()]
+        addr_values.append("0xFF  Broadcast")
+        self._periph_addr_combo = ctk.CTkComboBox(cmd_row1, values=addr_values, width=160)
+        self._periph_addr_combo.set(addr_values[0])
+        self._periph_addr_combo.pack(side="left", padx=(0, 10))
+        ctk.CTkLabel(cmd_row1, text="Cmd:", width=36, anchor="w").pack(side="left")
+        cmd_values = [
+            "PING (0x01)", "GET_STATUS (0x11)", "SET_OUTPUT (0x10)",
+            "SET_PARAM (0x20)", "GET_PARAM (0x21)",
+            "STREAM_ON (0x30)", "STREAM_OFF (0x31)", "SYNC (0xFF)",
+        ]
+        self._periph_cmd_combo = ctk.CTkComboBox(cmd_row1, values=cmd_values, width=160)
+        self._periph_cmd_combo.set("PING (0x01)")
+        self._periph_cmd_combo.pack(side="left")
+
+        cmd_row2 = ctk.CTkFrame(periph_box, fg_color="transparent")
+        cmd_row2.pack(fill="x", padx=8, pady=2)
+        ctk.CTkLabel(cmd_row2, text="Payload (hex):", width=96, anchor="w").pack(side="left")
+        self._periph_payload_entry = ctk.CTkEntry(cmd_row2, width=200,
+                                                   placeholder_text="e.g.  00 FF  or empty")
+        self._periph_payload_entry.pack(side="left", padx=(0, 8))
+
+        cmd_row3 = ctk.CTkFrame(periph_box, fg_color="transparent")
+        cmd_row3.pack(fill="x", padx=8, pady=(2, 8))
+        ctk.CTkButton(cmd_row3, text="Send Command", width=130,
+                      command=self._send_periph_cmd).pack(side="left")
+        self._periph_hint_label = ctk.CTkLabel(
+            cmd_row3,
+            text="SET_OUTPUT: ch val  |  SET_PARAM: id val_lo val_hi  |  STREAM_ON: ms_lo ms_hi",
+            font=ctk.CTkFont(size=9), text_color="#666666", wraplength=220, anchor="w")
+        self._periph_hint_label.pack(side="left", padx=(8, 0))
+
     # --- Right panel: LED Controls ------------------------------------------
 
     def _build_right(self):
@@ -848,6 +963,55 @@ class GCSTesterApp(ctk.CTk):
             self._log_tx(GCSProtocol.TYPE_BRIGHTNESS, payload,
                          f"target={target} level={level}")
 
+    def _send_periph_cmd(self):
+        # Parse address from combo "0x01  Searchlight" or "0xFF  Broadcast"
+        addr_str = self._periph_addr_combo.get().split()[0]
+        try:
+            addr = int(addr_str, 16)
+        except ValueError:
+            self._log_info("Invalid peripheral address")
+            return
+
+        # Parse command byte from combo "PING (0x01)"
+        m = re.search(r'0x([0-9A-Fa-f]+)', self._periph_cmd_combo.get())
+        if not m:
+            self._log_info("Could not parse command byte")
+            return
+        cmd = int(m.group(1), 16)
+
+        # Parse optional hex payload
+        hex_text = self._periph_payload_entry.get().strip()
+        try:
+            payload_bytes = bytes.fromhex(hex_text.replace(" ", "")) if hex_text else b""
+        except ValueError:
+            self._log_info("Invalid payload hex — use pairs like  00 FF  or  00FF")
+            return
+
+        # Build TYPE_PERIPH_CMD packet: [addr, cmd, len, payload...]
+        pkt_payload = bytes([addr, cmd, len(payload_bytes)]) + payload_bytes
+        pkt = GCSProtocol.build_packet(GCSProtocol.TYPE_PERIPH_CMD, pkt_payload)
+        if self._driver.send(pkt):
+            cmd_name = GCSProtocol.RS485_CMD_NAMES.get(cmd, f"0x{cmd:02X}")
+            note = f"→ 0x{addr:02X} cmd={cmd_name}"
+            if payload_bytes:
+                note += f"  payload={payload_bytes.hex(' ').upper()}"
+            self._log_tx(GCSProtocol.TYPE_PERIPH_CMD, pkt_payload, note)
+
+    def _send_periph_screen_select(self, addr: int):
+        """Switch display to peripheral detail screen for the given address."""
+        pkt = GCSProtocol.build_packet(GCSProtocol.TYPE_PERIPH_SCREEN, bytes([addr]))
+        if self._driver.send(pkt):
+            name = GCSProtocol.PERIPH_NAMES.get(addr, f"0x{addr:02X}")
+            self._log_tx(GCSProtocol.TYPE_PERIPH_SCREEN, bytes([addr]),
+                         f"→ detail screen for {name} (0x{addr:02X})")
+
+    def _send_periph_overview_screen(self):
+        """Switch display to peripheral overview screen (mode 5)."""
+        payload = bytes([5])   # SCREEN_MODE_PERIPH
+        pkt = GCSProtocol.build_packet(GCSProtocol.TYPE_SCREEN, payload)
+        if self._driver.send(pkt):
+            self._log_tx(GCSProtocol.TYPE_SCREEN, payload, "→ PERIPH overview screen")
+
     # -----------------------------------------------------------------------
     # RX handlers (called via self.after() — main thread only)
     # -----------------------------------------------------------------------
@@ -914,6 +1078,31 @@ class GCSTesterApp(ctk.CTk):
         desc = evt_map.get(evt_id, lambda v: f"UNKNOWN evt={evt_id:#04x} val={v}")(value)
         self._log_queue.put(("EVENT", f"EVENT  {desc}"))
 
+    def _update_periph_state(self, addr: int, online: bool):
+        row = self._periph_status_rows.get(addr)
+        if row:
+            color = "#00CC44" if online else "#CC2222"
+            row["dot"].itemconfig("dot", fill=color)
+            row["lbl"].configure(
+                text="ONLINE" if online else "OFFLINE",
+                text_color="#00CC44" if online else "#CC2222")
+        self._pkt_count += 1
+
+    def _update_periph_data(self, addr: int, cmd: int, data: bytes):
+        name     = GCSProtocol.PERIPH_NAMES.get(addr, f"0x{addr:02X}")
+        cmd_name = GCSProtocol.RS485_CMD_NAMES.get(cmd, f"0x{cmd:02X}")
+        hex_str  = data.hex(" ").upper() if data else "(empty)"
+        line     = f"0x{addr:02X} {name:<12}  {cmd_name:<12}  {hex_str}\n"
+        self._periph_data_box.configure(state="normal")
+        self._periph_data_box.insert("end", line)
+        # Keep last ~8 lines visible
+        self._periph_data_box.see("end")
+        lines = self._periph_data_box.get("1.0", "end").splitlines()
+        if len(lines) > 8:
+            self._periph_data_box.delete("1.0", f"{len(lines) - 8}.0")
+        self._periph_data_box.configure(state="disabled")
+        self._pkt_count += 1
+
     def _on_rx_packet(self, msg_type, payload):
         """Called from RX thread — must NOT touch widgets directly."""
         if msg_type is None:
@@ -952,6 +1141,32 @@ class GCSTesterApp(ctk.CTk):
             err_names = {1: "WATCHDOG_RESET", 2: "STACK_OVERFLOW", 3: "MALLOC_FAILED"}
             name = err_names.get(code, f"UNKNOWN({code:#04x})")
             self._log_queue.put(("ERR", f"DEVICE ERROR: {name}"))
+
+        elif msg_type == GCSProtocol.TYPE_PERIPH_STATE:
+            # periph_state_t: addr(u8), online(u8)
+            if len(payload) >= 2:
+                addr, online = payload[0], bool(payload[1])
+                name = GCSProtocol.PERIPH_NAMES.get(addr, f"0x{addr:02X}")
+                self._log_queue.put((
+                    "EVENT",
+                    f"PERIPH_STATE  0x{addr:02X} {name}  {'ONLINE' if online else 'OFFLINE'}"
+                ))
+                self.after(0, self._update_periph_state, addr, online)
+
+        elif msg_type == GCSProtocol.TYPE_PERIPH_DATA:
+            # periph_data_t on wire: [addr, cmd, data...]
+            if len(payload) >= 2:
+                addr = payload[0]
+                cmd  = payload[1]
+                data = payload[2:]
+                name     = GCSProtocol.PERIPH_NAMES.get(addr, f"0x{addr:02X}")
+                cmd_name = GCSProtocol.RS485_CMD_NAMES.get(cmd, f"0x{cmd:02X}")
+                self._log_queue.put((
+                    "RX",
+                    f"PERIPH_DATA   0x{addr:02X} {name}  cmd={cmd_name}"
+                    + (f"  {data.hex(' ').upper()}" if data else "")
+                ))
+                self.after(0, self._update_periph_data, addr, cmd, data)
 
     # -----------------------------------------------------------------------
     # Connection management

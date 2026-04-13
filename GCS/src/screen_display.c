@@ -3,6 +3,7 @@
 #include "system_state.h"
 #include "analog.h"     /* g_latest_adc  */
 #include "digital_io.h" /* g_latest_digital */
+#include "rs485.h"
 #include "pins.h"
 
 #include "pico/stdlib.h"
@@ -101,6 +102,18 @@ static uint16_t    s_last_ext_raw  = 0xFFFF;
 static uint8_t     s_last_porta    = 0xFF;
 static uint8_t     s_last_portb    = 0xFF;
 static sys_state_t s_last_sysstate = 0xFF;
+
+/* ------------------------------------------------------------------ */
+/* Peripheral screen state                                               */
+/* ------------------------------------------------------------------ */
+#define PERIPH_MAX_DISPLAY  8
+#define PERIPH_DETAIL_BUF   32
+
+static uint8_t  s_detail_addr  = 0x01;
+static uint8_t  s_detail_cmd   = 0;
+static uint8_t  s_detail_buf[PERIPH_DETAIL_BUF];
+static uint8_t  s_detail_len   = 0;
+static bool     s_detail_dirty = false;
 
 static bool main_needs_redraw(void)
 {
@@ -363,6 +376,226 @@ static void render_batwarning(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Peripheral helper                                                      */
+/* ------------------------------------------------------------------ */
+
+static const char *periph_name(uint8_t addr)
+{
+    switch (addr) {
+        case 0x01: return "Searchlight";
+        case 0x02: return "Radar";
+        case 0x03: return "Pan-Tilt";
+        case 0x04: return "Light Bar";
+        default:   return "Device";
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Peripheral overview screen (mode 5)                                   */
+/* ------------------------------------------------------------------ */
+
+static void render_periph_overview(void)
+{
+    st7735_fill_screen(ST7735_BLACK);
+    char buf[24];
+
+    /* Header */
+    st7735_fill_rect(0, 0, 128, 16, COL_NAVY);
+    st7735_fill_rect(0, 16, 128, 1, COL_TEAL);
+    /* "PERIPHERALS": 11*6=66px, x=(128-66)/2=31 */
+    st7735_draw_string(31, 4, "PERIPHERALS", ST7735_WHITE, COL_NAVY, 1);
+
+    /* Pull fresh data from RS-485 layer */
+    uint8_t addrs[PERIPH_MAX_DISPLAY];
+    bool    online[PERIPH_MAX_DISPLAY];
+    uint8_t count = rs485_get_peripherals(addrs, online, PERIPH_MAX_DISPLAY);
+
+    uint8_t online_count = 0;
+    for (int i = 0; i < count; i++) {
+        int16_t row_y = 20 + i * 12;
+        bool    is_on = online[i];
+        if (is_on) online_count++;
+
+        /* Address */
+        snprintf(buf, sizeof(buf), "%02X", addrs[i]);
+        st7735_draw_string(4, row_y, buf, COL_LTGRAY, ST7735_BLACK, 1);
+
+        /* Name */
+        st7735_draw_string(22, row_y, periph_name(addrs[i]),
+                           ST7735_WHITE, ST7735_BLACK, 1);
+
+        /* Status pill */
+        uint16_t pill_col = is_on ? ST7735_GREEN : ST7735_RED;
+        fill_rrect(97, row_y - 1, 27, 10, 3, pill_col);
+        st7735_draw_string(100, row_y, is_on ? "ON " : "OFF",
+                           ST7735_WHITE, pill_col, 1);
+    }
+
+    /* Footer summary */
+    st7735_fill_rect(0, 114, 128, 1, COL_TEAL);
+    st7735_fill_rect(0, 115, 128, 13, COL_NAVY);
+    snprintf(buf, sizeof(buf), "%d devs  %d online", count, online_count);
+    int16_t tw = (int16_t)(strlen(buf) * 6);
+    st7735_draw_string((128 - tw) / 2, 118, buf, COL_TEAL, COL_NAVY, 1);
+}
+
+/* ------------------------------------------------------------------ */
+/* Peripheral detail screen (mode 6)                                     */
+/* ------------------------------------------------------------------ */
+
+static void render_periph_detail(void)
+{
+    st7735_fill_screen(ST7735_BLACK);
+    char buf[24];
+
+    /* Header with device name */
+    st7735_fill_rect(0, 0, 128, 16, COL_NAVY);
+    st7735_fill_rect(0, 16, 128, 1, COL_TEAL);
+    const char *name = periph_name(s_detail_addr);
+    int16_t tw = (int16_t)(strlen(name) * 6);
+    st7735_draw_string((128 - tw) / 2, 4, name, ST7735_WHITE, COL_NAVY, 1);
+
+    /* Body — layout depends on peripheral type */
+    if (s_detail_len == 0) {
+        /* "No data yet": 11*6=66px, x=31 */
+        st7735_draw_string(31, 50, "No data yet", COL_LTGRAY, ST7735_BLACK, 1);
+    } else {
+        switch (s_detail_addr) {
+
+            case 0x01: /* Searchlight: brightness(u8), temp_C(i8), faults(u8) */
+                if (s_detail_len >= 3) {
+                    uint8_t brightness = s_detail_buf[0];
+                    int8_t  temp_c     = (int8_t)s_detail_buf[1];
+                    uint8_t faults     = s_detail_buf[2];
+
+                    st7735_draw_string(4, 22, "Brightness", COL_LTGRAY, ST7735_BLACK, 1);
+                    int pct = (int)((brightness * 100u) / 255u);
+                    snprintf(buf, sizeof(buf), "%3d%%", pct);
+                    st7735_draw_string(88, 22, buf, ST7735_WHITE, ST7735_BLACK, 1);
+                    fill_rrect(4, 32, 120, 6, 3, COL_CHARCOAL);
+                    int bw = (int)((brightness * 120u) / 255u);
+                    if (bw > 0) fill_rrect(4, 32, bw, 6, 3, ST7735_CYAN);
+
+                    st7735_draw_string(4, 44, "Temp", COL_LTGRAY, ST7735_BLACK, 1);
+                    snprintf(buf, sizeof(buf), "%d C", (int)temp_c);
+                    uint16_t t_col = (temp_c < 60) ? ST7735_GREEN :
+                                     (temp_c < 75) ? COL_AMBER : ST7735_RED;
+                    st7735_draw_string(60, 44, buf, t_col, ST7735_BLACK, 2);
+
+                    st7735_draw_string(4, 68, "Faults", COL_LTGRAY, ST7735_BLACK, 1);
+                    if (faults == 0) {
+                        st7735_draw_string(60, 68, "NONE", ST7735_GREEN, ST7735_BLACK, 1);
+                    } else {
+                        if (faults & 0x01) st7735_draw_string(4, 80, "Overcurrent",
+                                               ST7735_RED, ST7735_BLACK, 1);
+                        if (faults & 0x02) st7735_draw_string(4, 90, "Overtemp",
+                                               ST7735_RED, ST7735_BLACK, 1);
+                        if (faults & 0x04) st7735_draw_string(4, 100, "Undervolt",
+                                               ST7735_RED, ST7735_BLACK, 1);
+                    }
+                }
+                break;
+
+            case 0x02: /* Radar: distance_mm(u16 LE), signal(u8), status(u8) */
+                if (s_detail_len >= 4) {
+                    uint16_t dist_mm = (uint16_t)s_detail_buf[0]
+                                     | ((uint16_t)s_detail_buf[1] << 8);
+                    uint8_t  signal  = s_detail_buf[2];
+                    uint8_t  status  = s_detail_buf[3];
+
+                    st7735_draw_string(4, 22, "Distance", COL_LTGRAY, ST7735_BLACK, 1);
+                    snprintf(buf, sizeof(buf), "%u mm", (unsigned)dist_mm);
+                    int16_t dw = (int16_t)(strlen(buf) * 12);
+                    st7735_draw_string((128 - dw) / 2, 34, buf,
+                                       ST7735_CYAN, ST7735_BLACK, 2);
+
+                    st7735_draw_string(4, 58, "Signal", COL_LTGRAY, ST7735_BLACK, 1);
+                    fill_rrect(4, 68, 120, 6, 3, COL_CHARCOAL);
+                    int sw = (int)((signal * 120u) / 255u);
+                    if (sw > 0) fill_rrect(4, 68, sw, 6, 3, ST7735_GREEN);
+
+                    st7735_draw_string(4, 80, "Status", COL_LTGRAY, ST7735_BLACK, 1);
+                    st7735_draw_string(60, 80, status == 0 ? "OK " : "ERR",
+                                       status == 0 ? ST7735_GREEN : ST7735_RED,
+                                       ST7735_BLACK, 1);
+                }
+                break;
+
+            case 0x03: /* Pan-Tilt: pan_deg(u8), tilt_deg(u8), moving(u8) */
+                if (s_detail_len >= 3) {
+                    uint8_t pan    = s_detail_buf[0];
+                    uint8_t tilt   = s_detail_buf[1];
+                    uint8_t moving = s_detail_buf[2];
+
+                    st7735_draw_string(4, 22, "Pan", COL_LTGRAY, ST7735_BLACK, 1);
+                    snprintf(buf, sizeof(buf), "%3d deg", (int)pan);
+                    st7735_draw_string(50, 22, buf, ST7735_CYAN, ST7735_BLACK, 2);
+
+                    st7735_draw_string(4, 48, "Tilt", COL_LTGRAY, ST7735_BLACK, 1);
+                    snprintf(buf, sizeof(buf), "%3d deg", (int)tilt);
+                    st7735_draw_string(50, 48, buf, ST7735_CYAN, ST7735_BLACK, 2);
+
+                    st7735_draw_string(4, 76, "Motion", COL_LTGRAY, ST7735_BLACK, 1);
+                    uint16_t m_col = moving ? COL_AMBER : ST7735_GREEN;
+                    fill_rrect(60, 74, 40, 12, 4, m_col);
+                    st7735_draw_string(64, 77, moving ? "MOVE" : "IDLE",
+                                       ST7735_WHITE, m_col, 1);
+                }
+                break;
+
+            default: /* Generic: hex dump of first 8 bytes */
+                st7735_draw_string(4, 22, "Raw data:", COL_LTGRAY, ST7735_BLACK, 1);
+                for (int i = 0; i < s_detail_len && i < 8; i++) {
+                    snprintf(buf, sizeof(buf), "%02X", s_detail_buf[i]);
+                    st7735_draw_string(4 + i * 18, 36, buf,
+                                       ST7735_WHITE, ST7735_BLACK, 1);
+                }
+                break;
+        }
+    }
+
+    /* Footer: address + online status */
+    st7735_fill_rect(0, 114, 128, 1, COL_TEAL);
+    st7735_fill_rect(0, 115, 128, 13, COL_NAVY);
+
+    uint8_t addrs[PERIPH_MAX_DISPLAY];
+    bool    online_flags[PERIPH_MAX_DISPLAY];
+    uint8_t cnt = rs485_get_peripherals(addrs, online_flags, PERIPH_MAX_DISPLAY);
+    bool is_on = false;
+    for (int i = 0; i < cnt; i++) {
+        if (addrs[i] == s_detail_addr) { is_on = online_flags[i]; break; }
+    }
+
+    snprintf(buf, sizeof(buf), "0x%02X  %s",
+             s_detail_addr, is_on ? "ONLINE" : "OFFLINE");
+    tw = (int16_t)(strlen(buf) * 6);
+    st7735_draw_string((128 - tw) / 2, 118, buf,
+                       is_on ? ST7735_GREEN : ST7735_RED, COL_NAVY, 1);
+}
+
+/* ------------------------------------------------------------------ */
+/* Peripheral screen public API                                           */
+/* ------------------------------------------------------------------ */
+
+void screen_periph_set_detail_addr(uint8_t addr)
+{
+    s_detail_addr  = addr;
+    s_detail_len   = 0;
+    s_detail_dirty = true;
+}
+
+void screen_periph_update_data(uint8_t addr, uint8_t cmd,
+                               const uint8_t *payload, uint8_t len)
+{
+    if (addr != s_detail_addr) return;
+    s_detail_cmd = cmd;
+    if (len > PERIPH_DETAIL_BUF) len = PERIPH_DETAIL_BUF;
+    memcpy(s_detail_buf, payload, len);
+    s_detail_len   = len;
+    s_detail_dirty = true;
+}
+
+/* ------------------------------------------------------------------ */
 /* Public API                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -424,13 +657,15 @@ void screen_task(void *param)
         if (effective != s_last_mode) {
             s_last_mode = effective;
             switch (effective) {
-                case SCREEN_MODE_MAIN:     render_main();       break;
-                case SCREEN_MODE_WARNING:  render_warning();    break;
-                case SCREEN_MODE_LOCK:     render_lock();       break;
-                case SCREEN_MODE_BATWARNING: render_batwarning(); break;
+                case SCREEN_MODE_MAIN:          render_main();           break;
+                case SCREEN_MODE_WARNING:       render_warning();        break;
+                case SCREEN_MODE_LOCK:          render_lock();           break;
+                case SCREEN_MODE_BATWARNING:    render_batwarning();     break;
+                case SCREEN_MODE_PERIPH:        render_periph_overview(); break;
+                case SCREEN_MODE_PERIPH_DETAIL: render_periph_detail();  break;
                 case SCREEN_MODE_AUTO + 10: s_wait_frame = 0; render_waiting(); break;
-                case 0xFF:                               break; /* boot — skip */
-                default:                  render_main();       break;
+                case 0xFF:                                   break; /* boot — skip */
+                default:                        render_main();           break;
             }
         } else if (effective == SCREEN_MODE_MAIN && main_needs_redraw()) {
             render_main();
@@ -438,6 +673,9 @@ void screen_task(void *param)
             update_waiting_dots();
         } else if (effective == SCREEN_MODE_BATWARNING) {
             update_batwarning();
+        } else if (effective == SCREEN_MODE_PERIPH_DETAIL && s_detail_dirty) {
+            s_detail_dirty = false;
+            render_periph_detail();
         }
 
         vTaskDelayUntil(&last_wake, period);

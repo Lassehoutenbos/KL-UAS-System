@@ -14,6 +14,7 @@
 #include "usb_cdc.h"
 #include "screen_display.h"
 #include "veml7700.h"
+#include "rs485.h"
 
 /* Task handles — needed so protocol.c can notify LED/screen tasks */
 static TaskHandle_t s_sk6812_handle = NULL;
@@ -64,6 +65,7 @@ int main(void)
     analog_init();
     digital_io_init();
     veml7700_init();
+    rs485_init();
     led_sk6812_init();
     led_ws2811_init();
     screen_display_init();   /* GPIO-only init; full ST7735 init runs in screen_task */
@@ -92,6 +94,9 @@ int main(void)
 
     /* Screen task */
     xTaskCreate(screen_task,     "SCREEN", 1024, NULL, 1, &s_screen_handle);
+
+    /* RS-485 peripheral bus task */
+    xTaskCreate(rs485_task,      "RS485",  512,  NULL, 2, NULL);
 
     /* Watchdog service task */
     xTaskCreate(watchdog_task,   "WDT",    256,  NULL, 1, NULL);

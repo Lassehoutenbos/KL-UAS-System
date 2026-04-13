@@ -92,6 +92,17 @@
 #define ST7735_SPI_BAUD     15625000  /* 15.625 MHz — 125 MHz / 8, near ST7735S max */
 
 /* ------------------------------------------------------------------ */
+/* UART1 — RS-485 peripheral bus (GP8/GP9 + GP2 DE/RE)                 */
+/* ------------------------------------------------------------------ */
+#define PIN_RS485_TX        8   /* GP8  — UART1 TX → SP3485 DI          */
+#define PIN_RS485_RX        9   /* GP9  — UART1 RX ← SP3485 RO          */
+#define PIN_RS485_DE        2   /* GP2  — SP3485 DE + /RE (active high)  */
+#define PIN_RS485_INT       6   /* GP6  — /INT input (active low, pulled */
+                                /*         high; peripheral open-drains) */
+#define RS485_UART_INST     uart1
+#define RS485_BAUD          115200
+
+/* ------------------------------------------------------------------ */
 /* MCP3208 channel assignments                                          */
 /* ------------------------------------------------------------------ */
 #define ADC_CH_BAT_VIN      0   /* battery voltage monitor */
