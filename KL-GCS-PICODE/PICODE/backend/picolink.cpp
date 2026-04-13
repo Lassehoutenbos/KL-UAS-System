@@ -53,6 +53,7 @@ PicoLink::PicoLink(GCSState *state, QObject *parent)
     connect(&m_retryTimer, &QTimer::timeout, this, &PicoLink::retryConnect);
 
     connect(m_state, &GCSState::cmdBrightnessChanged, this, &PicoLink::onBrightnessChanged);
+    connect(m_state, &GCSState::cmdWorklightChanged, this, &PicoLink::onWorklightChanged);
     connect(m_state, &GCSState::cmdPeriphCmd,       this, &PicoLink::onPeriphCmd);
     connect(m_state, &GCSState::cmdTftScreen,       this, &PicoLink::onTftScreen);
     connect(m_state, &GCSState::cmdTftPeriphDetail, this, &PicoLink::onTftPeriphDetail);
@@ -606,4 +607,16 @@ void PicoLink::updatePayloadLeds()
         sendLedCmd(0x01, 1, 255, 100, 0, 2);   // blink slow orange
     else
         sendLedCmd(0x01, 1, 0, 0, 0, 0);       // off
+}
+
+void PicoLink::onWorklightChanged(bool on, const QColor &color)
+{
+    uint8_t r = on ? static_cast<uint8_t>(color.red())   : 0;
+    uint8_t g = on ? static_cast<uint8_t>(color.green()) : 0;
+    uint8_t b = on ? static_cast<uint8_t>(color.blue())  : 0;
+    uint8_t anim = on ? 1 : 0;  // 1 = solid on, 0 = off
+
+    // SK6812 LEDs 70-92 are the worklights (chain 0x00)
+    for (uint8_t id = 70; id <= 92; ++id)
+        sendLedCmd(0x00, id, r, g, b, anim);
 }

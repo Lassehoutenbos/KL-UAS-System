@@ -191,6 +191,12 @@ void GCSState::setWaypoints(const QVariantList &wps)
     emit waypointsChanged();
 }
 
+void GCSState::setPois(const QVariantList &pois)
+{
+    m_pois = pois;
+    emit poisChanged();
+}
+
 void GCSState::updateParams(const QVariantList &params)
 {
     m_params = params;
@@ -268,6 +274,23 @@ void GCSState::setAlsAutoEnabled(bool enabled)
 {
     m_alsAutoEnabled = enabled;
     emit brightnessChanged();
+}
+
+void GCSState::setWorklightOn(bool on)
+{
+    if (m_worklightOn == on) return;
+    m_worklightOn = on;
+    emit worklightChanged();
+    emit cmdWorklightChanged(m_worklightOn, m_worklightColor);
+}
+
+void GCSState::setWorklightColor(const QColor &color)
+{
+    if (m_worklightColor == color) return;
+    m_worklightColor = color;
+    emit worklightChanged();
+    if (m_worklightOn)
+        emit cmdWorklightChanged(m_worklightOn, m_worklightColor);
 }
 
 void GCSState::sendFlightMode(const QString &mode)

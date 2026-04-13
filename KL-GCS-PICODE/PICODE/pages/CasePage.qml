@@ -5,6 +5,9 @@ import PICODE
 
 Rectangle {
     color: Theme.bgPrimary
+    readonly property int sliderLabelWidth: 120
+    readonly property int sliderValueWidth: 52
+    property bool brightnessExpanded: false
 
     // Compute current TFT mode from GCSState (mirrors picolink updateTftMode logic)
     readonly property int tftMode: {
@@ -33,10 +36,28 @@ Rectangle {
             Item {
                 Layout.fillWidth: true; height: 32
                 Rectangle { anchors { left: parent.left; top: parent.top; bottom: parent.bottom } width: 3; color: Theme.accentYellow }
-                Text {
-                    anchors { left: parent.left; leftMargin: 11; verticalCenter: parent.verticalCenter }
-                    text: "BRIGHTNESS"
-                    color: Theme.textSecondary; font.pixelSize: Theme.fontPageTitle; font.weight: Font.SemiBold; font.letterSpacing: 0.8
+                RowLayout {
+                    anchors { fill: parent; leftMargin: 11; rightMargin: 12 }
+                    spacing: 8
+
+                    Text {
+                        text: "BRIGHTNESS"
+                        color: Theme.textSecondary; font.pixelSize: Theme.fontPageTitle; font.weight: Font.SemiBold; font.letterSpacing: 0.8
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Text {
+                        text: brightnessExpanded ? "▼" : "▶"
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSectionLabel
+                        font.weight: Font.SemiBold
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: brightnessExpanded = !brightnessExpanded
                 }
             }
             Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
@@ -44,149 +65,285 @@ Rectangle {
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.margins: 12
-                spacing: 0
+                spacing: 6
 
                 // MASTER
-                RowLayout {
+                Rectangle {
                     Layout.fillWidth: true
-                    height: 48
-                    spacing: 8
+                    Layout.preferredHeight: 52
+                    radius: 4
+                    color: Theme.bgSecondary
+                    border.color: Theme.border
+                    border.width: 1
 
-                    Text {
-                        text: "MASTER"
-                        color: Theme.textPrimary
-                        font.pixelSize: Theme.fontUnit
-                        font.weight: Font.Medium
-                        Layout.preferredWidth: 120
-                    }
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 8
 
-                    Slider {
-                        id: masterSlider
-                        from: 0; to: 100; stepSize: 1
-                        value: GCSState.brightnessScreenL
-                        Layout.fillWidth: true
+                        Text {
+                            text: "MASTER"
+                            color: Theme.textPrimary
+                            font.pixelSize: Theme.fontUnit
+                            font.weight: Font.Medium
+                            Layout.preferredWidth: sliderLabelWidth
+                        }
 
-                        onPressedChanged: {
-                            if (pressed) {
-                                var cur = value || 1
-                                brightnessRatios = [
-                                    GCSState.brightnessScreenL / cur,
-                                    GCSState.brightnessScreenR / cur,
-                                    GCSState.brightnessLed     / cur,
-                                    GCSState.brightnessTft     / cur,
-                                    GCSState.brightnessBtnLeds / cur
-                                ]
+                        Slider {
+                            id: masterSlider
+                            from: 0; to: 100; stepSize: 1
+                            value: GCSState.brightnessScreenL
+                            Layout.fillWidth: true
+
+                            // Match SliderRow visual style
+                            background: Item {
+                                x: masterSlider.leftPadding
+                                y: masterSlider.topPadding + masterSlider.availableHeight / 2 - height / 2
+                                implicitWidth: 200; implicitHeight: 6
+                                width: masterSlider.availableWidth; height: 6
+
+                                Rectangle {
+                                    width: parent.width; height: parent.height; radius: 3
+                                    color: Theme.bgElevated
+                                    border.color: Theme.border; border.width: 1
+                                }
+                                Rectangle {
+                                    width: masterSlider.visualPosition * parent.width
+                                    height: parent.height; radius: 3
+                                    color: Theme.accentBlue
+                                    opacity: 0.85
+                                }
+                            }
+
+                            handle: Rectangle {
+                                x: masterSlider.leftPadding + masterSlider.visualPosition * (masterSlider.availableWidth - width)
+                                y: masterSlider.topPadding + masterSlider.availableHeight / 2 - height / 2
+                                width: 18; height: 18; radius: 9
+                                color: Theme.accentYellow
+                                border.color: Theme.bgPrimary; border.width: 2
+
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 6; height: 6; radius: 3
+                                    color: Theme.bgPrimary
+                                    opacity: 0.5
+                                }
+
+                                scale: masterSlider.pressed ? 0.84 : 1.0
+                                Behavior on scale { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
+                            }
+
+                            onPressedChanged: {
+                                if (pressed) {
+                                    var cur = value || 1
+                                    brightnessRatios = [
+                                        GCSState.brightnessScreenL / cur,
+                                        GCSState.brightnessScreenR / cur,
+                                        GCSState.brightnessLed     / cur,
+                                        GCSState.brightnessTft     / cur,
+                                        GCSState.brightnessBtnLeds / cur
+                                    ]
+                                }
+                            }
+                            onMoved: {
+                                var v = Math.round(value)
+                                GCSState.brightnessScreenL = Math.min(100, Math.round(brightnessRatios[0] * v))
+                                GCSState.brightnessScreenR = screensLinked
+                                    ? GCSState.brightnessScreenL
+                                    : Math.min(100, Math.round(brightnessRatios[1] * v))
+                                GCSState.brightnessLed     = Math.min(100, Math.round(brightnessRatios[2] * v))
+                                GCSState.brightnessTft     = Math.min(100, Math.round(brightnessRatios[3] * v))
+                                GCSState.brightnessBtnLeds = Math.min(100, Math.round(brightnessRatios[4] * v))
                             }
                         }
-                        onMoved: {
-                            var v = Math.round(value)
-                            GCSState.brightnessScreenL = Math.min(100, Math.round(brightnessRatios[0] * v))
-                            GCSState.brightnessScreenR = screensLinked
-                                ? GCSState.brightnessScreenL
-                                : Math.min(100, Math.round(brightnessRatios[1] * v))
-                            GCSState.brightnessLed     = Math.min(100, Math.round(brightnessRatios[2] * v))
-                            GCSState.brightnessTft     = Math.min(100, Math.round(brightnessRatios[3] * v))
-                            GCSState.brightnessBtnLeds = Math.min(100, Math.round(brightnessRatios[4] * v))
-                        }
-                    }
 
-                    Text {
-                        text: Math.round(masterSlider.value) + "%"
-                        color: Theme.textPrimary
-                        font.pixelSize: Theme.fontUnit
-                        Layout.preferredWidth: 60
+                        Text {
+                            text: Math.round(masterSlider.value) + "%"
+                            color: Theme.textPrimary
+                            font.pixelSize: Theme.fontUnit
+                            font.weight: Font.SemiBold
+                            font.family: "monospace"
+                            Layout.preferredWidth: 52
+                            horizontalAlignment: Text.AlignRight
+                        }
                     }
                 }
 
-                // SCREENS + link toggle
-                RowLayout {
+                ColumnLayout {
+                    visible: brightnessExpanded
                     Layout.fillWidth: true
-                    height: 48
-                    spacing: 8
+                    spacing: 6
 
-                    SliderRow {
-                        label: screensLinked ? "SCREENS" : "SCREEN L"
-                        value: GCSState.brightnessScreenL
-                        Layout.fillWidth: true
-                        onSliderMoved: function(v) {
-                            GCSState.brightnessScreenL = v
-                            if (screensLinked) GCSState.brightnessScreenR = v
-                        }
-                    }
+                // SCREENS + link toggle
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 82
+                    radius: 4
+                    color: Theme.bgSecondary
+                    border.color: Theme.border
+                    border.width: 1
 
-                    Rectangle {
-                        width: 110; height: 40; radius: 4
-                        color: screensLinked ? Theme.accentYellow : Theme.bgElevated
-                        border.color: screensLinked ? Theme.accentYellow : Theme.border
-                        border.width: 1
-                        Text {
-                            anchors.centerIn: parent
-                            text: screensLinked ? "LINK ■" : "UNLINK □"
-                            color: screensLinked ? Theme.bgPrimary : Theme.textSecondary
-                            font.pixelSize: Theme.fontSectionLabel
-                            font.weight: Font.SemiBold
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        anchors.topMargin: 6
+                        anchors.bottomMargin: 6
+                        spacing: 4
+
+                        SliderRow {
+                            label: screensLinked ? "SCREENS" : "SCREEN L"
+                            labelWidth: sliderLabelWidth
+                            valueWidth: sliderValueWidth
+                            value: GCSState.brightnessScreenL
+                            Layout.fillWidth: true
+                            onSliderMoved: function(v) {
+                                GCSState.brightnessScreenL = v
+                                if (screensLinked) GCSState.brightnessScreenR = v
+                            }
                         }
-                        MouseArea { anchors.fill: parent; onClicked: screensLinked = !screensLinked }
+
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 28
+
+                            Rectangle {
+                                width: 220
+                                anchors.right: parent.right
+                                anchors.rightMargin: sliderValueWidth + 8
+                                height: 28
+                                radius: 14
+                                color: screensLinked
+                                       ? Qt.rgba(Theme.accentYellow.r, Theme.accentYellow.g, Theme.accentYellow.b, 0.14)
+                                       : Theme.bgElevated
+                                border.color: screensLinked ? Theme.accentYellow : Theme.border
+                                border.width: 1
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 8
+
+                                    Rectangle {
+                                        width: 10; height: 10; radius: 5
+                                        color: screensLinked ? Theme.accentYellow : Theme.textDisabled
+                                    }
+
+                                    Text {
+                                        text: screensLinked ? "SCREENS LINKED" : "SCREENS UNLINKED"
+                                        color: screensLinked ? Theme.accentYellow : Theme.textSecondary
+                                        font.pixelSize: 10
+                                        font.weight: Font.SemiBold
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+
+                                    Text {
+                                        text: screensLinked ? "LINK" : "UNLINK"
+                                        color: screensLinked ? Theme.accentYellow : Theme.textDisabled
+                                        font.pixelSize: 10
+                                        font.weight: Font.Medium
+                                        font.letterSpacing: 0.4
+                                    }
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: screensLinked = !screensLinked
+                                }
+                            }
+                        }
                     }
                 }
 
                 // SCREEN R — only when unlinked
-                SliderRow {
+                Rectangle {
                     visible: !screensLinked
-                    label: "SCREEN R"
-                    value: GCSState.brightnessScreenR
                     Layout.fillWidth: true
-                    onSliderMoved: function(v) { GCSState.brightnessScreenR = v }
+                    Layout.preferredHeight: 48
+                    radius: 4
+                    color: Theme.bgSecondary
+                    border.color: Theme.border
+                    border.width: 1
+                    SliderRow {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        label: "SCREEN R"
+                        labelWidth: sliderLabelWidth
+                        valueWidth: sliderValueWidth
+                        value: GCSState.brightnessScreenR
+                        onSliderMoved: function(v) { GCSState.brightnessScreenR = v }
+                    }
                 }
 
-                SliderRow {
-                    label: "LED STRIP"
-                    value: GCSState.brightnessLed
-                    Layout.fillWidth: true
-                    onSliderMoved: function(v) { GCSState.brightnessLed = v }
-                }
-                SliderRow {
-                    label: "TFT BL"
-                    value: GCSState.brightnessTft
-                    Layout.fillWidth: true
-                    onSliderMoved: function(v) { GCSState.brightnessTft = v }
-                }
-                SliderRow {
-                    label: "BTN LEDS"
-                    value: GCSState.brightnessBtnLeds
-                    Layout.fillWidth: true
-                    onSliderMoved: function(v) { GCSState.brightnessBtnLeds = v }
+                Repeater {
+                    model: [
+                        { lbl: "LED STRIP", val: GCSState.brightnessLed, setFn: function(v) { GCSState.brightnessLed = v } },
+                        { lbl: "TFT BL", val: GCSState.brightnessTft, setFn: function(v) { GCSState.brightnessTft = v } },
+                        { lbl: "BTN LEDS", val: GCSState.brightnessBtnLeds, setFn: function(v) { GCSState.brightnessBtnLeds = v } }
+                    ]
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 48
+                        radius: 4
+                        color: Theme.bgSecondary
+                        border.color: Theme.border
+                        border.width: 1
+                        SliderRow {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            label: modelData.lbl
+                            labelWidth: sliderLabelWidth
+                            valueWidth: sliderValueWidth
+                            value: modelData.val
+                            onSliderMoved: function(v) { modelData.setFn(v) }
+                        }
+                    }
                 }
 
                 // ALS auto-brightness toggle
-                RowLayout {
+                Rectangle {
                     Layout.fillWidth: true
-                    height: 48
-                    spacing: 8
+                    Layout.preferredHeight: 48
+                    radius: 4
+                    color: Theme.bgSecondary
+                    border.color: Theme.border
+                    border.width: 1
 
-                    Text {
-                        text: "AMBIENT LIGHT AUTO-BRIGHTNESS"
-                        color: Theme.textSecondary
-                        font.pixelSize: Theme.fontSectionLabel
-                        font.weight: Font.Medium
-                        Layout.fillWidth: true
-                    }
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 8
 
-                    Rectangle {
-                        width: 120; height: 40; radius: 4
-                        color: GCSState.alsAutoEnabled ? Theme.accentYellow : Theme.bgElevated
-                        border.color: GCSState.alsAutoEnabled ? Theme.accentYellow : Theme.border
-                        border.width: 1
                         Text {
-                            anchors.centerIn: parent
-                            text: GCSState.alsAutoEnabled ? "ENABLED ▶" : "DISABLED"
-                            color: GCSState.alsAutoEnabled ? Theme.bgPrimary : Theme.textSecondary
+                            text: "AMBIENT LIGHT AUTO-BRIGHTNESS"
+                            color: Theme.textSecondary
                             font.pixelSize: Theme.fontSectionLabel
-                            font.weight: Font.SemiBold
+                            font.weight: Font.Medium
+                            Layout.fillWidth: true
                         }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: GCSState.alsAutoEnabled = !GCSState.alsAutoEnabled
+
+                        Rectangle {
+                            width: 120; height: 34; radius: 4
+                            color: GCSState.alsAutoEnabled ? Theme.accentYellow : Theme.bgElevated
+                            border.color: GCSState.alsAutoEnabled ? Theme.accentYellow : Theme.border
+                            border.width: 1
+                            Text {
+                                anchors.centerIn: parent
+                                text: GCSState.alsAutoEnabled ? "ENABLED" : "DISABLED"
+                                color: GCSState.alsAutoEnabled ? Theme.bgPrimary : Theme.textSecondary
+                                font.pixelSize: Theme.fontSectionLabel
+                                font.weight: Font.SemiBold
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: GCSState.alsAutoEnabled = !GCSState.alsAutoEnabled
+                            }
                         }
                     }
                 }
@@ -200,6 +357,26 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.bottomMargin: 4
                 }
+                }
+            }
+
+            // ── CASE OVERVIEW ────────────────────────────────────────────────
+            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border; Layout.topMargin: 4 }
+            Item {
+                Layout.fillWidth: true; height: 32
+                Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 3; color: Theme.accentBlue }
+                Text {
+                    anchors.left: parent.left; anchors.leftMargin: 11; anchors.verticalCenter: parent.verticalCenter
+                    text: "CASE OVERVIEW"
+                    color: Theme.textSecondary; font.pixelSize: Theme.fontPageTitle; font.weight: Font.SemiBold; font.letterSpacing: 0.8
+                }
+            }
+            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+
+            CaseView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 250
+                Layout.margins: 4
             }
 
             // ── TEMPERATURES ─────────────────────────────────────────────────
@@ -222,10 +399,10 @@ Rectangle {
                 Repeater {
                     model: [
                         { lbl: "PI CPU",   temp: GCSState.tempCpuPi,  valid: true },
-                        { lbl: "CASE CH2", temp: GCSState.tempCaseA,  valid: !isNaN(GCSState.tempCaseA) && GCSState.tempCaseA > -274 },
-                        { lbl: "CASE CH3", temp: GCSState.tempCaseB,  valid: !isNaN(GCSState.tempCaseB) && GCSState.tempCaseB > -274 },
-                        { lbl: "CASE CH4", temp: GCSState.tempCaseC,  valid: !isNaN(GCSState.tempCaseC) && GCSState.tempCaseC > -274 },
-                        { lbl: "CASE CH5", temp: GCSState.tempCaseD,  valid: !isNaN(GCSState.tempCaseD) && GCSState.tempCaseD > -274 }
+                        { lbl: "PCB POWER",    temp: GCSState.tempCaseA,  valid: !isNaN(GCSState.tempCaseA) && GCSState.tempCaseA > -274 },
+                        { lbl: "RASPBERRY PI", temp: GCSState.tempCaseB,  valid: !isNaN(GCSState.tempCaseB) && GCSState.tempCaseB > -274 },
+                        { lbl: "CHARGER",      temp: GCSState.tempCaseC,  valid: !isNaN(GCSState.tempCaseC) && GCSState.tempCaseC > -274 },
+                        { lbl: "VRX MODULE",   temp: GCSState.tempCaseD,  valid: !isNaN(GCSState.tempCaseD) && GCSState.tempCaseD > -274 }
                     ]
                     Rectangle {
                         Layout.fillWidth: true; height: 36; radius: 3
@@ -241,7 +418,7 @@ Rectangle {
                         RowLayout {
                             anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 6
                             StatusDot { level: parent.parent.lvl }
-                            Text { text: modelData.lbl; color: Theme.textDisabled; font.pixelSize: 10; font.weight: Font.Medium; Layout.preferredWidth: 72; font.letterSpacing: 0.3 }
+                            Text { text: modelData.lbl; color: Theme.textDisabled; font.pixelSize: 10; font.weight: Font.Medium; Layout.preferredWidth: 90; font.letterSpacing: 0.3 }
                             Item { Layout.fillWidth: true }
                             Text {
                                 text: modelData.valid ? modelData.temp.toFixed(0) + "°C" : "—"

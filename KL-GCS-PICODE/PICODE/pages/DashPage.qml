@@ -6,7 +6,7 @@ Rectangle {
     color: Theme.bgPrimary
 
     // Helper: warning level → label string
-    function warnLabel(v) { return v === 0 ? "OK" : (v === 1 ? "WARN" : "CRIT") }
+    function warnLabel(v) { return v === 0 ? "OK" : (v === 1 ? "WARNING" : "CRITICAL") }
     function warnColor(v) { return v === 0 ? Theme.statusOk : (v === 1 ? Theme.statusWarn : Theme.statusCrit) }
 
     RowLayout {
@@ -45,14 +45,14 @@ Rectangle {
 
                     Repeater {
                         model: [
-                            { lbl: "ALT",  val: GCSState.altitude.toFixed(1),     unit: "m" },
-                            { lbl: "SPD",  val: GCSState.groundSpeed.toFixed(1),  unit: "m/s" },
-                            { lbl: "HDG",  val: GCSState.heading.toFixed(0),      unit: "°" },
-                            { lbl: "VSPD", val: (GCSState.verticalSpeed >= 0 ? "+" : "") + GCSState.verticalSpeed.toFixed(1), unit: "m/s" }
+                            { lbl: "ALTITUDE",  val: GCSState.altitude.toFixed(1),     unit: "m" },
+                            { lbl: "SPEED",     val: GCSState.groundSpeed.toFixed(1),  unit: "m/s" },
+                            { lbl: "HEADING",   val: GCSState.heading.toFixed(0),      unit: "°" },
+                            { lbl: "CLIMB",     val: (GCSState.verticalSpeed >= 0 ? "+" : "") + GCSState.verticalSpeed.toFixed(1), unit: "m/s" }
                         ]
                         RowLayout {
                             Layout.fillWidth: true
-                            Text { text: modelData.lbl;  color: Theme.textDisabled;  font.pixelSize: Theme.fontSectionLabel; font.weight: Font.Medium; Layout.preferredWidth: 42; font.letterSpacing: 0.4 }
+                            Text { text: modelData.lbl;  color: Theme.textDisabled;  font.pixelSize: Theme.fontSectionLabel; font.weight: Font.Medium; Layout.preferredWidth: 78; font.letterSpacing: 0.4 }
                             Text { text: modelData.val;  color: Theme.textPrimary;   font.pixelSize: Theme.fontValueSmall;   font.weight: Font.Bold;    Layout.fillWidth: true; font.family: "monospace" }
                             Text { text: modelData.unit; color: Theme.textDisabled;  font.pixelSize: Theme.fontUnit }
                         }
@@ -113,7 +113,7 @@ Rectangle {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        Text { text: "BAT";  color: Theme.textDisabled; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.Medium; Layout.preferredWidth: 42; font.letterSpacing: 0.4 }
+                        Text { text: "BATTERY";  color: Theme.textDisabled; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.Medium; Layout.preferredWidth: 78; font.letterSpacing: 0.4 }
                         Text {
                             text: GCSState.batteryVoltage.toFixed(1) + "V"
                             color: GCSState.batteryPercent < 20 ? Theme.statusCrit
@@ -126,7 +126,7 @@ Rectangle {
                     }
                     RowLayout {
                         Layout.fillWidth: true
-                        Text { text: "EXT";  color: Theme.textDisabled; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.Medium; Layout.preferredWidth: 42; font.letterSpacing: 0.4 }
+                        Text { text: "EXTERNAL";  color: Theme.textDisabled; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.Medium; Layout.preferredWidth: 78; font.letterSpacing: 0.4 }
                         Text { text: GCSState.extVoltage.toFixed(1) + "V"; color: Theme.textPrimary; font.pixelSize: Theme.fontValueSmall; font.weight: Font.Bold; font.family: "monospace" }
                     }
                 }
@@ -278,6 +278,50 @@ Rectangle {
                         }
                     }
                 }
+
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 220
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: 4
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text {
+                                text: "CASE OVERVIEW"
+                                color: Theme.textSecondary
+                                font.pixelSize: Theme.fontSectionLabel
+                                font.weight: Font.SemiBold
+                                font.letterSpacing: 0.6
+                            }
+                            Item { Layout.fillWidth: true }
+                            Text {
+                                text: GCSState.worklightOn ? "WORKLIGHT ON" : "WORKLIGHT OFF"
+                                color: GCSState.worklightOn ? Theme.accentYellow : Theme.textDisabled
+                                font.pixelSize: Theme.fontSectionLabel
+                                font.family: "monospace"
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: 3
+                            color: Theme.bgSecondary
+                            border.color: Theme.border
+                            border.width: 1
+
+                            CaseView {
+                                anchors.fill: parent
+                                anchors.margins: 3
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -311,23 +355,23 @@ Rectangle {
 
                     Repeater {
                         model: [
-                            { lbl: "LINK",  dot: GCSState.mavlinkConnected ? 0 : 2,
+                                                        { lbl: "TELEMETRY LINK",  dot: GCSState.mavlinkConnected ? 0 : 2,
                               val: GCSState.mavlinkConnected ? "OK" : "NO LINK",
                               col: GCSState.mavlinkConnected ? Theme.statusOk : Theme.statusCrit },
-                            { lbl: "GPS",   dot: GCSState.gpsSats >= 6 ? 0 : (GCSState.gpsSats > 0 ? 1 : 2),
+                                                        { lbl: "GPS",   dot: GCSState.gpsSats >= 6 ? 0 : (GCSState.gpsSats > 0 ? 1 : 2),
                               val: GCSState.gpsSats + "  " + GCSState.gpsFixType,
                               col: Theme.textPrimary },
-                            { lbl: "ALS",   dot: 0,
+                                                        { lbl: "AMBIENT LIGHT",   dot: 0,
                               val: GCSState.alsLux.toFixed(0) + " lux",
                               col: Theme.textPrimary },
-                            { lbl: "TEMP",  dot: GCSState.tempCpuPi < 60 ? 0 : (GCSState.tempCpuPi < 80 ? 1 : 2),
+                                                        { lbl: "PROCESSOR TEMP",  dot: GCSState.tempCpuPi < 60 ? 0 : (GCSState.tempCpuPi < 80 ? 1 : 2),
                               val: GCSState.tempCpuPi.toFixed(0) + "°C",
                               col: Theme.textPrimary }
                         ]
                         RowLayout {
                             Layout.fillWidth: true; spacing: 6
                             StatusDot { level: modelData.dot }
-                            Text { text: modelData.lbl; color: Theme.textDisabled; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.Medium; Layout.preferredWidth: 38; font.letterSpacing: 0.4 }
+                                                        Text { text: modelData.lbl; color: Theme.textDisabled; font.pixelSize: 10; font.weight: Font.Medium; Layout.preferredWidth: 104; font.letterSpacing: 0.3 }
                             Text { text: modelData.val; color: modelData.col;     font.pixelSize: Theme.fontValueSmall;   font.weight: Font.SemiBold; Layout.fillWidth: true; font.family: "monospace" }
                         }
                     }
@@ -350,20 +394,20 @@ Rectangle {
 
                 // Warning rows as mini badge-style entries
                 ColumnLayout {
-                    Layout.fillWidth: true; Layout.margins: 10; spacing: 5
+                    Layout.fillWidth: true; Layout.margins: 8; spacing: 4
 
                     Repeater {
                         model: [
-                            { lbl: "TEMP",  level: GCSState.warnTemp },
-                            { lbl: "SIG",   level: GCSState.warnSignal },
-                            { lbl: "DRONE", level: GCSState.warnDrone },
+                            { lbl: "TEMPERATURE",  level: GCSState.warnTemp },
+                            { lbl: "SIGNAL",       level: GCSState.warnSignal },
+                            { lbl: "DRONE",        level: GCSState.warnDrone },
                             { lbl: "GPS",   level: GCSState.warnGps },
-                            { lbl: "LINK",  level: GCSState.warnLink },
-                            { lbl: "NET",   level: GCSState.warnNetwork }
+                            { lbl: "LINK",         level: GCSState.warnLink },
+                            { lbl: "NETWORK",      level: GCSState.warnNetwork }
                         ]
 
                         Rectangle {
-                            Layout.fillWidth: true; height: 28; radius: 3
+                            Layout.fillWidth: true; height: 24; radius: 3
                             color: modelData.level === 0
                                    ? "transparent"
                                    : Qt.rgba(1, modelData.level === 1 ? 0.7 : 0.36, modelData.level === 1 ? 0.28 : 0.36, 0.07)
@@ -373,14 +417,14 @@ Rectangle {
 
                             RowLayout {
                                 anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
-                                spacing: 6
+                                spacing: 4
                                 StatusDot { level: modelData.level }
-                                Text { text: modelData.lbl; color: Theme.textDisabled; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.Medium; Layout.preferredWidth: 40; font.letterSpacing: 0.4 }
+                                Text { text: modelData.lbl; color: Theme.textDisabled; font.pixelSize: 10; font.weight: Font.Medium; Layout.preferredWidth: 86; font.letterSpacing: 0.3 }
                                 Item { Layout.fillWidth: true }
                                 Text {
                                     text: warnLabel(modelData.level)
                                     color: warnColor(modelData.level)
-                                    font.pixelSize: Theme.fontSectionLabel; font.weight: Font.Bold; font.family: "monospace"; font.letterSpacing: 0.5
+                                    font.pixelSize: 10; font.weight: Font.Bold; font.family: "monospace"; font.letterSpacing: 0.3
                                 }
                             }
                         }

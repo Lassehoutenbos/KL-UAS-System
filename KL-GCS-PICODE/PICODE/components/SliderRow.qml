@@ -12,6 +12,8 @@ Rectangle {
     property int    value:    50
     property string unit:     "%"
     property bool   readOnly: false
+    property int    labelWidth: 120
+    property int    valueWidth: 52
 
     // Use sliderMoved (not valueChanged) to avoid clashing with the
     // auto-generated property-change notification for `value`.
@@ -27,7 +29,7 @@ Rectangle {
             font.pixelSize: Theme.fontUnit
             font.weight: Font.Medium
             font.letterSpacing: 0.4
-            Layout.preferredWidth: 120
+            Layout.preferredWidth: sliderRowRoot.labelWidth
         }
 
         Slider {
@@ -87,7 +89,7 @@ Rectangle {
             color: Theme.textPrimary
             font.pixelSize: Theme.fontUnit
             font.family: "monospace"
-            Layout.preferredWidth: 52
+            Layout.preferredWidth: sliderRowRoot.valueWidth
             horizontalAlignment: Text.AlignRight
         }
     }

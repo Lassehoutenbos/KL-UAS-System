@@ -22,6 +22,7 @@ private slots:
     void onPeriphCmd(int address, int cmd, const QByteArray &payload);
     void onTftScreen(int mode);
     void onTftPeriphDetail(int address);
+    void onWorklightChanged(bool on, const QColor &color);
 
 private:
     void openPort();

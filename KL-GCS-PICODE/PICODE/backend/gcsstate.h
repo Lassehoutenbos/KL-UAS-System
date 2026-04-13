@@ -1,5 +1,6 @@
 #pragma once
 #include <QObject>
+#include <QColor>
 #include <QDateTime>
 #include <QVariantList>
 #include <QStringList>
@@ -72,6 +73,10 @@ class GCSState : public QObject {
     Q_PROPERTY(int  brightnessBtnLeds READ brightnessBtnLeds WRITE setBrightnessBtnLeds NOTIFY brightnessChanged)
     Q_PROPERTY(bool alsAutoEnabled    READ alsAutoEnabled    WRITE setAlsAutoEnabled    NOTIFY brightnessChanged)
 
+    // --- Worklight ---
+    Q_PROPERTY(bool   worklightOn    READ worklightOn    WRITE setWorklightOn    NOTIFY worklightChanged)
+    Q_PROPERTY(QColor worklightColor READ worklightColor WRITE setWorklightColor NOTIFY worklightChanged)
+
     // --- Peripherals (RS-485) ---
     Q_PROPERTY(QVariantList peripherals READ peripherals NOTIFY peripheralsChanged)
 
@@ -82,6 +87,7 @@ class GCSState : public QObject {
 
     // --- Mission ---
     Q_PROPERTY(QVariantList waypoints READ waypoints WRITE setWaypoints NOTIFY waypointsChanged)
+    Q_PROPERTY(QVariantList pois      READ pois      WRITE setPois      NOTIFY poisChanged)
 
     // --- Parameters ---
     Q_PROPERTY(QVariantList params READ params NOTIFY paramsChanged)
@@ -147,11 +153,14 @@ public:
     int  brightnessTft()       const { return m_brightnessTft; }
     int  brightnessBtnLeds()   const { return m_brightnessBtnLeds; }
     bool alsAutoEnabled()      const { return m_alsAutoEnabled; }
+    bool   worklightOn()       const { return m_worklightOn; }
+    QColor worklightColor()    const { return m_worklightColor; }
     QVariantList peripherals() const { return m_peripherals; }
     double uptimeSeconds()     const { return m_uptimeSeconds; }
     int    memPercent()        const { return m_memPercent; }
     int    diskPercent()       const { return m_diskPercent; }
     QVariantList waypoints()   const { return m_waypoints; }
+    QVariantList pois()        const { return m_pois; }
     QVariantList params()      const { return m_params; }
 
 public slots:
@@ -175,6 +184,7 @@ public slots:
                           const QVariantMap &deviceData);
     void updateSystemStats(double uptimeSec, int memPct, int diskPct);
     void setWaypoints(const QVariantList &wps);
+    void setPois(const QVariantList &pois);
     void updateParams(const QVariantList &params);
     void setParamDirty(const QString &name, double newValue);
     void updateDronePosition(double lat, double lon);
@@ -186,6 +196,8 @@ public slots:
     void setBrightnessTft(int v);
     void setBrightnessBtnLeds(int v);
     void setAlsAutoEnabled(bool enabled);
+    Q_INVOKABLE void setWorklightOn(bool on);
+    Q_INVOKABLE void setWorklightColor(const QColor &color);
 
     Q_INVOKABLE void sendFlightMode(const QString &mode);
     Q_INVOKABLE void sendArmDisarm(bool arm);
@@ -205,9 +217,11 @@ signals:
     void sensorChanged();
     void warningsChanged();
     void brightnessChanged();
+    void worklightChanged();
     void peripheralsChanged();
     void systemChanged();
     void waypointsChanged();
+    void poisChanged();
     void paramsChanged();
     void statusMessagesChanged();
     void switchStateChanged();
@@ -222,6 +236,7 @@ signals:
     void cmdParamWrite(const QString &name, double value);
     void cmdParamRefresh();
     void cmdBrightnessChanged(int screenL, int screenR, int led, int tft, int btnLeds);
+    void cmdWorklightChanged(bool on, const QColor &color);
     void cmdPeriphCmd(int address, int cmd, const QByteArray &payload);
     void cmdTftScreen(int mode);
     void cmdTftPeriphDetail(int address);
@@ -284,10 +299,13 @@ private:
     int     m_brightnessTft     = 80;
     int     m_brightnessBtnLeds = 50;
     bool    m_alsAutoEnabled    = false;
+    bool    m_worklightOn       = false;
+    QColor  m_worklightColor    = QColor(255, 255, 255);
     QVariantList m_peripherals;
     double  m_uptimeSeconds    = 0.0;
     int     m_memPercent       = 0;
     int     m_diskPercent      = 0;
     QVariantList m_waypoints;
+    QVariantList m_pois;
     QVariantList m_params;
 };

@@ -37,6 +37,7 @@ qt_add_qml_module(appPICODE
         components/StatusDot.qml
         components/ConfirmOverlay.qml
         components/QuickPanel.qml
+        components/CaseView.qml
         pages/DashPage.qml
         pages/DronePage.qml
         pages/CameraPage.qml
