@@ -1,5 +1,9 @@
 #include "gcsstate.h"
 #include <QtMath>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 GCSState *GCSState::s_instance = nullptr;
 
@@ -10,7 +14,23 @@ GCSState *GCSState::instance()
     return s_instance;
 }
 
-GCSState::GCSState(QObject *parent) : QObject(parent) {}
+GCSState::GCSState(QObject *parent) : QObject(parent)
+{
+    m_caseTwinHotspots = defaultCaseTwinHotspots();
+}
+
+QVariantList GCSState::defaultCaseTwinHotspots()
+{
+    QVariantList out;
+    out.append(QVariantMap{{"id", "pi_cpu"}, {"label", "PI CPU"}, {"sensorKey", "tempCpuPi"}, {"xNorm", 0.50}, {"yNorm", 0.38}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "pcb_power"}, {"label", "PCB POWER"}, {"sensorKey", "tempCaseA"}, {"xNorm", 0.25}, {"yNorm", 0.52}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "raspberry_pi_zone"}, {"label", "RASPBERRY PI"}, {"sensorKey", "tempCaseB"}, {"xNorm", 0.50}, {"yNorm", 0.48}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "charger"}, {"label", "CHARGER"}, {"sensorKey", "tempCaseC"}, {"xNorm", 0.30}, {"yNorm", 0.62}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "vrx_module"}, {"label", "VRX MODULE"}, {"sensorKey", "tempCaseD"}, {"xNorm", 0.72}, {"yNorm", 0.55}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "battery_bus"}, {"label", "BATTERY BUS"}, {"sensorKey", "batteryVoltage"}, {"xNorm", 0.56}, {"yNorm", 0.66}, {"metricType", "voltage"}, {"unit", "V"}, {"okMax", 30.0}, {"warnMax", 32.0}, {"warnMin", 22.0}, {"critMin", 20.0}, {"decimals", 1}});
+    out.append(QVariantMap{{"id", "mavlink_link"}, {"label", "MAVLINK"}, {"sensorKey", "mavlinkConnected"}, {"xNorm", 0.68}, {"yNorm", 0.42}, {"metricType", "bool"}, {"trueLabel", "ONLINE"}, {"falseLabel", "OFFLINE"}, {"invert", false}});
+    return out;
+}
 
 void GCSState::updateDroneState(double alt, double spd, double hdg, double vspd,
                                  double pitch, double roll, double yaw)
@@ -336,4 +356,130 @@ void GCSState::sendTftScreen(int mode)
 void GCSState::sendTftPeriphDetail(int address)
 {
     emit cmdTftPeriphDetail(address);
+}
+
+bool GCSState::loadCaseTwinConfig(const QString &path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        m_caseTwinConfigLastError = QString("Cannot open file: %1").arg(path);
+        emit caseTwinConfigChanged();
+        return false;
+    }
+
+    QJsonParseError parseError;
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+        m_caseTwinConfigLastError = QString("Invalid JSON: %1").arg(parseError.errorString());
+        emit caseTwinConfigChanged();
+        return false;
+    }
+
+    const QJsonObject root = doc.object();
+    const QJsonArray hotspots = root.value("hotspots").toArray();
+    if (hotspots.isEmpty()) {
+        m_caseTwinConfigLastError = "Config missing non-empty 'hotspots' array";
+        emit caseTwinConfigChanged();
+        return false;
+    }
+
+    QVariantList parsed;
+    for (int i = 0; i < hotspots.size(); ++i) {
+        const QJsonObject h = hotspots[i].toObject();
+        const QString id = h.value("id").toString().trimmed();
+        const QString label = h.value("label").toString().trimmed();
+        const QString sensorKey = h.value("sensor_key").toString(h.value("sensorKey").toString()).trimmed();
+        const double xNorm = h.value("x_norm").toDouble(h.value("xNorm").toDouble(-1.0));
+        const double yNorm = h.value("y_norm").toDouble(h.value("yNorm").toDouble(-1.0));
+        const double okMax = h.value("ok_max").toDouble(h.value("okMax").toDouble(60.0));
+        const double warnMax = h.value("warn_max").toDouble(h.value("warnMax").toDouble(80.0));
+        const double warnMin = h.value("warn_min").toDouble(h.value("warnMin").toDouble(qQNaN()));
+        const double critMin = h.value("crit_min").toDouble(h.value("critMin").toDouble(qQNaN()));
+        const int decimals = h.value("decimals").toInt(-9999);
+        QString metricType = h.value("metric_type").toString(h.value("metricType").toString("temp")).trimmed();
+        if (metricType.isEmpty()) metricType = "temp";
+        const QString unit = h.value("unit").toString();
+        const QString trueLabel = h.value("true_label").toString(h.value("trueLabel").toString());
+        const QString falseLabel = h.value("false_label").toString(h.value("falseLabel").toString());
+        const bool invert = h.value("invert").toBool(false);
+
+        if (id.isEmpty() || label.isEmpty() || sensorKey.isEmpty() || xNorm < 0.0 || xNorm > 1.0 || yNorm < 0.0 || yNorm > 1.0) {
+            m_caseTwinConfigLastError = QString("Invalid hotspot at index %1").arg(i);
+            emit caseTwinConfigChanged();
+            return false;
+        }
+
+        parsed.append(QVariantMap{
+            {"id", id},
+            {"label", label},
+            {"sensorKey", sensorKey},
+            {"xNorm", xNorm},
+            {"yNorm", yNorm},
+            {"metricType", metricType},
+            {"unit", unit},
+            {"okMax", okMax},
+            {"warnMax", warnMax},
+            {"warnMin", warnMin},
+            {"critMin", critMin},
+            {"decimals", decimals},
+            {"trueLabel", trueLabel},
+            {"falseLabel", falseLabel},
+            {"invert", invert}
+        });
+    }
+
+    m_caseTwinHotspots = parsed;
+    m_caseTwinConfigLastError.clear();
+    emit caseTwinConfigChanged();
+    return true;
+}
+
+bool GCSState::saveCaseTwinConfig(const QString &path)
+{
+    QJsonArray hotspots;
+    for (const QVariant &entryVar : m_caseTwinHotspots) {
+        const QVariantMap entry = entryVar.toMap();
+        QJsonObject h;
+        h["id"] = entry.value("id").toString();
+        h["label"] = entry.value("label").toString();
+        h["sensor_key"] = entry.value("sensorKey").toString();
+        h["x_norm"] = entry.value("xNorm").toDouble();
+        h["y_norm"] = entry.value("yNorm").toDouble();
+        const QString metricType = entry.value("metricType").toString().isEmpty() ? "temp" : entry.value("metricType").toString();
+        h["metric_type"] = metricType;
+        h["unit"] = entry.value("unit").toString();
+        h["ok_max"] = entry.value("okMax").toDouble();
+        h["warn_max"] = entry.value("warnMax").toDouble();
+        if (!qIsNaN(entry.value("warnMin").toDouble())) h["warn_min"] = entry.value("warnMin").toDouble();
+        if (!qIsNaN(entry.value("critMin").toDouble())) h["crit_min"] = entry.value("critMin").toDouble();
+        if (entry.value("decimals").toInt(-9999) != -9999) h["decimals"] = entry.value("decimals").toInt();
+        if (!entry.value("trueLabel").toString().isEmpty()) h["true_label"] = entry.value("trueLabel").toString();
+        if (!entry.value("falseLabel").toString().isEmpty()) h["false_label"] = entry.value("falseLabel").toString();
+        if (entry.contains("invert")) h["invert"] = entry.value("invert").toBool();
+        hotspots.append(h);
+    }
+
+    QJsonObject root;
+    root["version"] = 1;
+    root["hotspots"] = hotspots;
+
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        m_caseTwinConfigLastError = QString("Cannot write file: %1").arg(path);
+        emit caseTwinConfigChanged();
+        return false;
+    }
+
+    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    file.close();
+    m_caseTwinConfigLastError.clear();
+    emit caseTwinConfigChanged();
+    return true;
+}
+
+void GCSState::resetCaseTwinConfig()
+{
+    m_caseTwinHotspots = defaultCaseTwinHotspots();
+    m_caseTwinConfigLastError.clear();
+    emit caseTwinConfigChanged();
 }

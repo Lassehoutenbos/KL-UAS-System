@@ -5,35 +5,128 @@ import PICODE
 Item {
     id: caseView
     implicitHeight: 250
-
-    // Track min/max since component creation
-    property double minCpuPi:  9999
-    property double maxCpuPi:  -9999
-    property double minCaseA:  9999
-    property double maxCaseA:  -9999
-    property double minCaseB:  9999
-    property double maxCaseB:  -9999
-    property double minCaseC:  9999
-    property double maxCaseC:  -9999
-    property double minCaseD:  9999
-    property double maxCaseD:  -9999
-
+    signal sensorDetailsRequested(var sensor)
     property int selectedSensor: -1  // -1 = none, 0-4 = sensor index
+    property var minTemps: []
+    property var maxTemps: []
 
-    // Sensor data model
-    readonly property var sensors: [
-        { label: "PI CPU",       temp: GCSState.tempCpuPi, valid: true,                                                    cx: 0.50, cy: 0.38 },
-        { label: "PCB POWER",    temp: GCSState.tempCaseA, valid: !isNaN(GCSState.tempCaseA) && GCSState.tempCaseA > -274, cx: 0.25, cy: 0.52 },
-        { label: "RASPBERRY PI", temp: GCSState.tempCaseB, valid: !isNaN(GCSState.tempCaseB) && GCSState.tempCaseB > -274, cx: 0.50, cy: 0.48 },
-        { label: "CHARGER",      temp: GCSState.tempCaseC, valid: !isNaN(GCSState.tempCaseC) && GCSState.tempCaseC > -274, cx: 0.30, cy: 0.62 },
-        { label: "VRX MODULE",   temp: GCSState.tempCaseD, valid: !isNaN(GCSState.tempCaseD) && GCSState.tempCaseD > -274, cx: 0.72, cy: 0.55 }
-    ]
+    function valueForSensorKey(sensorKey) {
+        if (sensorKey === "tempCpuPi") return GCSState.tempCpuPi
+        if (sensorKey === "tempCaseA") return GCSState.tempCaseA
+        if (sensorKey === "tempCaseB") return GCSState.tempCaseB
+        if (sensorKey === "tempCaseC") return GCSState.tempCaseC
+        if (sensorKey === "tempCaseD") return GCSState.tempCaseD
+        if (sensorKey === "batteryVoltage") return GCSState.batteryVoltage
+        if (sensorKey === "extVoltage") return GCSState.extVoltage
+        if (sensorKey === "alsLux") return GCSState.alsLux
+        if (sensorKey === "brightnessScreenL") return GCSState.brightnessScreenL
+        if (sensorKey === "brightnessScreenR") return GCSState.brightnessScreenR
+        if (sensorKey === "brightnessLed") return GCSState.brightnessLed
+        if (sensorKey === "brightnessTft") return GCSState.brightnessTft
+        if (sensorKey === "brightnessBtnLeds") return GCSState.brightnessBtnLeds
+        if (sensorKey === "mavlinkConnected") return GCSState.mavlinkConnected
+        if (sensorKey === "picoConnected") return GCSState.picoConnected
+        if (sensorKey === "droneArmed") return GCSState.droneArmed
+        if (sensorKey === "keyUnlocked") return GCSState.keyUnlocked
+        if (sensorKey === "worklightOn") return GCSState.worklightOn
+        if (sensorKey === "anyWarningActive") return GCSState.anyWarningActive
+        if (sensorKey === "warnTemp") return GCSState.warnTemp
+        if (sensorKey === "warnSignal") return GCSState.warnSignal
+        if (sensorKey === "warnDrone") return GCSState.warnDrone
+        if (sensorKey === "warnGps") return GCSState.warnGps
+        if (sensorKey === "warnLink") return GCSState.warnLink
+        if (sensorKey === "warnNetwork") return GCSState.warnNetwork
+        if (sensorKey === "peripheralCount") return GCSState.peripherals.length
+        return NaN
+    }
 
-    function sensorLevel(temp, valid) {
-        if (!valid) return -1
-        if (temp < 60) return 0
-        if (temp < 80) return 1
-        return 2
+    function sensorValid(type, sensorKey, value) {
+        if (type === "bool") return value !== undefined && value !== null
+        if (type === "text") return value !== undefined && value !== null && ("" + value).length > 0
+        if (sensorKey === "tempCpuPi") return !isNaN(value)
+        if (type === "temp") return !isNaN(value) && value > -274
+        if (type === "number" || type === "voltage" || type === "percent") return !isNaN(value)
+        return value !== undefined && value !== null && !isNaN(value)
+    }
+
+    readonly property var sensors: {
+        var cfg = GCSState.caseTwinHotspots
+        var out = []
+        for (var i = 0; i < cfg.length; i++) {
+            var row = cfg[i]
+            var sensorKey = row.sensorKey !== undefined ? row.sensorKey : row.sensor_key
+            var t = valueForSensorKey(sensorKey)
+            var metricType = row.metricType !== undefined ? row.metricType : (row.type !== undefined ? row.type : "temp")
+            var okMax = row.okMax !== undefined ? row.okMax : (row.ok_max !== undefined ? row.ok_max : 60)
+            var warnMax = row.warnMax !== undefined ? row.warnMax : (row.warn_max !== undefined ? row.warn_max : 80)
+            var warnMin = row.warnMin !== undefined ? row.warnMin : row.warn_min
+            var critMin = row.critMin !== undefined ? row.critMin : row.crit_min
+            var decimals = row.decimals !== undefined ? row.decimals : (metricType === "temp" || metricType === "voltage" ? 1 : 0)
+            var unit = row.unit !== undefined ? row.unit : (metricType === "temp" ? "°C" : (metricType === "voltage" ? "V" : ""))
+            out.push({
+                id: row.id,
+                label: row.label,
+                sensorKey: sensorKey,
+                value: t,
+                valid: sensorValid(metricType, sensorKey, t),
+                cx: row.xNorm !== undefined ? row.xNorm : row.x_norm,
+                cy: row.yNorm !== undefined ? row.yNorm : row.y_norm,
+                type: metricType,
+                unit: unit,
+                decimals: decimals,
+                okMax: okMax,
+                warnMax: warnMax,
+                warnMin: warnMin,
+                critMin: critMin,
+                trueLabel: row.trueLabel !== undefined ? row.trueLabel : row.true_label,
+                falseLabel: row.falseLabel !== undefined ? row.falseLabel : row.false_label,
+                invert: row.invert === true
+            })
+        }
+        return out
+    }
+
+    function resetMinMaxBuffers() {
+        var mins = []
+        var maxs = []
+        for (var i = 0; i < sensors.length; i++) {
+            mins.push(9999)
+            maxs.push(-9999)
+        }
+        minTemps = mins
+        maxTemps = maxs
+    }
+
+    function sensorLevel(sensor) {
+        if (!sensor.valid) return -1
+        var value = sensor.value
+
+        if (sensor.type === "bool") {
+            var active = !!value
+            if (sensor.invert === true) active = !active
+            return active ? 0 : 2
+        }
+
+        if (sensor.critMin !== undefined && value < sensor.critMin) return 2
+        if (sensor.warnMin !== undefined && value < sensor.warnMin) return 1
+        if (sensor.warnMax !== undefined && value >= sensor.warnMax) return 2
+        if (sensor.okMax !== undefined && value >= sensor.okMax) return 1
+        return 0
+    }
+
+    function sensorDisplayValue(sensor) {
+        if (!sensor.valid) return "—"
+
+        if (sensor.type === "bool") {
+            var active = !!sensor.value
+            if (sensor.invert === true) active = !active
+            return active ? (sensor.trueLabel || "ON") : (sensor.falseLabel || "OFF")
+        }
+
+        if (typeof sensor.value === "number")
+            return sensor.value.toFixed(sensor.decimals !== undefined ? sensor.decimals : 0) + (sensor.unit || "")
+
+        return "" + sensor.value
     }
 
     function levelColor(level) {
@@ -43,44 +136,42 @@ Item {
         return Theme.textDisabled
     }
 
-    // Update min/max tracking
     Connections {
         target: GCSState
         function onSensorChanged() {
-            if (GCSState.tempCpuPi > caseView.maxCpuPi) caseView.maxCpuPi = GCSState.tempCpuPi
-            if (GCSState.tempCpuPi < caseView.minCpuPi) caseView.minCpuPi = GCSState.tempCpuPi
+            var mins = minTemps.slice()
+            var maxs = maxTemps.slice()
+            while (mins.length < sensors.length) mins.push(9999)
+            while (maxs.length < sensors.length) maxs.push(-9999)
 
-            if (!isNaN(GCSState.tempCaseA) && GCSState.tempCaseA > -274) {
-                if (GCSState.tempCaseA > caseView.maxCaseA) caseView.maxCaseA = GCSState.tempCaseA
-                if (GCSState.tempCaseA < caseView.minCaseA) caseView.minCaseA = GCSState.tempCaseA
+            for (var i = 0; i < sensors.length; i++) {
+                var s = sensors[i]
+                if (s.valid) {
+                    if (typeof s.value === "number") {
+                        if (s.value < mins[i]) mins[i] = s.value
+                        if (s.value > maxs[i]) maxs[i] = s.value
+                    }
+                }
             }
-            if (!isNaN(GCSState.tempCaseB) && GCSState.tempCaseB > -274) {
-                if (GCSState.tempCaseB > caseView.maxCaseB) caseView.maxCaseB = GCSState.tempCaseB
-                if (GCSState.tempCaseB < caseView.minCaseB) caseView.minCaseB = GCSState.tempCaseB
-            }
-            if (!isNaN(GCSState.tempCaseC) && GCSState.tempCaseC > -274) {
-                if (GCSState.tempCaseC > caseView.maxCaseC) caseView.maxCaseC = GCSState.tempCaseC
-                if (GCSState.tempCaseC < caseView.minCaseC) caseView.minCaseC = GCSState.tempCaseC
-            }
-            if (!isNaN(GCSState.tempCaseD) && GCSState.tempCaseD > -274) {
-                if (GCSState.tempCaseD > caseView.maxCaseD) caseView.maxCaseD = GCSState.tempCaseD
-                if (GCSState.tempCaseD < caseView.minCaseD) caseView.minCaseD = GCSState.tempCaseD
-            }
+            minTemps = mins
+            maxTemps = maxs
+            caseCanvas.requestPaint()
+        }
 
+        function onCaseTwinConfigChanged() {
+            resetMinMaxBuffers()
+            if (selectedSensor >= sensors.length) selectedSensor = -1
             caseCanvas.requestPaint()
         }
     }
 
     function getMinMax(index) {
-        switch (index) {
-        case 0: return { min: minCpuPi, max: maxCpuPi }
-        case 1: return { min: minCaseA, max: maxCaseA }
-        case 2: return { min: minCaseB, max: maxCaseB }
-        case 3: return { min: minCaseC, max: maxCaseC }
-        case 4: return { min: minCaseD, max: maxCaseD }
-        }
-        return { min: 0, max: 0 }
+        var minV = index < minTemps.length ? minTemps[index] : 9999
+        var maxV = index < maxTemps.length ? maxTemps[index] : -9999
+        return { min: minV, max: maxV }
     }
+
+    Component.onCompleted: resetMinMaxBuffers()
 
     Canvas {
         id: caseCanvas
@@ -199,7 +290,7 @@ Item {
                 var s = sensors[i]
                 var sx = s.cx * w
                 var sy = s.cy * h
-                var lvl = sensorLevel(s.temp, s.valid)
+                var lvl = sensorLevel(s)
                 var col = levelColor(lvl)
 
                 // Outer ring
@@ -250,8 +341,8 @@ Item {
         Text {
             x: modelData.cx * caseView.width + 12
             y: modelData.cy * caseView.height - 7
-            text: modelData.valid ? modelData.temp.toFixed(0) + "°C" : "—"
-            color: levelColor(sensorLevel(modelData.temp, modelData.valid))
+            text: sensorDisplayValue(modelData)
+            color: levelColor(sensorLevel(modelData))
             font.pixelSize: 10
             font.weight: Font.Bold
             font.family: "monospace"
@@ -302,7 +393,7 @@ Item {
 
             Text {
                 text: visible && sensors[selectedSensor].valid
-                      ? sensors[selectedSensor].temp.toFixed(1) + "°C"
+                      ? sensorDisplayValue(sensors[selectedSensor])
                       : "—"
                 color: Theme.textPrimary
                 font.pixelSize: 22
@@ -314,25 +405,58 @@ Item {
                 spacing: 12
                 Text {
                     property var mm: visible && selectedSensor >= 0 ? getMinMax(selectedSensor) : { min: 0, max: 0 }
-                    text: mm.min < 9999 ? ("MIN " + mm.min.toFixed(0) + "°") : "MIN —"
+                    property int dec: visible && selectedSensor >= 0 && sensors[selectedSensor] ? (sensors[selectedSensor].decimals !== undefined ? sensors[selectedSensor].decimals : 0) : 0
+                    property string unitText: visible && selectedSensor >= 0 && sensors[selectedSensor] ? (sensors[selectedSensor].unit || "") : ""
+                    text: mm.min < 9999
+                          ? ("MIN " + mm.min.toFixed(dec) + unitText)
+                          : "MIN —"
                     color: Theme.textSecondary
                     font.pixelSize: 9
                     font.family: "monospace"
                 }
                 Text {
                     property var mm: visible && selectedSensor >= 0 ? getMinMax(selectedSensor) : { min: 0, max: 0 }
-                    text: mm.max > -9999 ? ("MAX " + mm.max.toFixed(0) + "°") : "MAX —"
+                    property int dec: visible && selectedSensor >= 0 && sensors[selectedSensor] ? (sensors[selectedSensor].decimals !== undefined ? sensors[selectedSensor].decimals : 0) : 0
+                    property string unitText: visible && selectedSensor >= 0 && sensors[selectedSensor] ? (sensors[selectedSensor].unit || "") : ""
+                    text: mm.max > -9999
+                          ? ("MAX " + mm.max.toFixed(dec) + unitText)
+                          : "MAX —"
                     color: Theme.textSecondary
                     font.pixelSize: 9
                     font.family: "monospace"
                 }
                 Text {
                     property int lvl: visible && selectedSensor >= 0
-                                      ? sensorLevel(sensors[selectedSensor].temp, sensors[selectedSensor].valid) : -1
+                                      ? sensorLevel(sensors[selectedSensor]) : -1
                     text: lvl === 0 ? "OK" : (lvl === 1 ? "WARN" : (lvl === 2 ? "CRIT" : "—"))
                     color: levelColor(lvl)
                     font.pixelSize: 9
                     font.weight: Font.Bold
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 22
+                radius: 4
+                color: Theme.bgSecondary
+                border.color: Theme.border
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "MEER INFO"
+                    color: Theme.textPrimary
+                    font.pixelSize: 10
+                    font.weight: Font.SemiBold
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        if (detailOverlay.visible && selectedSensor >= 0 && selectedSensor < sensors.length)
+                            caseView.sensorDetailsRequested(sensors[selectedSensor])
+                    }
                 }
             }
         }
