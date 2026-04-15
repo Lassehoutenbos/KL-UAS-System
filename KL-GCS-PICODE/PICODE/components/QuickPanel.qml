@@ -190,7 +190,7 @@ Item {
                     RowLayout {
                         spacing: 6
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 30
+                        Layout.preferredHeight: 40
                         visible: true
 
                         Text {
@@ -198,7 +198,7 @@ Item {
                             color: Theme.textSecondary
                             font.pixelSize: Theme.fontSectionLabel
                             font.weight: Font.Medium
-                            Layout.preferredWidth: 50
+                            Layout.preferredWidth: 56
                         }
 
                         Repeater {
@@ -211,29 +211,73 @@ Item {
                                 { label: "A",  r: 255, g: 180, b: 0   }
                             ]
 
-                            Rectangle {
+                            Item {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                radius: 4
 
                                 property color swatchColor: Qt.rgba(modelData.r / 255, modelData.g / 255, modelData.b / 255, 1.0)
                                 property bool active: GCSState.worklightColor.r === modelData.r / 255
                                                       && GCSState.worklightColor.g === modelData.g / 255
                                                       && GCSState.worklightColor.b === modelData.b / 255
 
-                            color: Qt.rgba(swatchColor.r, swatchColor.g, swatchColor.b, 0.15)
-                            border.color: active ? Theme.accentYellow : swatchColor
-                            border.width: active ? 2 : 1
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 6
+                                    color: active
+                                           ? Qt.rgba(swatchColor.r, swatchColor.g, swatchColor.b, 0.24)
+                                           : colorMouse.containsMouse
+                                             ? Qt.rgba(swatchColor.r, swatchColor.g, swatchColor.b, 0.14)
+                                             : Theme.bgSecondary
+                                    border.color: active
+                                                  ? Theme.accentYellow
+                                                  : colorMouse.containsMouse
+                                                    ? swatchColor
+                                                    : Theme.border
+                                    border.width: active ? 2 : 1
+                                }
 
-                                // Color dot
                                 Rectangle {
                                     anchors.centerIn: parent
-                                    width: 14; height: 14; radius: 7
-                                    color: parent.swatchColor
+                                    width: 16; height: 16; radius: 8
+                                    color: swatchColor
+                                    border.color: Theme.bgPrimary
+                                    border.width: 1
+                                }
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.bottom: parent.bottom
+                                    anchors.bottomMargin: 2
+                                    text: modelData.label
+                                    color: active ? Theme.textPrimary : Theme.textSecondary
+                                    font.pixelSize: 9
+                                    font.weight: active ? Font.SemiBold : Font.Medium
+                                }
+
+                                Rectangle {
+                                    visible: active
+                                    anchors.top: parent.top
+                                    anchors.right: parent.right
+                                    anchors.topMargin: 2
+                                    anchors.rightMargin: 2
+                                    width: 10
+                                    height: 10
+                                    radius: 5
+                                    color: Theme.accentYellow
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "✓"
+                                        color: Theme.bgPrimary
+                                        font.pixelSize: 7
+                                        font.weight: Font.Bold
+                                    }
                                 }
 
                                 MouseArea {
+                                    id: colorMouse
                                     anchors.fill: parent
+                                    hoverEnabled: true
                                     onClicked: GCSState.worklightColor = Qt.rgba(modelData.r / 255, modelData.g / 255, modelData.b / 255, 1.0)
                                 }
                             }

@@ -8,6 +8,9 @@ import PICODE
 Rectangle {
     color: Theme.bgPrimary
 
+    readonly property int touchTarget: 44
+    readonly property int touchTargetLarge: 52
+
     property int selectedWpIndex: -1
     property bool poiMode: false
     property int selectedPoiIndex: -1
@@ -188,9 +191,9 @@ Rectangle {
                     delegate: MapQuickItem {
                         id: wpMarker
                         coordinate: QtPositioning.coordinate(modelData.lat || 0, modelData.lon || 0)
-                        anchorPoint.x: 14; anchorPoint.y: 14
+                        anchorPoint.x: 20; anchorPoint.y: 20
                         sourceItem: Rectangle {
-                            width: 28; height: 28; radius: 14
+                            width: 40; height: 40; radius: 20
                             color: selectedWpIndex === index ? Theme.accentYellow
                                  : modelData.type === "SPLINE_WP" ? Qt.rgba(0.5, 0.84, 1.0, 0.15)
                                  : Theme.bgSecondary
@@ -202,7 +205,7 @@ Rectangle {
                                 anchors.centerIn: parent
                                 text: index + 1
                                 color: selectedWpIndex === index ? Theme.bgPrimary : Theme.accentBlue
-                                font.pixelSize: 11; font.weight: Font.Bold
+                                font.pixelSize: 13; font.weight: Font.Bold
                             }
                             MouseArea {
                                 anchors.fill: parent
@@ -213,7 +216,7 @@ Rectangle {
                                 onReleased: {
                                     draggingMarker = false
                                     // Convert final position back to coordinate
-                                    var itemPos = mapToItem(missionMap, parent.x + 14, parent.y + 14)
+                                    var itemPos = mapToItem(missionMap, parent.x + 20, parent.y + 20)
                                     var newCoord = missionMap.toCoordinate(Qt.point(itemPos.x, itemPos.y))
                                     if (newCoord.isValid) {
                                         updateWaypoint(index, "lat", newCoord.latitude)
@@ -230,12 +233,12 @@ Rectangle {
                     model: GCSState.pois
                     delegate: MapQuickItem {
                         coordinate: QtPositioning.coordinate(modelData.lat || 0, modelData.lon || 0)
-                        anchorPoint.x: 12; anchorPoint.y: 12
+                        anchorPoint.x: 17; anchorPoint.y: 17
                         sourceItem: Item {
-                            width: 24; height: 24
+                            width: 34; height: 34
                             Rectangle {
                                 anchors.centerIn: parent
-                                width: 18; height: 18
+                                width: 24; height: 24
                                 rotation: 45
                                 color: selectedPoiIndex === index ? Theme.statusWarn : Qt.rgba(1, 0.7, 0.28, 0.15)
                                 border.color: Theme.statusWarn
@@ -245,7 +248,7 @@ Rectangle {
                                 anchors.centerIn: parent
                                 text: "P"
                                 color: selectedPoiIndex === index ? Theme.bgPrimary : Theme.statusWarn
-                                font.pixelSize: 9; font.weight: Font.Bold
+                                font.pixelSize: 11; font.weight: Font.Bold
                             }
                             MouseArea {
                                 anchors.fill: parent
@@ -357,12 +360,12 @@ Rectangle {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: 8
                         Repeater {
                             model: ["WAYPOINT", "LOITER", "CIRCLE", "SPLINE", "LAND"]
                             Rectangle {
                                 Layout.fillWidth: true
-                                height: 24
+                                height: touchTarget
                                 radius: 3
                                 property bool selected: missionProfile === modelData
                                 color: selected ? Qt.rgba(Theme.accentYellow.r, Theme.accentYellow.g, Theme.accentYellow.b, 0.12) : Theme.bgElevated
@@ -372,7 +375,7 @@ Rectangle {
                                     anchors.centerIn: parent
                                     text: modelData
                                     color: parent.selected ? Theme.accentYellow : Theme.textSecondary
-                                    font.pixelSize: 9
+                                    font.pixelSize: 11
                                     font.weight: Font.SemiBold
                                 }
                                 MouseArea {
@@ -392,6 +395,7 @@ Rectangle {
                             id: speedProfileSlider
                             from: 4; to: 30; stepSize: 1
                             value: profileSettings[missionProfile].cruise
+                            height: touchTarget
                             Layout.fillWidth: true
                             onMoved: updateProfileSetting("cruise", Math.round(value))
                         }
@@ -430,7 +434,7 @@ Rectangle {
 
                 delegate: Rectangle {
                     width: wpEditor.width
-                    height: selectedWpIndex === index ? 180 : 64
+                    height: selectedWpIndex === index ? 230 : 84
                     Behavior on height { NumberAnimation { duration: 120 } }
                     color: selectedWpIndex === index ? Qt.rgba(0.89, 0.82, 0.29, 0.06) : (index % 2 === 0 ? Theme.bgPrimary : Theme.bgSecondary)
                     border.color: selectedWpIndex === index ? Theme.accentYellow : Theme.border
@@ -482,12 +486,12 @@ Rectangle {
                             // Type selector
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 3
+                                spacing: 6
 
                                 Repeater {
                                     model: wpTypes
                                     Rectangle {
-                                        Layout.fillWidth: true; height: 26; radius: 3
+                                        Layout.fillWidth: true; height: 36; radius: 3
                                         color: modelData === (GCSState.waypoints[index] ? GCSState.waypoints[index].type : "") ? Theme.accentYellow : Theme.bgElevated
                                         border.color: modelData === (GCSState.waypoints[index] ? GCSState.waypoints[index].type : "") ? Theme.accentYellow : Theme.border
                                         border.width: 1
@@ -495,7 +499,7 @@ Rectangle {
                                             anchors.centerIn: parent
                                             text: modelData.length > 5 ? modelData.substring(0, 5) : modelData
                                             color: modelData === (GCSState.waypoints[index] ? GCSState.waypoints[index].type : "") ? Theme.bgPrimary : Theme.textSecondary
-                                            font.pixelSize: 8; font.weight: Font.SemiBold
+                                            font.pixelSize: 10; font.weight: Font.SemiBold
                                         }
                                         MouseArea {
                                             anchors.fill: parent
@@ -509,6 +513,7 @@ Rectangle {
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 6
+                                Layout.preferredHeight: touchTarget
 
                                 Text {
                                     text: "ALT"
@@ -521,7 +526,7 @@ Rectangle {
                                     from: 0; to: 200; stepSize: 1
                                     value: modelData.alt !== undefined ? modelData.alt : 20
                                     Layout.fillWidth: true
-                                    height: 24
+                                    height: touchTarget
 
                                     background: Item {
                                         x: altSlider.leftPadding
@@ -533,7 +538,7 @@ Rectangle {
                                     handle: Rectangle {
                                         x: altSlider.leftPadding + altSlider.visualPosition * (altSlider.availableWidth - width)
                                         y: altSlider.topPadding + altSlider.availableHeight / 2 - height / 2
-                                        width: 14; height: 14; radius: 7
+                                        width: 18; height: 18; radius: 9
                                         color: Theme.accentYellow; border.color: Theme.bgPrimary; border.width: 2
                                     }
 
@@ -551,11 +556,12 @@ Rectangle {
                             // Lat/Lon edit row
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 4
+                                spacing: 6
+                                Layout.preferredHeight: touchTarget
 
                                 Text { text: "LAT"; color: Theme.textSecondary; font.pixelSize: 9; Layout.preferredWidth: 24 }
                                 TextField {
-                                    Layout.fillWidth: true; height: 24
+                                    Layout.fillWidth: true; height: touchTarget
                                     text: modelData.lat !== undefined ? modelData.lat.toFixed(6) : ""
                                     color: Theme.textPrimary; font.pixelSize: 10; font.family: "monospace"
                                     background: Rectangle { color: Theme.bgElevated; border.color: Theme.border; radius: 2 }
@@ -567,7 +573,7 @@ Rectangle {
 
                                 Text { text: "LON"; color: Theme.textSecondary; font.pixelSize: 9; Layout.preferredWidth: 24 }
                                 TextField {
-                                    Layout.fillWidth: true; height: 24
+                                    Layout.fillWidth: true; height: touchTarget
                                     text: modelData.lon !== undefined ? modelData.lon.toFixed(6) : ""
                                     color: Theme.textPrimary; font.pixelSize: 10; font.family: "monospace"
                                     background: Rectangle { color: Theme.bgElevated; border.color: Theme.border; radius: 2 }
@@ -599,7 +605,7 @@ Rectangle {
                 spacing: 0
 
                 delegate: Rectangle {
-                    width: poiEditor.width; height: 64
+                    width: poiEditor.width; height: 84
                     color: selectedPoiIndex === index ? Qt.rgba(1, 0.7, 0.28, 0.06) : Theme.bgSecondary
                     border.color: selectedPoiIndex === index ? Theme.statusWarn : Theme.border
                     border.width: 1
@@ -642,7 +648,7 @@ Rectangle {
                             // Height edit (compact)
                             Text { text: "H:"; color: Theme.textSecondary; font.pixelSize: 9 }
                             TextField {
-                                width: 50; height: 20
+                                width: 64; height: 32
                                 text: modelData.alt !== undefined ? modelData.alt.toString() : "20"
                                 color: Theme.textPrimary; font.pixelSize: 10; font.family: "monospace"
                                 background: Rectangle { color: Theme.bgElevated; border.color: Theme.border; radius: 2 }
@@ -663,7 +669,7 @@ Rectangle {
 
             // ADD / DEL / POI buttons
             Rectangle {
-                Layout.fillWidth: true; height: 56
+                Layout.fillWidth: true; height: 72
                 color: Theme.bgSecondary
 
                 RowLayout {
@@ -672,7 +678,7 @@ Rectangle {
 
                     // ADD WP
                     Rectangle {
-                        Layout.fillWidth: true; height: 40; radius: 4
+                        Layout.fillWidth: true; height: touchTargetLarge; radius: 4
                         color: addMa.pressed ? Qt.rgba(0.89, 0.82, 0.29, 0.10) : Theme.bgElevated
                         border.color: addMa.pressed ? Theme.accentYellow : Theme.border; border.width: 1
                         scale: addMa.pressed ? 0.97 : 1.0
@@ -694,7 +700,7 @@ Rectangle {
 
                     // DEL
                     Rectangle {
-                        Layout.fillWidth: true; height: 40; radius: 4
+                        Layout.fillWidth: true; height: touchTargetLarge; radius: 4
                         property bool canDel: selectedWpIndex >= 0 || selectedPoiIndex >= 0
                         color: canDel && delMa.pressed ? Qt.rgba(1, 0.36, 0.36, 0.08) : Theme.bgElevated
                         border.color: canDel ? (delMa.pressed ? Theme.statusCrit : Theme.border) : Theme.bgElevated; border.width: 1
@@ -728,7 +734,7 @@ Rectangle {
 
                     // POI mode toggle
                     Rectangle {
-                        Layout.fillWidth: true; height: 40; radius: 4
+                        Layout.fillWidth: true; height: touchTargetLarge; radius: 4
                         color: poiMode ? Qt.rgba(1, 0.7, 0.28, 0.10) : Theme.bgElevated
                         border.color: poiMode ? Theme.statusWarn : Theme.border
                         border.width: poiMode ? 2 : 1
@@ -756,7 +762,7 @@ Rectangle {
                 ]
                 Rectangle {
                     id: missionActBtn
-                    Layout.fillWidth: true; height: 60
+                    Layout.fillWidth: true; height: 72
                     property color accentColor: modelData.accent
                     color: missionActMa.pressed ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.08) : Theme.bgElevated
                     border.color: missionActMa.pressed ? accentColor : Theme.border; border.width: 1
