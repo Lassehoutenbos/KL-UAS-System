@@ -22,13 +22,13 @@ GCSState::GCSState(QObject *parent) : QObject(parent)
 QVariantList GCSState::defaultCaseTwinHotspots()
 {
     QVariantList out;
-    out.append(QVariantMap{{"id", "pi_cpu"}, {"label", "PI CPU"}, {"sensorKey", "tempCpuPi"}, {"xNorm", 0.50}, {"yNorm", 0.38}, {"okMax", 60.0}, {"warnMax", 80.0}});
-    out.append(QVariantMap{{"id", "pcb_power"}, {"label", "PCB POWER"}, {"sensorKey", "tempCaseA"}, {"xNorm", 0.25}, {"yNorm", 0.52}, {"okMax", 60.0}, {"warnMax", 80.0}});
-    out.append(QVariantMap{{"id", "raspberry_pi_zone"}, {"label", "RASPBERRY PI"}, {"sensorKey", "tempCaseB"}, {"xNorm", 0.50}, {"yNorm", 0.48}, {"okMax", 60.0}, {"warnMax", 80.0}});
-    out.append(QVariantMap{{"id", "charger"}, {"label", "CHARGER"}, {"sensorKey", "tempCaseC"}, {"xNorm", 0.30}, {"yNorm", 0.62}, {"okMax", 60.0}, {"warnMax", 80.0}});
-    out.append(QVariantMap{{"id", "vrx_module"}, {"label", "VRX MODULE"}, {"sensorKey", "tempCaseD"}, {"xNorm", 0.72}, {"yNorm", 0.55}, {"okMax", 60.0}, {"warnMax", 80.0}});
-    out.append(QVariantMap{{"id", "battery_bus"}, {"label", "BATTERY BUS"}, {"sensorKey", "batteryVoltage"}, {"xNorm", 0.56}, {"yNorm", 0.66}, {"metricType", "voltage"}, {"unit", "V"}, {"okMax", 30.0}, {"warnMax", 32.0}, {"warnMin", 22.0}, {"critMin", 20.0}, {"decimals", 1}});
-    out.append(QVariantMap{{"id", "mavlink_link"}, {"label", "MAVLINK"}, {"sensorKey", "mavlinkConnected"}, {"xNorm", 0.68}, {"yNorm", 0.42}, {"metricType", "bool"}, {"trueLabel", "ONLINE"}, {"falseLabel", "OFFLINE"}, {"invert", false}});
+    out.append(QVariantMap{{"id", "pi_cpu"}, {"label", "PI CPU"}, {"sensorKey", "tempCpuPi"}, {"xNorm", 0.50}, {"yNorm", 0.38}, {"x3d", 0.000}, {"y3d", 0.170}, {"z3d", 0.226}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "pcb_power"}, {"label", "PCB POWER"}, {"sensorKey", "tempCaseA"}, {"xNorm", 0.25}, {"yNorm", 0.52}, {"x3d", -0.116}, {"y3d", 0.170}, {"z3d", 0.172}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "raspberry_pi_zone"}, {"label", "RASPBERRY PI"}, {"sensorKey", "tempCaseB"}, {"xNorm", 0.50}, {"yNorm", 0.48}, {"x3d", 0.000}, {"y3d", 0.170}, {"z3d", 0.187}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "charger"}, {"label", "CHARGER"}, {"sensorKey", "tempCaseC"}, {"xNorm", 0.30}, {"yNorm", 0.62}, {"x3d", -0.093}, {"y3d", 0.170}, {"z3d", 0.133}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "vrx_module"}, {"label", "VRX MODULE"}, {"sensorKey", "tempCaseD"}, {"xNorm", 0.72}, {"yNorm", 0.55}, {"x3d", 0.102}, {"y3d", 0.170}, {"z3d", 0.160}, {"okMax", 60.0}, {"warnMax", 80.0}});
+    out.append(QVariantMap{{"id", "battery_bus"}, {"label", "BATTERY BUS"}, {"sensorKey", "batteryVoltage"}, {"xNorm", 0.56}, {"yNorm", 0.66}, {"x3d", 0.028}, {"y3d", 0.170}, {"z3d", 0.117}, {"metricType", "voltage"}, {"unit", "V"}, {"okMax", 30.0}, {"warnMax", 32.0}, {"warnMin", 22.0}, {"critMin", 20.0}, {"decimals", 1}});
+    out.append(QVariantMap{{"id", "mavlink_link"}, {"label", "MAVLINK"}, {"sensorKey", "mavlinkConnected"}, {"xNorm", 0.68}, {"yNorm", 0.42}, {"x3d", 0.084}, {"y3d", 0.170}, {"z3d", 0.211}, {"metricType", "bool"}, {"trueLabel", "ONLINE"}, {"falseLabel", "OFFLINE"}, {"invert", false}});
     return out;
 }
 
@@ -402,6 +402,9 @@ bool GCSState::loadCaseTwinConfig(const QString &path)
         const QString trueLabel = h.value("true_label").toString(h.value("trueLabel").toString());
         const QString falseLabel = h.value("false_label").toString(h.value("falseLabel").toString());
         const bool invert = h.value("invert").toBool(false);
+        const double x3d = h.value("x3d").toDouble(qQNaN());
+        const double y3d = h.value("y3d").toDouble(qQNaN());
+        const double z3d = h.value("z3d").toDouble(qQNaN());
 
         if (id.isEmpty() || label.isEmpty() || sensorKey.isEmpty() || xNorm < 0.0 || xNorm > 1.0 || yNorm < 0.0 || yNorm > 1.0) {
             m_caseTwinConfigLastError = QString("Invalid hotspot at index %1").arg(i);
@@ -424,7 +427,10 @@ bool GCSState::loadCaseTwinConfig(const QString &path)
             {"decimals", decimals},
             {"trueLabel", trueLabel},
             {"falseLabel", falseLabel},
-            {"invert", invert}
+            {"invert", invert},
+            {"x3d", x3d},
+            {"y3d", y3d},
+            {"z3d", z3d}
         });
     }
 
@@ -452,10 +458,13 @@ bool GCSState::saveCaseTwinConfig(const QString &path)
         h["warn_max"] = entry.value("warnMax").toDouble();
         if (!qIsNaN(entry.value("warnMin").toDouble())) h["warn_min"] = entry.value("warnMin").toDouble();
         if (!qIsNaN(entry.value("critMin").toDouble())) h["crit_min"] = entry.value("critMin").toDouble();
-        if (entry.value("decimals").toInt(-9999) != -9999) h["decimals"] = entry.value("decimals").toInt();
+        { bool ok = false; int dec = entry.value("decimals").toInt(&ok); if (ok) h["decimals"] = dec; }
         if (!entry.value("trueLabel").toString().isEmpty()) h["true_label"] = entry.value("trueLabel").toString();
         if (!entry.value("falseLabel").toString().isEmpty()) h["false_label"] = entry.value("falseLabel").toString();
         if (entry.contains("invert")) h["invert"] = entry.value("invert").toBool();
+        if (!qIsNaN(entry.value("x3d").toDouble())) h["x3d"] = entry.value("x3d").toDouble();
+        if (!qIsNaN(entry.value("y3d").toDouble())) h["y3d"] = entry.value("y3d").toDouble();
+        if (!qIsNaN(entry.value("z3d").toDouble())) h["z3d"] = entry.value("z3d").toDouble();
         hotspots.append(h);
     }
 

@@ -19,6 +19,7 @@ Rectangle {
     }
 
     property bool screensLinked: true
+    property bool use3D: false
     property string configPath: "case_twin_config.json"
     property string configStatus: ""
     property var selectedTwinSensor: ({})
@@ -369,22 +370,61 @@ Rectangle {
             Item {
                 Layout.fillWidth: true; height: 32
                 Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 3; color: Theme.accentBlue }
-                Text {
-                    anchors.left: parent.left; anchors.leftMargin: 11; anchors.verticalCenter: parent.verticalCenter
-                    text: "CASE OVERVIEW"
-                    color: Theme.textSecondary; font.pixelSize: Theme.fontPageTitle; font.weight: Font.SemiBold; font.letterSpacing: 0.8
+                RowLayout {
+                    anchors { fill: parent; leftMargin: 11; rightMargin: 8 }
+                    spacing: 8
+                    Text {
+                        text: "CASE OVERVIEW"
+                        color: Theme.textSecondary; font.pixelSize: Theme.fontPageTitle; font.weight: Font.SemiBold; font.letterSpacing: 0.8
+                    }
+                    Item { Layout.fillWidth: true }
+                    // 2D / 3D toggle
+                    Repeater {
+                        model: ["2D", "3D"]
+                        Rectangle {
+                            required property string modelData
+                            required property int index
+                            width: 36; height: 22; radius: 3
+                            color: (use3D ? index === 1 : index === 0) ? Theme.accentBlue : Theme.bgElevated
+                            border.color: (use3D ? index === 1 : index === 0) ? Theme.accentBlue : Theme.border
+                            border.width: 1
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData
+                                color: (use3D ? index === 1 : index === 0) ? Theme.bgPrimary : Theme.textSecondary
+                                font.pixelSize: Theme.fontSectionLabel
+                                font.weight: Font.SemiBold
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: use3D = (index === 1) }
+                        }
+                    }
                 }
             }
             Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
 
             CaseView {
                 id: caseOverview
+                visible: !use3D
                 Layout.fillWidth: true
                 Layout.preferredHeight: 250
                 Layout.margins: 4
                 onSensorDetailsRequested: function(sensor) {
                     selectedTwinSensor = sensor
                     sensorModalVisible = true
+                }
+            }
+
+            Loader {
+                active: use3D
+                visible: use3D
+                Layout.fillWidth: true
+                Layout.preferredHeight: 350
+                Layout.margins: 4
+                sourceComponent: CaseView3D {
+                    onSensorDetailsRequested: function(sensor) {
+                        selectedTwinSensor = sensor
+                        sensorModalVisible = true
+                    }
                 }
             }
 

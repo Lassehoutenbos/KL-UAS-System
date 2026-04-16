@@ -12,7 +12,7 @@
 static void messageHandler(QtMsgType type, const QMessageLogContext &, const QString &msg)
 {
     QFile f("C:/Users/houte/Desktop/picode_log.txt");
-    f.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+    (void)f.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
     QTextStream out(&f);
     out << QDateTime::currentDateTime().toString("hh:mm:ss.zzz") << " " << msg << "\n";
 }
