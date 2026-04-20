@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 
-#define SK6812_MAX_PIXELS   128
+#define SK6812_MAX_PIXELS       128
+#define WORKLIGHT_LED_BASE      10
+#define WORKLIGHT_LED_COUNT     23
 
 /**
  * Initialize PIO0 SM0 for the SK6812 chain on PIN_SK6812_DATA (GP0).
@@ -33,6 +35,13 @@ void led_sk6812_set_brightness(uint8_t level);
  * new state on its next 50 ms tick.
  */
 void led_sk6812_set_warning_state(uint8_t icon, uint8_t severity);
+
+/**
+ * Set worklight state (LEDs WORKLIGHT_LED_BASE .. +WORKLIGHT_LED_COUNT-1).
+ * on=0: off. on=1: solid colour r/g/b.
+ * Thread-safe (volatile writes). sk6812_task picks up on next 50 ms tick.
+ */
+void led_sk6812_set_worklight(uint8_t on, uint8_t r, uint8_t g, uint8_t b);
 
 /**
  * FreeRTOS task: wakes on task notification or every 50 ms, updates

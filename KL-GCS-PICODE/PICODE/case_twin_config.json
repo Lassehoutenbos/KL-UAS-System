@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "hotspots": [
+    {
+      "id": "pi_cpu",
+      "label": "PI CPU",
+      "sensor_key": "tempCpuPi",
+      "x_norm": 0.5,
+      "y_norm": 0.38,
+      "x3d": 0.000,
+      "y3d": 0.170,
+      "z3d": 0.226,
+      "ok_max": 60,
+      "warn_max": 80
+    },
+    {
+      "id": "pcb_power",
+      "label": "PCB POWER",
+      "sensor_key": "tempCaseA",
+      "x_norm": 0.25,
+      "y_norm": 0.52,
+      "x3d": -0.116,
+      "y3d": 0.170,
+      "z3d": 0.172,
+      "ok_max": 60,
+      "warn_max": 80
+    },
+    {
+      "id": "raspberry_pi_zone",
+      "label": "RASPBERRY PI",
+      "sensor_key": "tempCaseB",
+      "x_norm": 0.5,
+      "y_norm": 0.48,
+      "x3d": 0.000,
+      "y3d": 0.170,
+      "z3d": 0.187,
+      "ok_max": 60,
+      "warn_max": 80
+    },
+    {
+      "id": "charger",
+      "label": "CHARGER",
+      "sensor_key": "tempCaseC",
+      "x_norm": 0.3,
+      "y_norm": 0.62,
+      "x3d": -0.093,
+      "y3d": 0.170,
+      "z3d": 0.133,
+      "ok_max": 60,
+      "warn_max": 80
+    },
+    {
+      "id": "vrx_module",
+      "label": "VRX MODULE",
+      "sensor_key": "tempCaseD",
+      "x_norm": 0.72,
+      "y_norm": 0.55,
+      "x3d": 0.102,
+      "y3d": 0.170,
+      "z3d": 0.160,
+      "ok_max": 60,
+      "warn_max": 80
+    },
+    {
+      "id": "battery_bus",
+      "label": "BATTERY BUS",
+      "sensor_key": "batteryVoltage",
+      "metric_type": "voltage",
+      "unit": "V",
+      "x_norm": 0.56,
+      "y_norm": 0.66,
+      "x3d": 0.028,
+      "y3d": 0.170,
+      "z3d": 0.117,
+      "warn_min": 22,
+      "crit_min": 20,
+      "ok_max": 30,
+      "warn_max": 32,
+      "decimals": 1
+    },
+    {
+      "id": "mavlink_link",
+      "label": "MAVLINK",
+      "sensor_key": "mavlinkConnected",
+      "metric_type": "bool",
+      "x_norm": 0.68,
+      "y_norm": 0.42,
+      "x3d": 0.084,
+      "y3d": 0.170,
+      "z3d": 0.211,
+      "true_label": "ONLINE",
+      "false_label": "OFFLINE"
+    }
+  ]
+}

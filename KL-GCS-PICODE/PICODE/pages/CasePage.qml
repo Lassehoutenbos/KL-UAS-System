@@ -19,6 +19,11 @@ Rectangle {
     }
 
     property bool screensLinked: true
+    property bool use3D: false
+    property string configPath: "case_twin_config.json"
+    property string configStatus: ""
+    property var selectedTwinSensor: ({})
+    property bool sensorModalVisible: false
 
     // Stored ratios for proportional master-slider scaling
     property var brightnessRatios: [1.0, 1.0, 1.0, 1.0, 1.0]
@@ -365,18 +370,137 @@ Rectangle {
             Item {
                 Layout.fillWidth: true; height: 32
                 Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 3; color: Theme.accentBlue }
-                Text {
-                    anchors.left: parent.left; anchors.leftMargin: 11; anchors.verticalCenter: parent.verticalCenter
-                    text: "CASE OVERVIEW"
-                    color: Theme.textSecondary; font.pixelSize: Theme.fontPageTitle; font.weight: Font.SemiBold; font.letterSpacing: 0.8
+                RowLayout {
+                    anchors { fill: parent; leftMargin: 11; rightMargin: 8 }
+                    spacing: 8
+                    Text {
+                        text: "CASE OVERVIEW"
+                        color: Theme.textSecondary; font.pixelSize: Theme.fontPageTitle; font.weight: Font.SemiBold; font.letterSpacing: 0.8
+                    }
+                    Item { Layout.fillWidth: true }
+                    // 2D / 3D toggle
+                    Repeater {
+                        model: ["2D", "3D"]
+                        Rectangle {
+                            required property string modelData
+                            required property int index
+                            width: 36; height: 22; radius: 3
+                            color: (use3D ? index === 1 : index === 0) ? Theme.accentBlue : Theme.bgElevated
+                            border.color: (use3D ? index === 1 : index === 0) ? Theme.accentBlue : Theme.border
+                            border.width: 1
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData
+                                color: (use3D ? index === 1 : index === 0) ? Theme.bgPrimary : Theme.textSecondary
+                                font.pixelSize: Theme.fontSectionLabel
+                                font.weight: Font.SemiBold
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: use3D = (index === 1) }
+                        }
+                    }
                 }
             }
             Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
 
             CaseView {
+                id: caseOverview
+                visible: !use3D
                 Layout.fillWidth: true
                 Layout.preferredHeight: 250
                 Layout.margins: 4
+                onSensorDetailsRequested: function(sensor) {
+                    selectedTwinSensor = sensor
+                    sensorModalVisible = true
+                }
+            }
+
+            Loader {
+                active: use3D
+                visible: use3D
+                Layout.fillWidth: true
+                Layout.preferredHeight: 350
+                Layout.margins: 4
+                sourceComponent: CaseView3D {
+                    onSensorDetailsRequested: function(sensor) {
+                        selectedTwinSensor = sensor
+                        sensorModalVisible = true
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.margins: 12
+                spacing: 6
+
+                TextField {
+                    Layout.fillWidth: true
+                    text: configPath
+                    placeholderText: "Pad naar case twin config JSON"
+                    onTextChanged: configPath = text
+                    background: Rectangle {
+                        radius: 4
+                        color: Theme.bgSecondary
+                        border.color: Theme.border
+                        border.width: 1
+                    }
+                }
+
+                Rectangle {
+                    width: 86; height: 34; radius: 4
+                    color: Theme.bgElevated
+                    border.color: Theme.border
+                    border.width: 1
+                    Text { anchors.centerIn: parent; text: "LOAD"; color: Theme.textPrimary; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.SemiBold }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            var ok = GCSState.loadCaseTwinConfig(configPath)
+                            configStatus = ok ? "Config geladen: " + configPath : ("Load fout: " + GCSState.caseTwinConfigLastError)
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 86; height: 34; radius: 4
+                    color: Theme.bgElevated
+                    border.color: Theme.border
+                    border.width: 1
+                    Text { anchors.centerIn: parent; text: "SAVE"; color: Theme.textPrimary; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.SemiBold }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            var ok = GCSState.saveCaseTwinConfig(configPath)
+                            configStatus = ok ? "Config opgeslagen: " + configPath : ("Save fout: " + GCSState.caseTwinConfigLastError)
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 86; height: 34; radius: 4
+                    color: Theme.bgElevated
+                    border.color: Theme.border
+                    border.width: 1
+                    Text { anchors.centerIn: parent; text: "RESET"; color: Theme.textPrimary; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.SemiBold }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            GCSState.resetCaseTwinConfig()
+                            configStatus = "Config teruggezet naar defaults"
+                        }
+                    }
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                Layout.leftMargin: 12
+                Layout.rightMargin: 12
+                Layout.bottomMargin: 6
+                text: configStatus.length > 0 ? configStatus : "Tip: gebruik LOAD/SAVE met JSON config om hotspot-locaties te uploaden."
+                color: configStatus.indexOf("fout") >= 0 ? Theme.statusCrit : Theme.textDisabled
+                font.pixelSize: Theme.fontSectionLabel
+                wrapMode: Text.Wrap
             }
 
             // ── TEMPERATURES ─────────────────────────────────────────────────
@@ -503,6 +627,94 @@ Rectangle {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.45)
+        visible: sensorModalVisible
+        z: 20
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: sensorModalVisible = false
+        }
+    }
+
+    Rectangle {
+        visible: sensorModalVisible
+        z: 21
+        width: Math.min(parent.width - 120, 480)
+        height: 220
+        radius: 8
+        color: Theme.bgElevated
+        border.color: Theme.accentYellow
+        border.width: 1
+        anchors.centerIn: parent
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 14
+            spacing: 8
+
+            Text {
+                text: selectedTwinSensor && selectedTwinSensor.label ? selectedTwinSensor.label : "SENSOR"
+                color: Theme.accentYellow
+                font.pixelSize: Theme.fontPageTitle
+                font.weight: Font.SemiBold
+            }
+            Text {
+                text: selectedTwinSensor && selectedTwinSensor.valid
+                      ? (selectedTwinSensor.type === "bool"
+                         ? ((selectedTwinSensor.invert ? !selectedTwinSensor.value : selectedTwinSensor.value)
+                            ? (selectedTwinSensor.trueLabel || "ON")
+                            : (selectedTwinSensor.falseLabel || "OFF"))
+                         : (typeof selectedTwinSensor.value === "number"
+                            ? selectedTwinSensor.value.toFixed(selectedTwinSensor.decimals !== undefined ? selectedTwinSensor.decimals : 0)
+                              + (selectedTwinSensor.unit || "")
+                            : selectedTwinSensor.value))
+                      : "—"
+                color: Theme.textPrimary
+                font.pixelSize: Theme.fontValueMedium
+                font.weight: Font.Bold
+                font.family: "monospace"
+            }
+            Text {
+                text: "KEY: " + (selectedTwinSensor && selectedTwinSensor.sensorKey ? selectedTwinSensor.sensorKey : "—")
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontSectionLabel
+                font.family: "monospace"
+            }
+            Text {
+                text: {
+                    if (!selectedTwinSensor || selectedTwinSensor.type === "bool")
+                        return "THRESHOLD: BOOL STATE"
+                    var unit = selectedTwinSensor.unit || ""
+                    var okTxt = selectedTwinSensor.okMax !== undefined ? selectedTwinSensor.okMax + unit : "—"
+                    var warnTxt = selectedTwinSensor.warnMax !== undefined ? selectedTwinSensor.warnMax + unit : "—"
+                    var warnMinTxt = selectedTwinSensor.warnMin !== undefined ? selectedTwinSensor.warnMin + unit : "—"
+                    var critMinTxt = selectedTwinSensor.critMin !== undefined ? selectedTwinSensor.critMin + unit : "—"
+                    return "THRESHOLD: okMax=" + okTxt + " warnMax=" + warnTxt
+                           + " warnMin=" + warnMinTxt + " critMin=" + critMinTxt
+                }
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontSectionLabel
+            }
+
+            Item { Layout.fillHeight: true }
+
+            Rectangle {
+                Layout.alignment: Qt.AlignRight
+                width: 100
+                height: 34
+                radius: 4
+                color: Theme.bgSecondary
+                border.color: Theme.border
+                border.width: 1
+                Text { anchors.centerIn: parent; text: "SLUIT"; color: Theme.textPrimary; font.pixelSize: Theme.fontSectionLabel; font.weight: Font.SemiBold }
+                MouseArea { anchors.fill: parent; onClicked: sensorModalVisible = false }
             }
         }
     }

@@ -27,6 +27,7 @@
 #define PROTO_TYPE_PERIPH_DATA  0x0D  /* Pico→Pi:  data from a bus peripheral    */
 #define PROTO_TYPE_PERIPH_STATE 0x0E  /* Pico→Pi:  peripheral online/offline     */
 #define PROTO_TYPE_PERIPH_SCREEN 0x0F /* Pi→Pico:  select peripheral detail screen */
+#define PROTO_TYPE_WORKLIGHT     0x10 /* Pi→Pico:  worklight on/off + colour        */
 
 /* Warning severity levels — type 0x0A */
 #define WARN_OK                 0
@@ -44,7 +45,9 @@
 #define WARN_ICON_LOCKED        7   /* locked state            */
 #define WARN_ICON_DRONE_STATUS  8   /* drone status            */
 #define WARN_ICON_COUNT         9
-#define WARN_PANEL_LED_BASE     61  /* first LED index of warning panel — change to relocate */
+/* MAIN occupies two physical LEDs; total panel LED span = WARN_ICON_COUNT + 1 */
+#define WARN_PANEL_LED_COUNT    (WARN_ICON_COUNT + 1)
+#define WARN_PANEL_LED_BASE     0   /* first LED index of warning panel — change to relocate */
 
 /* LED animation modes — type 0x03, chain=0x01 (WS2811 RGB buttons) */
 #define LED_ANIM_OFF            0
@@ -162,6 +165,14 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
     uint8_t addr;       /* peripheral address to show on detail screen */
 } periph_screen_cmd_t;
+
+/* Type 0x10 — Worklight command (Pi → Pico) */
+typedef struct __attribute__((packed)) {
+    uint8_t on;   /* 0 = off, 1 = on */
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+} worklight_cmd_t;
 
 /* Type 0x0B — Ambient light sensor data (VEML7700) */
 typedef struct __attribute__((packed)) {

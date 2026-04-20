@@ -276,6 +276,16 @@ void proto_handle_rx(const uint8_t *data, uint32_t len)
                             }
                             break;
 
+                        case PROTO_TYPE_WORKLIGHT:
+                            if (s_rx_len >= 4) {
+                                led_sk6812_set_worklight(s_rx_buf[0],
+                                                         s_rx_buf[1],
+                                                         s_rx_buf[2],
+                                                         s_rx_buf[3]);
+                                if (s_sk6812_handle) xTaskNotifyGive(s_sk6812_handle);
+                            }
+                            break;
+
                         case PROTO_TYPE_PERIPH_SCREEN:
                             /* Select peripheral for detail screen and switch mode */
                             if (s_rx_len >= 1) {

@@ -11,6 +11,8 @@ find_package(Qt6 REQUIRED COMPONENTS
     Positioning
     Location
     Network
+    Quick3D
+    Quick3DAssetUtils
 )
 
 qt_standard_project_setup(REQUIRES 6.10)
@@ -38,6 +40,7 @@ qt_add_qml_module(appPICODE
         components/ConfirmOverlay.qml
         components/QuickPanel.qml
         components/CaseView.qml
+        components/CaseView3D.qml
         pages/DashPage.qml
         pages/DronePage.qml
         pages/CameraPage.qml
@@ -47,7 +50,10 @@ qt_add_qml_module(appPICODE
         pages/PayloadPage.qml
         pages/PeriphPage.qml
         pages/CasePage.qml
+    RESOURCES
+        assets/models/case_v13.glb
 )
+
 
 set_target_properties(appPICODE PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
@@ -55,6 +61,7 @@ set_target_properties(appPICODE PROPERTIES
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE $<NOT:$<CONFIG:Debug>>
 )
+
 
 target_link_libraries(appPICODE PRIVATE
     Qt6::Quick
@@ -64,6 +71,8 @@ target_link_libraries(appPICODE PRIVATE
     Qt6::Positioning
     Qt6::Location
     Qt6::Network
+    Qt6::Quick3D
+    Qt6::Quick3DAssetUtils
 )
 
 install(TARGETS appPICODE

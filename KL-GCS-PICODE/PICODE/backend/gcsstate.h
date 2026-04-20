@@ -91,6 +91,8 @@ class GCSState : public QObject {
 
     // --- Parameters ---
     Q_PROPERTY(QVariantList params READ params NOTIFY paramsChanged)
+    Q_PROPERTY(QVariantList caseTwinHotspots READ caseTwinHotspots NOTIFY caseTwinConfigChanged)
+    Q_PROPERTY(QString caseTwinConfigLastError READ caseTwinConfigLastError NOTIFY caseTwinConfigChanged)
 
 public:
     static GCSState *instance();
@@ -162,6 +164,8 @@ public:
     QVariantList waypoints()   const { return m_waypoints; }
     QVariantList pois()        const { return m_pois; }
     QVariantList params()      const { return m_params; }
+    QVariantList caseTwinHotspots() const { return m_caseTwinHotspots; }
+    QString caseTwinConfigLastError() const { return m_caseTwinConfigLastError; }
 
 public slots:
     void updateDroneState(double alt, double spd, double hdg, double vspd,
@@ -208,6 +212,9 @@ public slots:
     Q_INVOKABLE void sendPeriphCmd(int address, int cmd, const QByteArray &payload = {});
     Q_INVOKABLE void sendTftScreen(int mode);
     Q_INVOKABLE void sendTftPeriphDetail(int address);
+    Q_INVOKABLE bool loadCaseTwinConfig(const QString &path);
+    Q_INVOKABLE bool saveCaseTwinConfig(const QString &path);
+    Q_INVOKABLE void resetCaseTwinConfig();
 
 signals:
     void droneStateChanged();
@@ -225,6 +232,7 @@ signals:
     void paramsChanged();
     void statusMessagesChanged();
     void switchStateChanged();
+    void caseTwinConfigChanged();
     void armSwitchToggled(bool on);
     void buttonPressed(int buttonId);
     void buttonReleased(int buttonId);
@@ -243,6 +251,7 @@ signals:
 
 private:
     explicit GCSState(QObject *parent = nullptr);
+    static QVariantList defaultCaseTwinHotspots();
     static GCSState *s_instance;
 
     double  m_altitude         = 0.0;
@@ -308,4 +317,6 @@ private:
     QVariantList m_waypoints;
     QVariantList m_pois;
     QVariantList m_params;
+    QVariantList m_caseTwinHotspots;
+    QString m_caseTwinConfigLastError;
 };
