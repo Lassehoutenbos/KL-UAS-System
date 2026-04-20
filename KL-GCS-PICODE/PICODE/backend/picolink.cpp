@@ -19,6 +19,7 @@
 #define PROTO_TYPE_LED            0x03
 #define PROTO_TYPE_SCREEN         0x04
 #define PROTO_TYPE_PERIPH_SCREEN  0x0F
+#define PROTO_TYPE_WORKLIGHT      0x10
 
 #define ADC_CH_BAT_VIN   0
 #define ADC_CH_EXT_VIN   1
@@ -611,12 +612,11 @@ void PicoLink::updatePayloadLeds()
 
 void PicoLink::onWorklightChanged(bool on, const QColor &color)
 {
-    uint8_t r = on ? static_cast<uint8_t>(color.red())   : 0;
-    uint8_t g = on ? static_cast<uint8_t>(color.green()) : 0;
-    uint8_t b = on ? static_cast<uint8_t>(color.blue())  : 0;
-    uint8_t anim = on ? 1 : 0;  // 1 = solid on, 0 = off
-
-    // SK6812 LEDs 70-92 are the worklights (chain 0x00)
-    for (uint8_t id = 70; id <= 92; ++id)
-        sendLedCmd(0x00, id, r, g, b, anim);
+    uint8_t payload[4] = {
+        static_cast<uint8_t>(on ? 1 : 0),
+        static_cast<uint8_t>(on ? color.red()   : 0),
+        static_cast<uint8_t>(on ? color.green() : 0),
+        static_cast<uint8_t>(on ? color.blue()  : 0),
+    };
+    sendFrame(PROTO_TYPE_WORKLIGHT, payload, sizeof(payload));
 }

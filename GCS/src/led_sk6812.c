@@ -36,9 +36,18 @@ static SemaphoreHandle_t s_dma_sem  = NULL;
 
 static volatile uint8_t s_warn_severity[WARN_ICON_COUNT]; /* default = WARN_OK (0) */
 
+/* ------------------------------------------------------------------ */
+/* Worklight state                                                        */
+/* ------------------------------------------------------------------ */
+
+static volatile uint8_t s_worklight_on = 0;
+static volatile uint8_t s_worklight_r  = 0;
+static volatile uint8_t s_worklight_g  = 0;
+static volatile uint8_t s_worklight_b  = 0;
+
 /* Pixel word format used by s_pixel_buf: (G<<24)|(R<<16)|(B<<8) */
 #define COL_RED    0x00FF0000UL   /* G=0,   R=255, B=0   */
-#define COL_AMBER  0xA5FF0000UL   /* G=165, R=255, B=0   */
+#define COL_AMBER  0x64FF0000UL   /* G=100, R=255, B=0   */
 #define COL_GREEN  0xFF000000UL   /* G=255, R=0,   B=0   */
 #define COL_BLUE   0x0000FF00UL   /* G=0,   R=0,   B=255 */
 #define COL_OFF    0x00000000UL
@@ -48,13 +57,14 @@ static bool warn_is_gps_net(uint8_t icon)
     return icon == WARN_ICON_GPS_GCS || icon == WARN_ICON_NETWORK_GCS;
 }
 
-static void warn_update_pixels(uint32_t tick)
+static void warn_update_pixels(void)
 {
-    /* Blink phases: task wakes every 50 ms */
-    bool blink_250 = (tick / 5)  & 1u;  /* toggles every 250 ms */
-    bool blink_500 = (tick / 10) & 1u;  /* toggles every 500 ms */
+    uint32_t ms = (uint32_t)(xTaskGetTickCount() * portTICK_PERIOD_MS);
+    bool blink_250 = (ms / 250) & 1u;
+    bool blink_500 = (ms / 500) & 1u;
     uint8_t br = s_brightness;
 
+    uint8_t led = WARN_PANEL_LED_BASE;
     for (uint8_t i = 0; i < WARN_ICON_COUNT; i++) {
         uint8_t sev = s_warn_severity[i];
         uint32_t col;
@@ -68,7 +78,6 @@ static void warn_update_pixels(uint32_t tick)
             else if (sev == WARN_WARNING)  col = COL_AMBER;
             else                           col = COL_GREEN;
         } else {
-            /* Normal icons */
             if      (sev == WARN_CRITICAL) col = blink_250 ? COL_RED : COL_OFF;
             else if (sev == WARN_WARNING)  col = COL_AMBER;
             else                           col = COL_GREEN;
@@ -78,9 +87,26 @@ static void warn_update_pixels(uint32_t tick)
         uint8_t g = (uint8_t)(((col >> 24) & 0xFFu) * (uint16_t)br >> 8);
         uint8_t r = (uint8_t)(((col >> 16) & 0xFFu) * (uint16_t)br >> 8);
         uint8_t b = (uint8_t)(((col >>  8) & 0xFFu) * (uint16_t)br >> 8);
-        s_pixel_buf[WARN_PANEL_LED_BASE + i] =
-            ((uint32_t)g << 24) | ((uint32_t)r << 16) | ((uint32_t)b << 8);
+        uint32_t word = ((uint32_t)g << 24) | ((uint32_t)r << 16) | ((uint32_t)b << 8);
+
+        s_pixel_buf[led++] = word;
+        /* MAIN spans two physical LEDs */
+        if (i == WARN_ICON_MAIN)
+            s_pixel_buf[led++] = word;
     }
+}
+
+static void worklight_update_pixels(void)
+{
+    uint8_t br  = s_brightness;
+    uint8_t on  = s_worklight_on;
+    uint8_t g_v = on ? (uint8_t)(((uint16_t)s_worklight_g * br) >> 8) : 0;
+    uint8_t r_v = on ? (uint8_t)(((uint16_t)s_worklight_r * br) >> 8) : 0;
+    uint8_t b_v = on ? (uint8_t)(((uint16_t)s_worklight_b * br) >> 8) : 0;
+    uint32_t word = ((uint32_t)g_v << 24) | ((uint32_t)r_v << 16) | ((uint32_t)b_v << 8);
+
+    for (uint8_t i = 0; i < WORKLIGHT_LED_COUNT; i++)
+        s_pixel_buf[WORKLIGHT_LED_BASE + i] = word;
 }
 
 /* ------------------------------------------------------------------ */
@@ -133,6 +159,21 @@ void led_sk6812_set_warning_state(uint8_t icon, uint8_t severity)
 {
     if (icon >= WARN_ICON_COUNT) return;
     s_warn_severity[icon] = severity;
+    /* Ensure the DMA transfer always covers the full warning panel */
+    uint8_t needed = WARN_PANEL_LED_BASE + WARN_PANEL_LED_COUNT;
+    if (s_num_pixels < needed)
+        s_num_pixels = needed;
+}
+
+void led_sk6812_set_worklight(uint8_t on, uint8_t r, uint8_t g, uint8_t b)
+{
+    s_worklight_on = on;
+    s_worklight_r  = r;
+    s_worklight_g  = g;
+    s_worklight_b  = b;
+    uint8_t needed = WORKLIGHT_LED_BASE + WORKLIGHT_LED_COUNT;
+    if (s_num_pixels < needed)
+        s_num_pixels = needed;
 }
 
 void led_sk6812_set(const uint8_t *pixel_data, uint8_t num_pixels)
@@ -154,7 +195,7 @@ void led_sk6812_set(const uint8_t *pixel_data, uint8_t num_pixels)
     }
 
     /* Always cover the warning panel so it is included in every DMA transfer */
-    uint8_t needed = WARN_PANEL_LED_BASE + WARN_ICON_COUNT;
+    uint8_t needed = WARN_PANEL_LED_BASE + WARN_PANEL_LED_COUNT;
     if (num_pixels < needed) {
         /* Zero-fill any gap between the last Pi pixel and the panel */
         memset(&s_pixel_buf[num_pixels], 0,
@@ -168,7 +209,6 @@ void led_sk6812_set(const uint8_t *pixel_data, uint8_t num_pixels)
 void sk6812_task(void *param)
 {
     (void)param;
-    uint32_t warn_tick = 0;
 
     /* Prime semaphore so first DMA transfer can proceed immediately */
     xSemaphoreGive(s_dma_sem);
@@ -178,7 +218,8 @@ void sk6812_task(void *param)
          * after 50 ms to animate the warning panel blink states. */
         ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(50));
 
-        warn_update_pixels(warn_tick++);
+        warn_update_pixels();
+        worklight_update_pixels();
 
         uint8_t n = s_num_pixels;
         if (n == 0) continue;

@@ -1,4 +1,4 @@
-# Warning Panel — SK6812 LEDs 61–69
+# Warning Panel — SK6812 LEDs 61–70
 
 ## Overview
 
@@ -18,11 +18,11 @@ need to manage LED timing.
 | 1         | `WARN_ICON_SIGNAL`      | 62        | Signal strength warning  |
 | 2         | `WARN_ICON_AIRCRAFT`    | 63        | Aircraft warning         |
 | 3         | `WARN_ICON_DRONE_LINK`  | 64        | Drone link status        |
-| 4         | `WARN_ICON_MAIN`        | 65        | Main / big warning       |
-| 5         | `WARN_ICON_GPS_GCS`     | 66        | GPS lock (GCS)           |
-| 6         | `WARN_ICON_NETWORK_GCS` | 67        | Network connection (GCS) |
-| 7         | `WARN_ICON_LOCKED`      | 68        | Locked state             |
-| 8         | `WARN_ICON_DRONE_STATUS`| 69        | Drone status             |
+| 4         | `WARN_ICON_MAIN`        | 65 + 66   | Main / big warning (2 LEDs, 1 protocol byte) |
+| 5         | `WARN_ICON_GPS_GCS`     | 67        | GPS lock (GCS)           |
+| 6         | `WARN_ICON_NETWORK_GCS` | 68        | Network connection (GCS) |
+| 7         | `WARN_ICON_LOCKED`      | 69        | Locked state             |
+| 8         | `WARN_ICON_DRONE_STATUS`| 70        | Drone status             |
 
 ---
 
@@ -74,7 +74,7 @@ need to manage LED timing.
 ```
 
 - **Type**: `0x0A` (`PROTO_TYPE_WARNING`)
-- **Length**: `9` (one byte per icon)
+- **Length**: `9` (one byte per icon; `WARN_ICON_MAIN` drives two physical LEDs internally)
 - **Payload**: 9 bytes, each `WARN_OK (0)`, `WARN_WARNING (1)`, or `WARN_CRITICAL (2)`
 - **Checksum**: XOR of type, length, and all payload bytes
 
@@ -125,7 +125,7 @@ serial_port.write(packet)
 - The `sk6812_task` wakes every **50 ms** (or immediately on a new LED/warning
   packet) to recompute blink state and push pixels via DMA.
 - Warning LEDs are always appended to any Pi-controlled pixel data. If the Pi sends
-  fewer than 70 pixels, the gap is zero-filled and the strip is extended to LED 69.
+  fewer than 71 pixels, the gap is zero-filled and the strip is extended to LED 70.
 - Brightness set via `PROTO_TYPE_BRIGHTNESS (target=0)` applies uniformly to both
   the Pi-controlled pixels and the warning panel.
 - Default severity on power-up is `WARN_OK` (green) for all icons.

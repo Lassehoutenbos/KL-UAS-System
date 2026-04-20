@@ -39,6 +39,7 @@ class GCSProtocol:
     TYPE_PERIPH_DATA   = 0x0D  # Pico→Pi: response from RS-485 peripheral
     TYPE_PERIPH_STATE  = 0x0E  # Pico→Pi: peripheral online/offline notification
     TYPE_PERIPH_SCREEN = 0x0F  # Pi→Pico: select peripheral detail screen
+    TYPE_WORKLIGHT     = 0x10  # Pi→Pico: worklight on/off + colour
 
     # LED chain IDs (first byte of LED payload)
     CHAIN_SK6812    = 0x00
@@ -770,6 +771,49 @@ class GCSTesterApp(ctk.CTk):
                       fg_color="#7a1a1a", hover_color="#a02020",
                       command=self._send_sk6812_clear).pack(side="left")
 
+        # --- Worklight (0x10) -----------------------------------------------
+        self._section_label(p, "WORKLIGHT  (0x10 · LEDs 48–70)")
+        wl_box = ctk.CTkFrame(p, corner_radius=6)
+        wl_box.pack(fill="x", padx=8, pady=(0, 8))
+
+        wl_top = ctk.CTkFrame(wl_box, fg_color="transparent")
+        wl_top.pack(fill="x", padx=8, pady=(8, 4))
+        self._wl_switch = ctk.CTkSwitch(wl_top, text="On")
+        self._wl_switch.pack(side="left", padx=(0, 16))
+
+        self._wl_preview = tk.Canvas(wl_top, width=40, height=20,
+                                     bg="#000000", highlightthickness=1,
+                                     highlightbackground="#555555")
+        self._wl_preview.create_rectangle(0, 0, 40, 20, fill="#000000",
+                                           outline="", tags="fill")
+        self._wl_preview.pack(side="right", padx=6)
+
+        self._wl_r = self._wl_g = self._wl_b = None
+
+        def wl_slider_row(ch_label):
+            r = ctk.CTkFrame(wl_box, fg_color="transparent")
+            r.pack(fill="x", padx=8, pady=1)
+            ctk.CTkLabel(r, text=ch_label, width=18, anchor="w",
+                         font=ctk.CTkFont(size=11)).pack(side="left")
+            val_lbl = ctk.CTkLabel(r, text="255", width=32,
+                                   font=ctk.CTkFont(family="Courier New", size=11))
+            val_lbl.pack(side="left", padx=(2, 4))
+            sl = ctk.CTkSlider(r, from_=0, to=255, width=180,
+                               command=lambda v, lbl=val_lbl: (
+                                   lbl.configure(text=f"{int(v):03d}"),
+                                   self._update_wl_preview()
+                               ))
+            sl.set(255)
+            sl.pack(side="left")
+            return sl
+
+        self._wl_r = wl_slider_row("R")
+        self._wl_g = wl_slider_row("G")
+        self._wl_b = wl_slider_row("B")
+
+        ctk.CTkButton(wl_box, text="Send Worklight", width=130,
+                      command=self._send_worklight).pack(padx=8, pady=(4, 8))
+
         # --- Brightness -----------------------------------------------------
         self._section_label(p, "BRIGHTNESS  (0x08)")
         bright_box = ctk.CTkFrame(p, corner_radius=6)
@@ -874,7 +918,7 @@ class GCSTesterApp(ctk.CTk):
         payload = bytes(
             GCSProtocol.WARN_SEVERITY_NAMES.index(self._warn_combos[i].get())
             if self._warn_combos[i].get() in GCSProtocol.WARN_SEVERITY_NAMES else 0
-            for i in range(9)
+            for i in range(len(GCSProtocol.WARN_NAMES))
         )
         pkt = GCSProtocol.build_packet(GCSProtocol.TYPE_WARNING, payload)
         if self._driver.send(pkt):
@@ -962,6 +1006,18 @@ class GCSTesterApp(ctk.CTk):
         if self._driver.send(pkt):
             self._log_tx(GCSProtocol.TYPE_BRIGHTNESS, payload,
                          f"target={target} level={level}")
+
+    def _send_worklight(self):
+        on  = 1 if self._wl_switch.get() else 0
+        r   = int(self._wl_r.get())
+        g   = int(self._wl_g.get())
+        b   = int(self._wl_b.get())
+        payload = bytes([on, r, g, b])
+        pkt = GCSProtocol.build_packet(GCSProtocol.TYPE_WORKLIGHT, payload)
+        if self._driver.send(pkt):
+            state = "ON" if on else "OFF"
+            self._log_tx(GCSProtocol.TYPE_WORKLIGHT, payload,
+                         f"worklight {state}  R={r} G={g} B={b}")
 
     def _send_periph_cmd(self):
         # Parse address from combo "0x01  Searchlight" or "0xFF  Broadcast"
@@ -1260,6 +1316,12 @@ class GCSTesterApp(ctk.CTk):
         b = int(self._ws_b[idx].get())
         color = f"#{r:02x}{g:02x}{b:02x}"
         self._ws_preview[idx].itemconfig("fill", fill=color)
+
+    def _update_wl_preview(self):
+        r = int(self._wl_r.get())
+        g = int(self._wl_g.get())
+        b = int(self._wl_b.get())
+        self._wl_preview.itemconfig("fill", fill=f"#{r:02x}{g:02x}{b:02x}")
 
     def _update_sk_preview(self):
         g = int(self._sk_g.get())

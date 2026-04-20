@@ -192,9 +192,9 @@ The SK6812 chain drives switch backlighting, the warning panel, and the workligh
 |-----------|---------|
 | 0–13 | SW2 switch backlights (3 buttons × 3 LEDs, with gaps) |
 | 14–27 | SW1 switch backlights (3 switches × 3 LEDs, with gaps) |
-| 28–60 | Remaining panel illumination |
-| 61–69 | Warning panel icons — controlled via `PROTO_TYPE_WARNING` (`0x0A`) |
-| 70–92 | Worklights (23 LEDs, act as one unified light) |
+| 28–47 | Remaining panel illumination |
+| 38–46 | Warning panel icons — controlled via `PROTO_TYPE_WARNING` (`0x0A`) |
+| 48–70 | Worklights (23 LEDs, act as one unified light) — controlled via `PROTO_TYPE_WORKLIGHT` (`0x10`) |
 
 #### Switch backlight layout
 
@@ -222,11 +222,24 @@ The strip starts under **SW2 B3** (crosshair). Each switch has **3 LEDs** undern
 | 22, 23, 24 | SW1_3 — Return home (covered toggle) |
 | 25, 26, 27 | padding |
 
-#### Worklights (LEDs 70–92)
+#### Worklights (LEDs 48–70)
 
-The last 23 LEDs of the strip form the **worklights**. These function as a single unified light and should be controlled from the Pi by setting colour and brightness uniformly across all 23 LEDs via `PROTO_TYPE_LED` (`chain=0x00`). Typical use is white illumination for field work or inspection.
+The last 23 LEDs of the strip (indices 48–70) form the **worklights**. These are managed entirely by the Pico firmware — the Pi sends a single `PROTO_TYPE_WORKLIGHT` (`0x10`) packet and the Pico fills all 23 LEDs with the requested uniform colour on every refresh cycle.
 
-See `warning_panel.md` for warning icon mapping and severity behavior.
+**Payload** (`worklight_cmd_t`, 4 bytes):
+
+| Byte | Field | Description |
+|------|-------|-------------|
+| 0 | `on` | `0` = off, `1` = on |
+| 1 | `r` | Red (0–255) |
+| 2 | `g` | Green (0–255) |
+| 3 | `b` | Blue (0–255) |
+
+Brightness scaling (`PROTO_TYPE_BRIGHTNESS`, `target=0`) is applied by the Pico before writing to the pixel buffer.
+
+**Pi-side**: `GCSState::cmdWorklightChanged(bool on, QColor color)` signal → `PicoLink::onWorklightChanged()` — sends one packet instead of 23 individual LED commands.
+
+See `warning_panel.md` for warning icon mapping and severity behaviour.
 
 **Brightness**: `PROTO_TYPE_BRIGHTNESS` with `target=0` (`BRIGHTNESS_TGT_SK6812`).
 
@@ -320,6 +333,7 @@ Checksum = XOR of type, len_lo, len_hi, and all payload bytes.
 | `0x0A` | WARNING | `warning_cmd_t` (9 B) | Set warning panel severities |
 | `0x0C` | PERIPH_CMD | `periph_cmd_t` | Forward command to RS-485 peripheral |
 | `0x0F` | PERIPH_SCREEN | `periph_screen_cmd_t` (1 B) | Select peripheral for TFT detail view |
+| `0x10` | WORKLIGHT | `worklight_cmd_t` (4 B) | Set worklight on/off + RGB colour (Pico fills all 23 LEDs) |
 
 ---
 
@@ -352,3 +366,4 @@ The `GCSState` singleton exposes all hardware state to the QML UI:
 | Peripherals | `peripherals` (QVariantList of online devices) |
 | System | `uptimeSeconds`, `memPercent`, `diskPercent` |
 | Warnings | `warnTemp`, `warnSignal`, `warnDrone`, `warnGps`, `warnLink`, `warnNetwork`, `anyWarningActive` |
+| Worklight | `cmdWorklightOn`, `cmdWorklightColor` — emits `cmdWorklightChanged(bool, QColor)` → single `PROTO_TYPE_WORKLIGHT` packet |
