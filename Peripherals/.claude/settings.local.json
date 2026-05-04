@@ -3,7 +3,9 @@
     "allow": [
       "Bash(gh pr *)",
       "PowerShell(gh pr *)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(Test-Path *)"
     ]
   }
 }

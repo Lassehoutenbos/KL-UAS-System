@@ -8,24 +8,28 @@
 # PICO_BOARD before including framework.cmake to target a specific board
 # (default = pico).
 
-if(NOT COMMAND pico_sdk_init)
-    if(NOT DEFINED PICO_SDK_PATH AND DEFINED ENV{PICO_SDK_PATH})
-        set(PICO_SDK_PATH $ENV{PICO_SDK_PATH})
-    endif()
-    if(NOT PICO_SDK_PATH)
-        message(FATAL_ERROR
-            "rp2040.cmake: PICO_SDK_PATH not set. "
-            "Install the Pico SDK and set the env var, or pass "
-            "-DPICO_SDK_PATH=/path/to/pico-sdk on the cmake command line.")
-    endif()
-    include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
-    if(NOT DEFINED PICO_BOARD)
-        set(PICO_BOARD pico)
-    endif()
-    pico_sdk_init()
+# pico_sdk_import.cmake sets up the toolchain and must run BEFORE
+# project(), so it lives at include time. pico_sdk_init() inspects
+# project state and must run AFTER project(), so it's deferred into
+# the per-target function below.
+if(NOT DEFINED PICO_SDK_PATH AND DEFINED ENV{PICO_SDK_PATH})
+    set(PICO_SDK_PATH $ENV{PICO_SDK_PATH})
+endif()
+if(NOT PICO_SDK_PATH)
+    message(FATAL_ERROR
+        "rp2040.cmake: PICO_SDK_PATH not set. "
+        "Install the Pico SDK and set the env var, or pass "
+        "-DPICO_SDK_PATH=/path/to/pico-sdk on the cmake command line.")
+endif()
+include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+if(NOT DEFINED PICO_BOARD)
+    set(PICO_BOARD pico)
 endif()
 
 function(_peripheral_rp2040 NAME SOURCES)
+    if(NOT COMMAND pico_add_extra_outputs)
+        pico_sdk_init()
+    endif()
     add_executable(${NAME}
         ${SOURCES}
         ${PERIPH_CORE_SOURCES}

@@ -36,6 +36,10 @@ set(STM32_CFLAGS
 set(STM32_LDFLAGS
     -mcpu=cortex-m3 -mthumb
     -Wl,--gc-sections -nostartfiles --specs=nano.specs --specs=nosys.specs
+    # arm-none-eabi-gcc 14.x newlib-nano references _init/_fini from
+    # __libc_init_array but no longer ships them. We have no C++ static
+    # ctors here, so stub them to 0.
+    -Wl,--defsym=_init=0 -Wl,--defsym=_fini=0
 )
 
 set(STM32F1_DEVICE_DIR ${cmsis_device_f1_SOURCE_DIR})
