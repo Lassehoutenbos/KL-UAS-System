@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.13)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(NOT DEFINED TARGET_MCU)
+    set(TARGET_MCU rp2040 CACHE STRING "Target MCU (rp2040 | stm32g0 | esp32)")
+endif()
+
+include(${CMAKE_CURRENT_LIST_DIR}/../Framework/cmake/framework.cmake)
+
+project(pantilt C ASM)
+
+set(BOARD_FILE ${CMAKE_CURRENT_LIST_DIR}/src/board_${TARGET_MCU}.c)
+if(NOT EXISTS ${BOARD_FILE})
+    message(FATAL_ERROR
+        "PanTilt has no board implementation for MCU '${TARGET_MCU}'. "
+        "Expected: ${BOARD_FILE}")
+endif()
+
+add_peripheral(
+    NAME    pantilt
+    MCU     ${TARGET_MCU}
+    SOURCES src/main.c ${BOARD_FILE}
+)
+target_include_directories(pantilt PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
