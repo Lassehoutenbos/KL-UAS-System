@@ -3,7 +3,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT DEFINED TARGET_MCU)
-    set(TARGET_MCU rp2040 CACHE STRING "Target MCU (rp2040 | stm32g0 | esp32)")
+    set(TARGET_MCU stm32f1 CACHE STRING "Target MCU (stm32f1 | rp2040 | esp32)")
 endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/../Framework/cmake/framework.cmake)

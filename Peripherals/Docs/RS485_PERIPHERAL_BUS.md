@@ -181,7 +181,7 @@ Any MCU with a UART works. Suggested options for new peripheral boards:
 | MCU | Why |
 | ----- | ----- |
 | **RP2040 (Pico)** | Same toolchain as GCS, cheap, plenty of I/O |
-| **STM32G031** | Tiny, cheap, low power, SOIC-8 or TSSOP-20 |
+| **STM32F103C8T6** | Primary chip on the KL-GCS-MODBUS03 PCB; LQFP-48, USB, lots of timers/ADC |
 | **ATmega328P** | Arduino ecosystem, easy prototyping |
 | **CH32V003** | Extremely cheap (< €0.15), RISC-V, SOIC-8 |
 
@@ -195,7 +195,7 @@ Each peripheral board needs a **SP3485** (or MAX485 if running at 5 V logic) plu
 
 **Hardware:**
 
-- MCU: RP2040 or STM32G031
+- MCU: STM32F103C8T6 (or RP2040 / ESP32)
 - SP3485 for RS-485
 - MOSFET (e.g. IRLZ44N) to switch the LED load from VBAT
 - NTC thermistor on the LED heatsink

@@ -1,7 +1,7 @@
 # RS-485 peripheral slave framework — top-level CMake entry point.
 #
 # Apps include this file and call:
-#   add_peripheral(NAME <app> MCU <rp2040|stm32g0|esp32> SOURCES <files…>)
+#   add_peripheral(NAME <app> MCU <stm32f1|rp2040|esp32> SOURCES <files…>)
 #
 # The MCU dispatcher pulls in the per-MCU toolchain + SDK and adds the
 # framework's portable core + the matching HAL.
@@ -29,14 +29,14 @@ function(add_peripheral)
     if(P_MCU STREQUAL "rp2040")
         include(${PERIPH_CMAKE_DIR}/rp2040.cmake)
         _peripheral_rp2040(${P_NAME} "${P_SOURCES}")
-    elseif(P_MCU STREQUAL "stm32g0")
-        include(${PERIPH_CMAKE_DIR}/stm32g0.cmake)
-        _peripheral_stm32g0(${P_NAME} "${P_SOURCES}")
+    elseif(P_MCU STREQUAL "stm32f1")
+        include(${PERIPH_CMAKE_DIR}/stm32f1.cmake)
+        _peripheral_stm32f1(${P_NAME} "${P_SOURCES}")
     elseif(P_MCU STREQUAL "esp32")
         include(${PERIPH_CMAKE_DIR}/esp32.cmake)
         _peripheral_esp32(${P_NAME} "${P_SOURCES}")
     else()
         message(FATAL_ERROR "add_peripheral: unknown MCU '${P_MCU}' "
-                            "(expected rp2040 | stm32g0 | esp32)")
+                            "(expected rp2040 | stm32f1 | esp32)")
     endif()
 endfunction()
