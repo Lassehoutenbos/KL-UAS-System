@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/raspberrypi/pico-examples/master/pico_w/wifi/access_point/dhcpserver/dhcpserver.c\" -o \"C:/Users/houte/Desktop/Overig/Projects/KL-UAS-System/Testcode/MODBUSTester/dhcpserver.c\")",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/raspberrypi/pico-examples/master/pico_w/wifi/access_point/dhcpserver/dhcpserver.h\" -o \"C:/Users/houte/Desktop/Overig/Projects/KL-UAS-System/Testcode/MODBUSTester/dhcpserver.h\")",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/raspberrypi/pico-examples/master/pico_w/wifi/access_point/dnsserver/dnsserver.c\" -o \"C:/Users/houte/Desktop/Overig/Projects/KL-UAS-System/Testcode/MODBUSTester/dnsserver.c\")",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/raspberrypi/pico-examples/master/pico_w/wifi/access_point/dnsserver/dnsserver.h\" -o \"C:/Users/houte/Desktop/Overig/Projects/KL-UAS-System/Testcode/MODBUSTester/dnsserver.h\")",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/raspberrypi/pico-examples/master/pico_w/wifi/access_point/lwipopts.h\" -o \"C:/Users/houte/Desktop/Overig/Projects/KL-UAS-System/Testcode/MODBUSTester/lwipopts.h\")",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/raspberrypi/pico-examples/master/pico_w/wifi/lwipopts_examples_common.h\" -o \"C:/Users/houte/Desktop/Overig/Projects/KL-UAS-System/Testcode/MODBUSTester/lwipopts.h\")",
+      "Bash(awk '/static const char INDEX_HTML/,/^\";$/' \"C:/Users/houte/Desktop/Overig/Projects/KL-UAS-System/Testcode/MODBUSTester/MODBUSTester.c\")",
+      "Bash(python *)"
+    ]
+  }
+}

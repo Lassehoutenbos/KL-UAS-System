@@ -1,14 +1,15 @@
 ;
-; WS2811 RGB button driver — 400 Kbps NRZ, RGB 24-bit
+; WS2811S RGB button driver — 800 Kbps NRZ, RGB 24-bit
 ;
 ; Adapted from the Raspberry Pi Pico SDK ws2812.pio example.
-; Drives PIO0 SM1 on PIN_WS2811_DATA (GP1) via a 3.3V→5V level shifter.
-; Chain: LED5 WS2811 DIN → LED5 WS2811 DOUT → LED6 WS2811 DIN.
+; Drives PIO1 SM0 on PIN_WS2811_DATA (GP3) via a 3.3V→5V level shifter.
+; Chain: LED5 WS2811S DIN → LED5 WS2811S DOUT → LED6 WS2811S DIN.
 ;
-; Timing (400 Kbps, 10 cycles/bit at 4 MHz PIO clock):
-;   T0H = 3 cycles (0.75 µs),   T0L = 7 cycles (1.75 µs)
-;   T1H = 6 cycles (1.50 µs),   T1L = 4 cycles (1.00 µs)
-;   Reset: >50 µs low — handled in C by delaying before next DMA transfer
+; Timing (800 Kbps, 10 cycles/bit at 8 MHz PIO clock, 125 ns/cycle):
+;   T0H = 3 cycles (375 ns),  T0L = 7 cycles (875 ns)
+;   T1H = 5 cycles (625 ns),  T1L = 5 cycles (625 ns)
+; All four within WS2811S spec (T0H 220-380 ns, T1H/T0L/T1L 580-1000 ns).
+; Reset: >280 µs low per datasheet — handled in C by delaying before next DMA transfer
 ;
 ; Pixel data is pushed 32 bits at a time (MSB first), left-aligned:
 ; bits[31:8] = RGB, bits[7:0] ignored.
@@ -19,8 +20,8 @@
 .side_set 1
 
 .define PUBLIC T1 3
-.define PUBLIC T2 3
-.define PUBLIC T3 4
+.define PUBLIC T2 2
+.define PUBLIC T3 5
 
 .wrap_target
 bitloop:

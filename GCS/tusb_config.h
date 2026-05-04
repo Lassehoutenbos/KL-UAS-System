@@ -1,9 +1,9 @@
 #ifndef TUSB_CONFIG_H
 #define TUSB_CONFIG_H
 
-/* MCU and OS */
+/* MCU — RP2040 USB hardware, works on both RP2040 and RP2350 */
 #define CFG_TUSB_MCU            OPT_MCU_RP2040
-#define CFG_TUSB_OS             OPT_OS_FREERTOS
+/* CFG_TUSB_OS is set to OPT_OS_FREERTOS by the pico-sdk CMake */
 
 /* Device class enables */
 #define CFG_TUD_ENABLED         1

@@ -115,6 +115,11 @@ static uint8_t  s_detail_buf[PERIPH_DETAIL_BUF];
 static uint8_t  s_detail_len   = 0;
 static bool     s_detail_dirty = false;
 
+/* ADC noise floor: ignore changes smaller than this many counts.
+ * 8 counts ≈ 6.4 mV at the ADC, ≈ 51 mV after the 8.021 divider — well
+ * below the 0.1 V displayed precision, so this never hides a real change. */
+#define ADC_REDRAW_HYST 8
+
 static bool main_needs_redraw(void)
 {
     uint16_t    bat = g_latest_adc.ch[ADC_CH_BAT_VIN];
@@ -123,7 +128,10 @@ static bool main_needs_redraw(void)
     uint8_t     pb  = g_latest_digital.port_b;
     sys_state_t st  = g_sys_state;
 
-    if (bat == s_last_bat_raw && ext == s_last_ext_raw &&
+    int bat_d = (int)bat - (int)s_last_bat_raw; if (bat_d < 0) bat_d = -bat_d;
+    int ext_d = (int)ext - (int)s_last_ext_raw; if (ext_d < 0) ext_d = -ext_d;
+
+    if (bat_d < ADC_REDRAW_HYST && ext_d < ADC_REDRAW_HYST &&
         pa == s_last_porta && pb == s_last_portb && st == s_last_sysstate)
         return false;
 
@@ -216,7 +224,9 @@ static void update_waiting_dots(void)
 
 static void render_main(void)
 {
-    st7735_fill_screen(ST7735_BLACK);
+    /* No fill_screen here — caller clears on mode change.
+     * Every element below repaints its own background, so partial
+     * updates (driven by main_needs_redraw) are flicker-free. */
     char buf[24];
 
     /* Header: dark navy with teal accent line */
@@ -252,7 +262,7 @@ static void render_main(void)
     fill_rrect(24, 83, 80, 3, 1, COL_TEAL);
 
     /* ---- Key status — inset rounded pill ---- */
-    bool locked = !(g_latest_digital.port_a & (1u << IOEXP_A_KEY));
+    bool locked = (g_latest_digital.port_a & (1u << IOEXP_A_KEY));
     uint16_t key_col = locked ? ST7735_RED : ST7735_GREEN;
     fill_rrect(4, 88, 120, 12, 4, key_col);
     /* "KEY: LOCKED"/"KEY:  OPEN ": 11*6=66px, x=(128-66)/2=31 */
@@ -657,7 +667,10 @@ void screen_task(void *param)
         if (effective != s_last_mode) {
             s_last_mode = effective;
             switch (effective) {
-                case SCREEN_MODE_MAIN:          render_main();           break;
+                case SCREEN_MODE_MAIN:
+                    st7735_fill_screen(ST7735_BLACK);
+                    render_main();
+                    break;
                 case SCREEN_MODE_WARNING:       render_warning();        break;
                 case SCREEN_MODE_LOCK:          render_lock();           break;
                 case SCREEN_MODE_BATWARNING:    render_batwarning();     break;
@@ -665,7 +678,10 @@ void screen_task(void *param)
                 case SCREEN_MODE_PERIPH_DETAIL: render_periph_detail();  break;
                 case SCREEN_MODE_AUTO + 10: s_wait_frame = 0; render_waiting(); break;
                 case 0xFF:                                   break; /* boot — skip */
-                default:                        render_main();           break;
+                default:
+                    st7735_fill_screen(ST7735_BLACK);
+                    render_main();
+                    break;
             }
         } else if (effective == SCREEN_MODE_MAIN && main_needs_redraw()) {
             render_main();

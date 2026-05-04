@@ -243,6 +243,8 @@ void rs485_task(void *arg)
                     screen_periph_update_data(resp_addr, resp_cmd,
                                               resp_buf, (uint8_t)r);
                 }
+                /* inter-frame gap so the slave fully re-arms RX */
+                vTaskDelay(pdMS_TO_TICKS(2));
             }
         }
 
@@ -260,6 +262,8 @@ void rs485_task(void *arg)
                     s_online[i] = now_online;
                     notify_state(s_known_addrs[i], now_online);
                 }
+                /* inter-frame gap so the slave fully re-arms RX */
+                vTaskDelay(pdMS_TO_TICKS(2));
             }
         }
 

@@ -208,25 +208,33 @@ static void flood_colour(uint16_t color, uint32_t n)
 /* ------------------------------------------------------------------ */
 void st7735_init(void)
 {
+    /* Drive CS/DC/RST high BEFORE switching SPI pins to SPI function so the
+     * display's CS line is asserted high (deselected) the moment SCK/MOSI
+     * stop being SIO. (screen_display_init() already does this from main(),
+     * but call again here so st7735_init() is safe to use standalone.) */
+    gpio_init(PIN_TFT_CS);  gpio_set_dir(PIN_TFT_CS,  GPIO_OUT); gpio_put(PIN_TFT_CS,  1);
+    gpio_init(PIN_TFT_DC);  gpio_set_dir(PIN_TFT_DC,  GPIO_OUT); gpio_put(PIN_TFT_DC,  1);
+    gpio_init(PIN_TFT_RST); gpio_set_dir(PIN_TFT_RST, GPIO_OUT); gpio_put(PIN_TFT_RST, 1);
+
     /* SPI1 hardware — dedicated to ST7735S display */
     spi_init(ST7735_SPI_INST, ST7735_SPI_BAUD);
     spi_set_format(ST7735_SPI_INST, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     gpio_set_function(PIN_TFT_SCK,  GPIO_FUNC_SPI);
     gpio_set_function(PIN_TFT_MOSI, GPIO_FUNC_SPI);
 
-    /* Configure CS, DC, RST as GPIO outputs */
-    gpio_init(PIN_TFT_CS);  gpio_set_dir(PIN_TFT_CS,  GPIO_OUT); gpio_put(PIN_TFT_CS,  1);
-    gpio_init(PIN_TFT_DC);  gpio_set_dir(PIN_TFT_DC,  GPIO_OUT); gpio_put(PIN_TFT_DC,  1);
-    gpio_init(PIN_TFT_RST); gpio_set_dir(PIN_TFT_RST, GPIO_OUT); gpio_put(PIN_TFT_RST, 1);
-
     /* Backlight PWM on PIN_TFT_BLK (GP15, slice 7 ch B).
-     * Wrap = 255 → PWM frequency = 125 MHz / 256 ≈ 488 kHz (no visible flicker).
-     * Start at full brightness. */
+     * Wrap = 255 → PWM frequency = clk_sys / 256 ≈ 586 kHz at 150 MHz
+     * (RP2350 default), well above any visible flicker.
+     * IMPORTANT: start at 0 % duty. Slamming the backlight to 100 % at boot
+     * is a ~80-100 mA step load on the 3.3 V rail; combined with RP2350 +
+     * CYW43 + USB inrush this can brown out the on-board regulator and
+     * cause a reset loop ("USB keeps connecting/disconnecting"). The
+     * backlight is ramped up at the end of init, after the panel is alive. */
     gpio_set_function(PIN_TFT_BLK, GPIO_FUNC_PWM);
     {
         uint slice = pwm_gpio_to_slice_num(PIN_TFT_BLK);
         pwm_set_wrap(slice, 255);
-        pwm_set_gpio_level(PIN_TFT_BLK, 255);
+        pwm_set_gpio_level(PIN_TFT_BLK, 0);
         pwm_set_enabled(slice, true);
     }
 
@@ -307,6 +315,14 @@ void st7735_init(void)
     vTaskDelay(pdMS_TO_TICKS(100));
 
     st7735_fill_screen(ST7735_BLACK);
+
+    /* Soft-start the backlight: ramp 0 → 255 over ~100 ms so the LED
+     * inrush current doesn't slam the 3.3 V rail and trigger BOR. */
+    for (uint16_t lvl = 0; lvl <= 255; lvl += 16) {
+        st7735_set_backlight((uint8_t)lvl);
+        vTaskDelay(pdMS_TO_TICKS(6));
+    }
+    st7735_set_backlight(255);
 }
 
 /* ------------------------------------------------------------------ */

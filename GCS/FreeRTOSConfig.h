@@ -1,10 +1,34 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
+/* SMP — RP2350 is dual-core Cortex-M33 */
+#define configNUMBER_OF_CORES                   2
+#define configTICK_CORE                         0
+#define configRUN_MULTIPLE_PRIORITIES           1
+#define configUSE_PASSIVE_IDLE_HOOK             0
+#define configUSE_CORE_AFFINITY                 1
+
+/* Cortex-M33 port options (RP2350 ARM non-secure, no TrustZone) */
+#define configENABLE_FPU                        1
+#define configENABLE_MPU                        0
+#define configENABLE_TRUSTZONE                  0
+#define configRUN_FREERTOS_SECURE_ONLY          1
+
+/* Cortex-M33 interrupt priorities (4 priority bits on RP2350 NVIC).
+ * Lower numerical value = higher priority. Kernel must run below the
+ * priority of interrupts that call FreeRTOS *FromISR APIs. */
+#define configPRIO_BITS                         4
+#define configLIBRARY_LOWEST_INTERRUPT_PRIORITY        15
+#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY   5
+#define configKERNEL_INTERRUPT_PRIORITY \
+    (configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8 - configPRIO_BITS))
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY \
+    (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS))
+
 /* Scheduler settings */
 #define configUSE_PREEMPTION                    1
 #define configUSE_TICKLESS_IDLE                 0
-#define configCPU_CLOCK_HZ                      133000000UL
+#define configCPU_CLOCK_HZ                      150000000UL
 #define configTICK_RATE_HZ                      1000          /* 1 ms tick */
 #define configMAX_PRIORITIES                    5
 #define configMINIMAL_STACK_SIZE                256           /* words */
@@ -63,10 +87,9 @@
 #define INCLUDE_xTaskGetIdleTaskHandle          0
 #define INCLUDE_eTaskGetState                   1
 #define INCLUDE_xEventGroupSetBitFromISR        1
-#define INCLUDE_xTimerPendFunctionCall          0
+#define INCLUDE_xTimerPendFunctionCall          1   /* required by RP2040 port via event_groups */
 #define INCLUDE_xTaskAbortDelay                 0
 #define INCLUDE_xTaskGetHandle                  0
-#define INCLUDE_xTimerPendFunctionCall          1   /* required by RP2040 port via event_groups */
 
 /* NOTE: xPortPendSVHandler, xPortSysTickHandler, vPortSVCHandler are
  * defined by the RP2040 FreeRTOS port itself (portmacro.h maps them to

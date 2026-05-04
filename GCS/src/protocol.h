@@ -47,7 +47,7 @@
 #define WARN_ICON_COUNT         9
 /* MAIN occupies two physical LEDs; total panel LED span = WARN_ICON_COUNT + 1 */
 #define WARN_PANEL_LED_COUNT    (WARN_ICON_COUNT + 1)
-#define WARN_PANEL_LED_BASE     0   /* first LED index of warning panel — change to relocate */
+#define WARN_PANEL_LED_BASE     50   /* first LED index of warning panel — change to relocate */
 
 /* LED animation modes — type 0x03, chain=0x01 (WS2811 RGB buttons) */
 #define LED_ANIM_OFF            0

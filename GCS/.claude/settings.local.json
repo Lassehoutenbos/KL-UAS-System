@@ -5,7 +5,12 @@
       "Read(//c/Users/houte/.pico-sdk/sdk/2.2.0//**)",
       "Bash(xargs grep:*)",
       "Read(//c/Users/houte//**)",
-      "Bash(grep -l \"ST7735\\\\|display\\\\|screen\" /c/Users/houte/Desktop/Overig/Projects/KL-UAS-System/GCS/src/*.h /c/Users/houte/Desktop/Overig/Projects/KL-UAS-System/GCS/src/*.c)"
+      "Bash(grep -l \"ST7735\\\\|display\\\\|screen\" /c/Users/houte/Desktop/Overig/Projects/KL-UAS-System/GCS/src/*.h /c/Users/houte/Desktop/Overig/Projects/KL-UAS-System/GCS/src/*.c)",
+      "WebSearch",
+      "Bash(cmake -G Ninja -B build -S .)",
+      "Bash(cmake --build build)",
+      "Bash(awk NR>=120 && NR<=230 *)",
+      "Bash(python *)"
     ]
   }
 }

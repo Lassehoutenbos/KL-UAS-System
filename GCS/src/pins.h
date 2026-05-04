@@ -8,7 +8,7 @@
 /* PIO / LED data lines                                                 */
 /* ------------------------------------------------------------------ */
 #define PIN_SK6812_DATA     0   /* GP0  — PIO0 SM0, 800 Kbps NRZ → SK6812 chain */
-#define PIN_WS2811_DATA     1   /* GP1  — PIO0 SM1, 400 Kbps NRZ → WS2811 chain */
+#define PIN_WS2811_DATA     3   /* GP3  — PIO1 SM0, 800 Kbps NRZ → WS2811S chain */
 
 /* ------------------------------------------------------------------ */
 /* I2C0 — MCP23017 GPIO expander                                        */

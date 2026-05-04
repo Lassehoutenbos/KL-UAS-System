@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define SK6812_MAX_PIXELS       128
-#define WORKLIGHT_LED_BASE      10
+#define WORKLIGHT_LED_BASE      60
 #define WORKLIGHT_LED_COUNT     23
 
 /**

@@ -23,28 +23,31 @@ if (EXISTS ${picoVscode})
     include(${picoVscode})
 endif()
 # ====================================================================================
-set(PICO_BOARD pico_w CACHE STRING "Board type")
+set(PICO_BOARD pico2_w CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(GCS C CXX ASM)
-
-# Initialise the Raspberry Pi Pico SDK
-pico_sdk_init()
-
-# -- FreeRTOS-Kernel via FetchContent --
-# Must be after pico_sdk_init() so the ARM toolchain is set up before
-# FreeRTOS-Kernel processes its own CMakeLists.
+# -- FreeRTOS-Kernel (Raspberry Pi fork) via FetchContent --
+# The RP2350_ARM_NTZ port is provided by the raspberrypi/FreeRTOS-Kernel fork.
+# This fork is integrated by adding the *port* directory as a subdirectory
+# (NOT the top-level FreeRTOS-Kernel CMakeLists, which has no knowledge of
+# the GCC_RP2350_ARM_NTZ port). The port hooks into pico_sdk_init() via
+# PICO_SDK_POST_LIST_FILES and creates FreeRTOS-Kernel + FreeRTOS-Kernel-Heap*
+# INTERFACE targets.
 include(FetchContent)
 FetchContent_Declare(
     freertos_kernel
-    GIT_REPOSITORY https://github.com/FreeRTOS/FreeRTOS-Kernel.git
-    GIT_TAG        V11.1.0
+    GIT_REPOSITORY https://github.com/raspberrypi/FreeRTOS-Kernel.git
+    GIT_TAG        main
 )
-# freertos_config must be defined before FetchContent_MakeAvailable.
-# Link hardware_sync and hardware_exception so the RP2040 port can find
-# hardware/sync.h and hardware/exception.h from the Pico SDK.
+FetchContent_GetProperties(freertos_kernel)
+if(NOT freertos_kernel_POPULATED)
+    FetchContent_Populate(freertos_kernel)
+endif()
+set(FREERTOS_KERNEL_PATH ${freertos_kernel_SOURCE_DIR})
+
+# freertos_config must be defined before the port subdirectory is added.
 add_library(freertos_config INTERFACE)
 target_include_directories(freertos_config INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}   # FreeRTOSConfig.h lives at project root
@@ -52,17 +55,17 @@ target_include_directories(freertos_config INTERFACE
 target_compile_definitions(freertos_config INTERFACE
     projCOVERAGE_TEST=0
 )
-target_link_libraries(freertos_config INTERFACE
-    hardware_sync
-    hardware_exception
-    pico_multicore      # RP2040 port uses sio_hw inter-core FIFO
-)
-set(FREERTOS_HEAP "4" CACHE STRING "FreeRTOS heap implementation")
-set(FREERTOS_PORT "GCC_RP2040" CACHE STRING "FreeRTOS port for RP2040 Cortex-M0+")
-FetchContent_MakeAvailable(freertos_kernel)
 
-# Capture the FreeRTOS source path for explicit include propagation
-FetchContent_GetProperties(freertos_kernel SOURCE_DIR FREERTOS_KERNEL_PATH)
+# Pull in the RP2350 ARM non-TrustZone port. This must come BEFORE
+# pico_sdk_init() so it can register its library.cmake via
+# PICO_SDK_POST_LIST_FILES.
+add_subdirectory(${FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2350_ARM_NTZ
+                 ${CMAKE_BINARY_DIR}/freertos_kernel_port)
+
+project(GCS C CXX ASM)
+
+# Initialise the Raspberry Pi Pico SDK (this triggers FreeRTOS library.cmake)
+pico_sdk_init()
 
 # -- Source files --
 add_executable(GCS
@@ -96,9 +99,6 @@ pico_generate_pio_header(GCS ${CMAKE_CURRENT_LIST_DIR}/src/ws2811.pio)
 target_include_directories(GCS PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}       # FreeRTOSConfig.h, tusb_config.h
     ${CMAKE_CURRENT_LIST_DIR}/src   # pins.h, protocol.h, etc.
-    # FreeRTOS headers (explicit — PUBLIC propagation from FetchContent is unreliable)
-    ${FREERTOS_KERNEL_PATH}/include
-    ${FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2040/include
 )
 
 # -- Link libraries --
@@ -115,7 +115,8 @@ target_link_libraries(GCS
     pico_unique_id
     tinyusb_device
     tinyusb_board
-    freertos_kernel
+    FreeRTOS-Kernel
+    FreeRTOS-Kernel-Heap4
 )
 
 pico_add_extra_outputs(GCS)
@@ -137,8 +138,6 @@ pico_enable_stdio_usb(GCS_TFT_Test 0)
 target_include_directories(GCS_TFT_Test PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_CURRENT_LIST_DIR}/src
-    ${FREERTOS_KERNEL_PATH}/include
-    ${FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2040/include
 )
 
 target_link_libraries(GCS_TFT_Test
@@ -147,7 +146,8 @@ target_link_libraries(GCS_TFT_Test
     hardware_spi
     hardware_gpio
     hardware_pwm
-    freertos_kernel
+    FreeRTOS-Kernel
+    FreeRTOS-Kernel-Heap4
 )
 
 pico_add_extra_outputs(GCS_TFT_Test)

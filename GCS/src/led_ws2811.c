@@ -53,8 +53,8 @@ static void __isr ws2811_dma_isr(void)
 /* ------------------------------------------------------------------ */
 void led_ws2811_init(void)
 {
-    uint offset = pio_add_program(pio0, &ws2811_program);
-    ws2811_program_init(pio0, 1, offset, PIN_WS2811_DATA, 400000.0f);
+    uint offset = pio_add_program(pio1, &ws2811_program);
+    ws2811_program_init(pio1, 0, offset, PIN_WS2811_DATA, 800000.0f);
 
     s_dma_chan = dma_claim_unused_channel(true);
     s_dma_sem  = xSemaphoreCreateBinary();
@@ -63,9 +63,9 @@ void led_ws2811_init(void)
     channel_config_set_transfer_data_size(&cfg, DMA_SIZE_32);
     channel_config_set_read_increment(&cfg, true);
     channel_config_set_write_increment(&cfg, false);
-    channel_config_set_dreq(&cfg, DREQ_PIO0_TX1);
+    channel_config_set_dreq(&cfg, DREQ_PIO1_TX0);
     dma_channel_set_config(s_dma_chan, &cfg, false);
-    dma_channel_set_write_addr(s_dma_chan, &pio0->txf[1], false);
+    dma_channel_set_write_addr(s_dma_chan, &pio1->txf[0], false);
 
     dma_channel_set_irq1_enabled(s_dma_chan, true);
     irq_set_exclusive_handler(DMA_IRQ_1, ws2811_dma_isr);
@@ -79,6 +79,11 @@ void led_ws2811_init(void)
         s_btn[i].anim = LED_ANIM_OFF;
         s_btn[i].phase = 0;
     }
+
+    /* TEMP DIAGNOSTIC: force non-zero pixels so GP1 shows continuous
+     * 50 ms bit patterns on a scope. Remove once PIO output is confirmed. */
+    s_btn[0].r = 255; s_btn[0].anim = LED_ANIM_ON;
+    s_btn[1].g = 255; s_btn[1].anim = LED_ANIM_ON;
 }
 
 void led_ws2811_set_button(uint8_t button_id,

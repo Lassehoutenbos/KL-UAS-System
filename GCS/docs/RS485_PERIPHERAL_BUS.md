@@ -46,18 +46,18 @@ GCS Pico (UART1)
 Recommended connector: **GX16-8** circular aviation connector (IP54, field-proven, locking).
 
 | Pin | Signal | Notes |
-|-----|--------|-------|
+| ----- | -------- | ------- |
 | 1 | GND | Common ground — connect shield here too |
 | 2 | +5 V | Regulated 5 V for peripheral logic / MCU |
-| 3 | VBAT | Fused raw battery voltage for high-power loads |
-| 4 | RS-485 A | Differential data line + |
-| 5 | RS-485 B | Differential data line − |
+| 3 | RS-485 A | Differential data line + |
+| 4 | spare | Reserved for future expansion |
+| 5 | spare | Reserved for future expansion |
 | 6 | /INT | Open-drain alert — peripheral pulls low to signal async event |
-| 7 | spare | Reserved for future expansion |
-| 8 | spare | Reserved for future expansion |
+| 7 | RS-485 B | Differential data line − |
+| 8 | VIN | Fused raw battery voltage for high-power loads |
 
 > **Cable colour suggestion (for consistent field builds):**
-> GND = black, +5 V = red, VBAT = orange, A = yellow, B = green, /INT = white.
+> GND = Brown, +5 V = Red, VIN = White, A = Green, B = Blue, /INT = Orange.
 
 ---
 
@@ -118,7 +118,7 @@ Last:     CRC8                  (CRC-8/MAXIM over bytes 1…payload end)
 ### Address space
 
 | Address | Assignment |
-|---------|-----------|
+| --------- | ----------- |
 | 0x00 | Reserved |
 | 0x01 | Searchlight module |
 | 0x02 | Radar / rangefinder node |
@@ -132,7 +132,7 @@ Addresses should be configured via DIP switches or solder jumpers on each periph
 ### Command types (CMD byte)
 
 | CMD | Direction | Name | Description |
-|-----|-----------|------|-------------|
+| ----- | ----------- | ------ | ------------- |
 | 0x01 | Master → Slave | PING | Alive check. Slave responds with PONG |
 | 0x02 | Slave → Master | PONG | Response to PING. Payload: 1-byte firmware version |
 | 0x10 | Master → Slave | SET_OUTPUT | Set a digital/PWM output. Payload: `channel (u8), value (u8)` |
@@ -150,7 +150,7 @@ Addresses should be configured via DIP switches or solder jumpers on each periph
 ### Timing
 
 | Parameter | Value |
-|---|---|
+| --- | --- |
 | Inter-frame gap | ≥ 2 ms |
 | Slave response timeout | 50 ms |
 | PING interval (health check) | 1000 ms per device |
@@ -179,7 +179,7 @@ uint8_t crc8(const uint8_t *data, size_t len) {
 Any MCU with a UART works. Suggested options for new peripheral boards:
 
 | MCU | Why |
-|-----|-----|
+| ----- | ----- |
 | **RP2040 (Pico)** | Same toolchain as GCS, cheap, plenty of I/O |
 | **STM32G031** | Tiny, cheap, low power, SOIC-8 or TSSOP-20 |
 | **ATmega328P** | Arduino ecosystem, easy prototyping |
@@ -194,6 +194,7 @@ Each peripheral board needs a **SP3485** (or MAX485 if running at 5 V logic) plu
 **Purpose:** High-power LED spotlight with PWM brightness control and thermal monitoring.
 
 **Hardware:**
+
 - MCU: RP2040 or STM32G031
 - SP3485 for RS-485
 - MOSFET (e.g. IRLZ44N) to switch the LED load from VBAT
@@ -203,7 +204,7 @@ Each peripheral board needs a **SP3485** (or MAX485 if running at 5 V logic) plu
 **Protocol usage:**
 
 | CMD | Payload | Effect |
-|-----|---------|--------|
+| ----- | --------- | -------- |
 | `SET_OUTPUT` | `ch=0, val=0–255` | PWM brightness (0 = off, 255 = full) |
 | `GET_STATUS` | — | Returns: `brightness (u8), temp_C (i8), fault_flags (u8)` |
 | `SET_PARAM` | `param=0x01, val=1` | Enable thermal shutoff at 80 °C |
@@ -211,7 +212,7 @@ Each peripheral board needs a **SP3485** (or MAX485 if running at 5 V logic) plu
 **Fault flags byte:**
 
 | Bit | Meaning |
-|-----|---------|
+| ----- | --------- |
 | 0 | Overcurrent |
 | 1 | Overtemperature |
 | 2 | VBAT undervoltage |
@@ -226,6 +227,7 @@ When a fault is detected the module sends an `ERROR` frame and asserts `/INT`.
 **Purpose:** Relay distance and detection data from a radar or laser rangefinder to the GCS.
 
 **Hardware:**
+
 - MCU: RP2040 or STM32
 - SP3485 for RS-485
 - Sensor connected via secondary UART or I2C on the peripheral MCU (e.g. TF-Luna LiDAR via UART, or LD06 radar via UART)
@@ -233,7 +235,7 @@ When a fault is detected the module sends an `ERROR` frame and asserts `/INT`.
 **Protocol usage:**
 
 | CMD | Payload | Effect |
-|-----|---------|--------|
+| ----- | --------- | -------- |
 | `STREAM_ON` | `interval=100` | Stream detection data every 100 ms |
 | `STREAM_DATA` | `distance_mm (u16), signal_strength (u8), status (u8)` | Periodic reading |
 | `GET_STATUS` | — | Returns: `mode (u8), range_max_m (u8), sample_rate_hz (u8)` |
@@ -246,6 +248,7 @@ When a fault is detected the module sends an `ERROR` frame and asserts `/INT`.
 **Purpose:** Two-axis servo-driven camera or sensor mount, controllable from the GCS.
 
 **Hardware:**
+
 - MCU: RP2040
 - SP3485 for RS-485
 - 2× servo PWM output (pan + tilt)
@@ -254,7 +257,7 @@ When a fault is detected the module sends an `ERROR` frame and asserts `/INT`.
 **Protocol usage:**
 
 | CMD | Payload | Effect |
-|-----|---------|--------|
+| ----- | --------- | -------- |
 | `SET_OUTPUT` | `ch=0, val=0–180` | Pan angle in degrees |
 | `SET_OUTPUT` | `ch=1, val=0–180` | Tilt angle in degrees |
 | `GET_STATUS` | — | Returns: `pan_deg (u8), tilt_deg (u8), moving (u8)` |
@@ -268,6 +271,7 @@ When a fault is detected the module sends an `ERROR` frame and asserts `/INT`.
 **Purpose:** Addressable LED bar (e.g. SK6812) for area illumination or status indication, driven by a dedicated peripheral MCU rather than the main GCS Pico chain.
 
 **Hardware:**
+
 - MCU: RP2040 or ATmega328P
 - SP3485 for RS-485
 - PIO/timer output to SK6812 strip
@@ -276,7 +280,7 @@ When a fault is detected the module sends an `ERROR` frame and asserts `/INT`.
 **Protocol usage:**
 
 | CMD | Payload | Effect |
-|-----|---------|--------|
+| ----- | --------- | -------- |
 | `SET_OUTPUT` | `ch=0, val=0–255` | Global brightness |
 | `SET_PARAM` | `param=0x01, val=<mode>` | Set lighting mode (0=solid, 1=flash, 2=breathe) |
 | `SET_PARAM` | `param=0x02, val=<colour>` | Set colour (packed RGB u16: RRRRRGGGGGGBBBBB) |
@@ -676,12 +680,12 @@ The detail screen shows live data from one peripheral. The Pi selects which peri
 │  Brightness       ███████  │  ← bar graph, 0–255
 │                    78%     │
 │                            │
-│  Temp              42°C   │  ← colour-coded (green/amber/red)
+│  Temp              42°C    │  ← colour-coded (green/amber/red)
 │                            │
-│  Faults           NONE    │  ← or list active fault flags
+│  Faults           NONE     │  ← or list active fault flags
 │                            │
-│  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
-│  addr 0x01    ONLINE      │  ← footer with address + status
+│  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    │
+│  addr 0x01    ONLINE       │  ← footer with address + status
 └────────────────────────────┘
 ```
 

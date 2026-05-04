@@ -148,6 +148,12 @@ void led_sk6812_init(void)
     irq_set_enabled(DMA_IRQ_0, true);
 
     memset(s_pixel_buf, 0, sizeof(s_pixel_buf));
+
+    /* Cover both the warning panel and the worklight from boot, so neither
+     * region is silently dropped from DMA when only one is commanded. */
+    uint8_t warn_end = WARN_PANEL_LED_BASE + WARN_PANEL_LED_COUNT;
+    uint8_t work_end = WORKLIGHT_LED_BASE + WORKLIGHT_LED_COUNT;
+    s_num_pixels = warn_end > work_end ? warn_end : work_end;
 }
 
 void led_sk6812_set_brightness(uint8_t level)

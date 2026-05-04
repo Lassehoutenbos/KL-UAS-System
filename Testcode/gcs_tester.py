@@ -7,6 +7,7 @@
 
 import customtkinter as ctk
 import tkinter as tk
+from tkinter import ttk
 import serial
 import serial.tools.list_ports
 import threading
@@ -136,6 +137,41 @@ class GCSProtocol:
 
 
 # ---------------------------------------------------------------------------
+# ComboBox adapter
+#
+# customtkinter 5.2.2 + Python 3.13 deadlocks when a CTkComboBox dropdown is
+# opened on Windows (Toplevel grab is never released). This wrapper exposes the
+# subset of the CTkComboBox API used in this file (set/get/configure(values=)/
+# command=) backed by ttk.Combobox, which is unaffected.
+# ---------------------------------------------------------------------------
+
+class ComboBox(ttk.Combobox):
+    def __init__(self, master, values=None, width=None, command=None, **kwargs):
+        char_width = max(6, int(width) // 8) if width else 18
+        kwargs.pop("state", None)
+        super().__init__(master, values=values or [], width=char_width,
+                         state="readonly", **kwargs)
+        self._command = command
+        if command is not None:
+            self.bind("<<ComboboxSelected>>",
+                      lambda e: self._command(self.get()))
+        if values:
+            self.set(values[0])
+
+    def configure(self, **kwargs):
+        cmd = kwargs.pop("command", None)
+        if cmd is not None:
+            self._command = cmd
+            self.bind("<<ComboboxSelected>>",
+                      lambda e: self._command(self.get()))
+        if "width" in kwargs:
+            kwargs["width"] = max(6, int(kwargs["width"]) // 8)
+        return super().configure(**kwargs)
+
+    config = configure
+
+
+# ---------------------------------------------------------------------------
 # Serial driver
 # ---------------------------------------------------------------------------
 
@@ -225,6 +261,24 @@ class GCSTesterApp(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
+        style = ttk.Style(self)
+        style.theme_use("clam")
+        style.configure("TCombobox",
+                        fieldbackground="#343638", background="#565b5e",
+                        foreground="#dce4ee", arrowcolor="#dce4ee",
+                        bordercolor="#565b5e", lightcolor="#565b5e",
+                        darkcolor="#565b5e", selectbackground="#1f6aa5",
+                        selectforeground="#dce4ee")
+        style.map("TCombobox",
+                  fieldbackground=[("readonly", "#343638")],
+                  foreground=[("readonly", "#dce4ee")],
+                  selectbackground=[("readonly", "#343638")],
+                  selectforeground=[("readonly", "#dce4ee")])
+        self.option_add("*TCombobox*Listbox.background", "#2b2b2b")
+        self.option_add("*TCombobox*Listbox.foreground", "#dce4ee")
+        self.option_add("*TCombobox*Listbox.selectBackground", "#1f6aa5")
+        self.option_add("*TCombobox*Listbox.selectForeground", "#dce4ee")
+
         self._driver = SerialDriver(rx_callback=self._on_rx_packet)
         self._hb_seq = 0
         self._hb_auto = False
@@ -270,7 +324,7 @@ class GCSTesterApp(ctk.CTk):
         bar.grid(row=0, column=0, columnspan=3, sticky="ew", padx=6, pady=(6, 0))
 
         ctk.CTkLabel(bar, text="Port:").pack(side="left", padx=(10, 2))
-        self._port_combo = ctk.CTkComboBox(bar, width=110, values=[])
+        self._port_combo = ComboBox(bar, width=110, values=[])
         self._port_combo.pack(side="left", padx=2)
 
         ctk.CTkButton(bar, text="Refresh", width=68,
@@ -465,7 +519,7 @@ class GCSTesterApp(ctk.CTk):
         row2 = ctk.CTkFrame(state_box, fg_color="transparent")
         row2.pack(fill="x", padx=8, pady=(0, 8))
         ctk.CTkLabel(row2, text="Override:", width=60, anchor="w").pack(side="left")
-        self._state_combo = ctk.CTkComboBox(row2, values=GCSProtocol.STATE_NAMES, width=150)
+        self._state_combo = ComboBox(row2, values=GCSProtocol.STATE_NAMES, width=150)
         self._state_combo.set("ACTIVE")
         self._state_combo.pack(side="left", padx=(0, 8))
         ctk.CTkButton(row2, text="Send", width=70,
@@ -479,7 +533,7 @@ class GCSTesterApp(ctk.CTk):
         row3 = ctk.CTkFrame(screen_box, fg_color="transparent")
         row3.pack(fill="x", padx=8, pady=8)
         ctk.CTkLabel(row3, text="Mode:", width=50, anchor="w").pack(side="left")
-        self._screen_combo = ctk.CTkComboBox(row3, values=GCSProtocol.SCREEN_NAMES, width=130)
+        self._screen_combo = ComboBox(row3, values=GCSProtocol.SCREEN_NAMES, width=130)
         self._screen_combo.set("AUTO")
         self._screen_combo.pack(side="left", padx=(0, 8))
         ctk.CTkButton(row3, text="Send", width=70,
@@ -521,7 +575,7 @@ class GCSTesterApp(ctk.CTk):
             row.pack(fill="x", padx=6, pady=2)
             ctk.CTkLabel(row, text=f"{i}  {name}",
                          font=ctk.CTkFont(size=11), width=140, anchor="w").pack(side="left", padx=6)
-            combo = ctk.CTkComboBox(row, values=GCSProtocol.WARN_SEVERITY_NAMES,
+            combo = ComboBox(row, values=GCSProtocol.WARN_SEVERITY_NAMES,
                                     width=110,
                                     command=lambda val, r=row, idx=i: self._on_warn_changed(r, val))
             combo.set("OK")
@@ -594,7 +648,7 @@ class GCSTesterApp(ctk.CTk):
         ctk.CTkLabel(cmd_row1, text="Addr:", width=36, anchor="w").pack(side="left")
         addr_values = [f"0x{a:02X}  {n}" for a, n in GCSProtocol.PERIPH_NAMES.items()]
         addr_values.append("0xFF  Broadcast")
-        self._periph_addr_combo = ctk.CTkComboBox(cmd_row1, values=addr_values, width=160)
+        self._periph_addr_combo = ComboBox(cmd_row1, values=addr_values, width=160)
         self._periph_addr_combo.set(addr_values[0])
         self._periph_addr_combo.pack(side="left", padx=(0, 10))
         ctk.CTkLabel(cmd_row1, text="Cmd:", width=36, anchor="w").pack(side="left")
@@ -603,7 +657,7 @@ class GCSTesterApp(ctk.CTk):
             "SET_PARAM (0x20)", "GET_PARAM (0x21)",
             "STREAM_ON (0x30)", "STREAM_OFF (0x31)", "SYNC (0xFF)",
         ]
-        self._periph_cmd_combo = ctk.CTkComboBox(cmd_row1, values=cmd_values, width=160)
+        self._periph_cmd_combo = ComboBox(cmd_row1, values=cmd_values, width=160)
         self._periph_cmd_combo.set("PING (0x01)")
         self._periph_cmd_combo.pack(side="left")
 
@@ -697,7 +751,7 @@ class GCSTesterApp(ctk.CTk):
             anim_row = ctk.CTkFrame(sub, fg_color="transparent")
             anim_row.pack(fill="x", padx=6, pady=(2, 4))
             ctk.CTkLabel(anim_row, text="Anim:", width=40, anchor="w").pack(side="left")
-            anim_combo = ctk.CTkComboBox(anim_row, values=GCSProtocol.ANIM_NAMES, width=130)
+            anim_combo = ComboBox(anim_row, values=GCSProtocol.ANIM_NAMES, width=130)
             anim_combo.set("ON")
             anim_combo.pack(side="left", padx=(0, 8))
             self._ws_anim.append(anim_combo)
@@ -822,7 +876,7 @@ class GCSTesterApp(ctk.CTk):
         br_row = ctk.CTkFrame(bright_box, fg_color="transparent")
         br_row.pack(fill="x", padx=8, pady=8)
         ctk.CTkLabel(br_row, text="Target:", width=50, anchor="w").pack(side="left")
-        self._bright_target = ctk.CTkComboBox(br_row,
+        self._bright_target = ComboBox(br_row,
                                                values=["SK6812 Strip (0)", "WS2811 Buttons (1)",
                                                        "TFT Backlight (2)"],
                                                width=160)
